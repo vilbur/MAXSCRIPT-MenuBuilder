@@ -1,11 +1,10 @@
 
-
 /*  Menu build manager.
     Owns definitions, saved JSON data, startup loader and callback routing.
 */
 struct MenuBuildManager_v
 (
-	version = 0.08,
+	version = 0.09,
 	menus_data = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
@@ -527,6 +526,51 @@ struct MenuBuildManager_v
 	),
 
 
+	/*  Loads saved menu data array from JSON.
+	    Missing file returns empty array.
+	*/
+	function loadSavedMenusDataFromJson =
+	(
+		json_io = MenuJsonIO_v()
+		json_io.loadMenusDataFromJsonFile this.data_file_path -- return
+	),
+
+
+	/*  Saves given menu data array to shared JSON file.
+	    This is low level write method.
+	*/
+	function writeSavedMenusDataToJson menus_data_array =
+	(
+		json_io = MenuJsonIO_v()
+		json_io.saveMenusDataToJsonFile menus_data_array this.data_file_path
+
+		this.data_file_path -- return
+	),
+
+
+	/*  Clears shared JSON file.
+	    File stays valid and contains empty menus array.
+	*/
+	function clearJsonFile =
+	(
+		this.saved_menus_data = #()
+		this.writeSavedMenusDataToJson this.saved_menus_data
+
+		format "Menu JSON file cleared:\n%\n" this.data_file_path
+
+		this.saved_menus_data -- return
+	),
+
+
+	/*  Deletes all menus from JSON file.
+	    Alias for clearJsonFile.
+	*/
+	function deleteAllMenusFromJson =
+	(
+		this.clearJsonFile() -- return
+	),
+
+
 	/*  Gets saved menu type from root data.
 	    Defaults to #menu.
 	*/
@@ -546,6 +590,34 @@ struct MenuBuildManager_v
 	),
 
 
+	/*  Gets saved menu title.
+	    Empty title means invalid menu data.
+	*/
+	function getSavedMenuTitle menu_data =
+	(
+		menu_title = ""
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #title then
+			(
+				menu_title = menu_data[#title]
+			)
+		)
+
+		menu_title -- return
+	),
+
+
+	/*  Checks if saved menu data has title.
+	    Invalid data is skipped.
+	*/
+	function isValidSavedMenuData menu_data =
+	(
+		this.getSavedMenuTitle menu_data != "" -- return
+	),
+
+
 	/*  Checks if saved root data should be loaded by menu callback.
 	    Only #menu and #both are allowed here.
 	*/
@@ -553,7 +625,11 @@ struct MenuBuildManager_v
 	(
 		saved_type = this.getSavedMenuType menu_data
 
-		if saved_type == #menu then
+		if not this.isValidSavedMenuData menu_data then
+		(
+			false -- return
+		)
+		else if saved_type == #menu then
 		(
 			true -- return
 		)
@@ -575,7 +651,11 @@ struct MenuBuildManager_v
 	(
 		saved_type = this.getSavedMenuType menu_data
 
-		if saved_type == #quad then
+		if not this.isValidSavedMenuData menu_data then
+		(
+			false -- return
+		)
+		else if saved_type == #quad then
 		(
 			true -- return
 		)
@@ -590,27 +670,41 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Gets signature for merge.
+	/*  Gets signature for merge and delete.
 	    Same type and same title replaces previous saved definition.
 	*/
 	function getMenuDataSignature menu_data =
 	(
 		signature = ""
 
-		if this.isDictionaryValue menu_data then
+		if this.isValidSavedMenuData menu_data then
 		(
 			menu_type_text = this.getSavedMenuType menu_data as string
-			menu_title_text = ""
-
-			if this.hasDictValueSafe menu_data #title then
-			(
-				menu_title_text = menu_data[#title]
-			)
+			menu_title_text = this.getSavedMenuTitle menu_data
 
 			signature = menu_type_text + "|" + menu_title_text
 		)
 
 		signature -- return
+	),
+
+
+	/*  Checks if string exists in array.
+	    Used by JSON delete methods.
+	*/
+	function isStringInArray string_array string_value =
+	(
+		was_found = false
+
+		for item_string in string_array while not was_found do
+		(
+			if item_string == string_value then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
 	),
 
 
@@ -623,29 +717,38 @@ struct MenuBuildManager_v
 
 		for old_menu_data in old_menus_data do
 		(
-			append merged_menus_data old_menu_data
+			old_signature = this.getMenuDataSignature old_menu_data
+
+			if old_signature != "" then
+			(
+				append merged_menus_data old_menu_data
+			)
 		)
 
 		for new_menu_data in new_menus_data do
 		(
 			new_signature = this.getMenuDataSignature new_menu_data
-			replace_index = 0
 
-			for menu_index = 1 to merged_menus_data.count while replace_index == 0 do
+			if new_signature != "" then
 			(
-				if this.getMenuDataSignature merged_menus_data[menu_index] == new_signature then
+				replace_index = 0
+
+				for menu_index = 1 to merged_menus_data.count while replace_index == 0 do
 				(
-					replace_index = menu_index
+					if this.getMenuDataSignature merged_menus_data[menu_index] == new_signature then
+					(
+						replace_index = menu_index
+					)
 				)
-			)
 
-			if replace_index > 0 then
-			(
-				merged_menus_data[replace_index] = new_menu_data
-			)
-			else
-			(
-				append merged_menus_data new_menu_data
+				if replace_index > 0 then
+				(
+					merged_menus_data[replace_index] = new_menu_data
+				)
+				else
+				(
+					append merged_menus_data new_menu_data
+				)
 			)
 		)
 
@@ -653,8 +756,33 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds current session callbacks.
-	    One manager callback owns all menu definitions.
+	/*  Deletes menu entries from JSON by signatures.
+	    Signatures are built from type and title.
+	*/
+	function deleteMenusFromJsonBySignatures signatures =
+	(
+		old_menus_data = this.loadSavedMenusDataFromJson()
+		new_menus_data = #()
+
+		for menu_data in old_menus_data do
+		(
+			menu_signature = this.getMenuDataSignature menu_data
+
+			if not this.isStringInArray signatures menu_signature then
+			(
+				append new_menus_data menu_data
+			)
+		)
+
+		this.saved_menus_data = new_menus_data
+		this.writeSavedMenusDataToJson this.saved_menus_data
+
+		this.saved_menus_data -- return
+	),
+
+
+	/*  Builds current saved menu data.
+	    No callbacks are registered here.
 	*/
 	function buildMenus =
 	(
@@ -663,17 +791,12 @@ struct MenuBuildManager_v
 			this.buildSavedMenusData()
 		)
 
-		if this.auto_register_callback then
-		(
-			this.registerCallback()
-		)
-
 		this.saved_menus_data -- return
 	),
 
 
 	/*  Saves saved menu data array to JSON file.
-	    Can merge with existing JSON to avoid overrides.
+	    Existing JSON is merged by default so separate tools can add own menus.
 	*/
 	function saveJsonData =
 	(
@@ -686,11 +809,8 @@ struct MenuBuildManager_v
 
 		if this.merge_existing_data then
 		(
-			if doesFileExist this.data_file_path then
-			(
-				old_menus_data = json_io.loadMenusDataFromJsonFile this.data_file_path
-				this.saved_menus_data = this.mergeSavedMenusData old_menus_data this.saved_menus_data
-			)
+			old_menus_data = json_io.loadMenusDataFromJsonFile this.data_file_path
+			this.saved_menus_data = this.mergeSavedMenusData old_menus_data this.saved_menus_data
 		)
 
 		json_io.saveMenusDataToJsonFile this.saved_menus_data this.data_file_path
@@ -890,13 +1010,19 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds menus, saves JSON data, saves startup loader.
-	    Main manager entry point.
+	/*  Builds menus, merges them into JSON, registers callbacks and saves startup loader.
+	    Main manager entry point for all tools.
 	*/
 	function run =
 	(
 		this.buildMenus()
 		this.saveJsonData()
+
+		if this.auto_register_callback then
+		(
+			this.registerCallback()
+		)
+
 		this.saveStartupScript()
 
 		this.saved_menus_data -- return
@@ -923,6 +1049,5 @@ struct MenuBuildManager_v
 		)
 	)
 )
-
 
 

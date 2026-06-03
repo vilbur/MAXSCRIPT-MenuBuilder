@@ -1,4 +1,5 @@
 ﻿
+
 /*  Creates new guid string.
     Used by test helpers.
 */
@@ -31,7 +32,7 @@ function generateMockMacroScript macro_category macro_name =
 /*  Creates simplified test menu dictionary.
     Key is title string, value is macro array or nested submenu dictionary.
 */
-function createTestMacroDictionaryLevel level_index item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_TEST_CATEGORY" minimum_submenu_item_count:1 =
+function createTestMacroDictionaryLevel level_index item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_MENU_REBUILDER_TEST_CATEGORY" minimum_submenu_item_count:1 =
 (
 	dictionary_value = Dictionary #string
 	level_item_count = item_count
@@ -46,7 +47,7 @@ function createTestMacroDictionaryLevel level_index item_count:2 submenu_count:1
 		macro_counter[1] += 1
 
 		title_string = "Item L" + (level_index as string) + "." + (item_index as string)
-		macro_name = "_TEST_MACRO_" + (macro_counter[1] as string)
+		macro_name = "_MENU_REBUILDER_TEST_MACRO_" + (macro_counter[1] as string)
 
 		generateMockMacroScript macro_category macro_name
 
@@ -73,24 +74,4 @@ function createTestMacroDictionaryLevel level_index item_count:2 submenu_count:1
 	dictionary_value -- return
 )
 
-/*  Creates saved menu data from test source dictionary.
-    Compatibility helper for old createSavedTestMenuDataLevel calls.
-*/
-function createSavedTestMenuDataLevel level_index menu_title:"_TEST_MENU_OOOOH" item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_TEST_CATEGORY" minimum_submenu_item_count:1 =
-(
-	source_menu_items = createTestMacroDictionaryLevel \
-		level_index \
-		item_count:item_count \
-		submenu_count:submenu_count \
-		nested_level_count:nested_level_count \
-		macro_counter:macro_counter \
-		macro_category:macro_category \
-		minimum_submenu_item_count:minimum_submenu_item_count
 
-	menu_rebuilder = MenuRebuilder_v \
-		menu_type:#menu \
-		menu_title:menu_title \
-		menu_items:source_menu_items
-
-	menu_rebuilder.buildMenuData() -- return
-)

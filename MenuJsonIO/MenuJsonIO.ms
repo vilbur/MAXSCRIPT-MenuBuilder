@@ -99,7 +99,31 @@ struct MenuJsonIO_v
 		(
 			menu_type_value = #quad
 		)
+		else if text_value == "#quad" then
+		(
+			menu_type_value = #quad
+		)
+		else if text_value == "QUAD" then
+		(
+			menu_type_value = #quad
+		)
+		else if text_value == "#QUAD" then
+		(
+			menu_type_value = #quad
+		)
 		else if text_value == "both" then
+		(
+			menu_type_value = #both
+		)
+		else if text_value == "#both" then
+		(
+			menu_type_value = #both
+		)
+		else if text_value == "BOTH" then
+		(
+			menu_type_value = #both
+		)
+		else if text_value == "#BOTH" then
 		(
 			menu_type_value = #both
 		)
@@ -348,7 +372,7 @@ struct MenuJsonIO_v
 	(
 		json_value = "{\n"
 
-		json_value += "\t\"version\": 0.08,\n"
+		json_value += "\t\"version\": 0.09,\n"
 		json_value += "\t\"menus\": [\n"
 
 		for menu_index = 1 to menus_data_array.count do
@@ -400,21 +424,25 @@ struct MenuJsonIO_v
 	function readTextFile file_path =
 	(
 		file_text = ""
-		text_file = openFile file_path mode:"rt"
 
-		if text_file != undefined then
+		if doesFileExist file_path then
 		(
-			while not eof text_file do
+			text_file = openFile file_path mode:"rt"
+
+			if text_file != undefined then
 			(
-				file_text += readLine text_file
-
-				if not eof text_file then
+				while not eof text_file do
 				(
-					file_text += "\n"
-				)
-			)
+					file_text += readLine text_file
 
-			close text_file
+					if not eof text_file then
+					(
+						file_text += "\n"
+					)
+				)
+
+				close text_file
+			)
 		)
 
 		file_text -- return
@@ -471,18 +499,18 @@ struct MenuJsonIO_v
 	(
 		result_string = ""
 
-		if (this.getCurrentChar()) == "\"" then
+		if this.getCurrentChar() == "\"" then
 		(
 			this.json_position += 1
 
 			while this.json_position <= this.json_length and (this.getCurrentChar()) != "\"" do
 			(
-				current_char = (this.getCurrentChar())
+				current_char = this.getCurrentChar()
 
 				if current_char == "\\" then
 				(
 					this.json_position += 1
-					escape_char = (this.getCurrentChar())
+					escape_char = this.getCurrentChar()
 
 					if escape_char == "\"" then
 					(
@@ -521,7 +549,7 @@ struct MenuJsonIO_v
 				this.json_position += 1
 			)
 
-			if (this.getCurrentChar()) == "\"" then
+			if this.getCurrentChar() == "\"" then
 			(
 				this.json_position += 1
 			)
@@ -540,7 +568,7 @@ struct MenuJsonIO_v
 
 		while this.json_position <= this.json_length and findString "-+0123456789.eE" (this.getCurrentChar()) != undefined do
 		(
-			number_text += (this.getCurrentChar())
+			number_text += this.getCurrentChar()
 			this.json_position += 1
 		)
 
@@ -585,24 +613,24 @@ struct MenuJsonIO_v
 	(
 		array_value = #()
 
-		if (this.getCurrentChar()) == "[" then
+		if this.getCurrentChar() == "[" then
 		(
 			this.json_position += 1
 			this.skipJsonWhitespace()
 
-			while this.json_position <= this.json_length and (this.getCurrentChar()) != "]" do
+			while this.json_position <= this.json_length and this.getCurrentChar() != "]" do
 			(
 				append array_value (this.parseJsonValue())
 				this.skipJsonWhitespace()
 
-				if (this.getCurrentChar()) == "," then
+				if this.getCurrentChar() == "," then
 				(
 					this.json_position += 1
 					this.skipJsonWhitespace()
 				)
 			)
 
-			if (this.getCurrentChar()) == "]" then
+			if this.getCurrentChar() == "]" then
 			(
 				this.json_position += 1
 			)
@@ -619,17 +647,17 @@ struct MenuJsonIO_v
 	(
 		object_value = Dictionary #string
 
-		if (this.getCurrentChar()) == "{" then
+		if this.getCurrentChar() == "{" then
 		(
 			this.json_position += 1
 			this.skipJsonWhitespace()
 
-			while this.json_position <= this.json_length and (this.getCurrentChar()) != "}" do
+			while this.json_position <= this.json_length and this.getCurrentChar() != "}" do
 			(
 				key_string = this.parseJsonString()
 				this.skipJsonWhitespace()
 
-				if (this.getCurrentChar()) == ":" then
+				if this.getCurrentChar() == ":" then
 				(
 					this.json_position += 1
 				)
@@ -640,14 +668,14 @@ struct MenuJsonIO_v
 
 				this.skipJsonWhitespace()
 
-				if (this.getCurrentChar()) == "," then
+				if this.getCurrentChar() == "," then
 				(
 					this.json_position += 1
 					this.skipJsonWhitespace()
 				)
 			)
 
-			if (this.getCurrentChar()) == "}" then
+			if this.getCurrentChar() == "}" then
 			(
 				this.json_position += 1
 			)
@@ -664,7 +692,7 @@ struct MenuJsonIO_v
 	(
 		this.skipJsonWhitespace()
 
-		current_char = (this.getCurrentChar())
+		current_char = this.getCurrentChar()
 		result_value = undefined
 
 		if current_char == "{" then
@@ -772,29 +800,39 @@ struct MenuJsonIO_v
 
 
 	/*  Converts parsed JSON root to saved menu data.
-	    Output root uses Dictionary #name keys. Missing title stays empty.
+	    Missing title returns undefined.
 	*/
 	function jsonRootToMenuData json_root =
 	(
-		menu_data = Dictionary #name
+		menu_data = undefined
 
-		menu_data[#version] = this.getJsonValue json_root "version" 0.08
-		menu_data[#id] = this.getJsonValue json_root "id" ""
-		menu_data[#title] = this.getJsonValue json_root "title" ""
-		menu_data[#type] = this.textToMenuType (this.getJsonValue json_root "type" "menu")
-		menu_data[#quad_context_id] = this.getJsonValue json_root "quad_context_id" "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
-		menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "shiftAndControlPressed")
-		menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
-		menu_data[#quad_menu_id] = this.getJsonValue json_root "quad_menu_id" ""
-		menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_root "items" (Dictionary #string))
+		if this.isDictionaryValue json_root then
+		(
+			menu_title = this.getJsonValue json_root "title" ""
 
-		if this.hasDictValueSafe json_root "quad_menus" then
-		(
-			menu_data[#quad_menus] = this.jsonQuadMenusToData json_root["quad_menus"]
-		)
-		else
-		(
-			menu_data[#quad_menus] = #()
+			if menu_title != "" then
+			(
+				menu_data = Dictionary #name
+
+				menu_data[#version] = this.getJsonValue json_root "version" 0.09
+				menu_data[#id] = this.getJsonValue json_root "id" ""
+				menu_data[#title] = menu_title
+				menu_data[#type] = this.textToMenuType (this.getJsonValue json_root "type" "menu")
+				menu_data[#quad_context_id] = this.getJsonValue json_root "quad_context_id" "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
+				menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "shiftAndControlPressed")
+				menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
+				menu_data[#quad_menu_id] = this.getJsonValue json_root "quad_menu_id" ""
+				menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_root "items" (Dictionary #string))
+
+				if this.hasDictValueSafe json_root "quad_menus" then
+				(
+					menu_data[#quad_menus] = this.jsonQuadMenusToData json_root["quad_menus"]
+				)
+				else
+				(
+					menu_data[#quad_menus] = #()
+				)
+			)
 		)
 
 		menu_data -- return
@@ -808,21 +846,34 @@ struct MenuJsonIO_v
 	(
 		menus_data_array = #()
 
-		if this.hasDictValueSafe json_root "menus" then
+		if this.isDictionaryValue json_root then
 		(
-			json_menus_array = json_root["menus"]
-
-			if classOf json_menus_array == Array then
+			if this.hasDictValueSafe json_root "menus" then
 			(
-				for json_menu_data in json_menus_array do
+				json_menus_array = json_root["menus"]
+
+				if classOf json_menus_array == Array then
 				(
-					append menus_data_array (this.jsonRootToMenuData json_menu_data)
+					for json_menu_data in json_menus_array do
+					(
+						menu_data = this.jsonRootToMenuData json_menu_data
+
+						if menu_data != undefined then
+						(
+							append menus_data_array menu_data
+						)
+					)
 				)
 			)
-		)
-		else
-		(
-			append menus_data_array (this.jsonRootToMenuData json_root)
+			else
+			(
+				menu_data = this.jsonRootToMenuData json_root
+
+				if menu_data != undefined then
+				(
+					append menus_data_array menu_data
+				)
+			)
 		)
 
 		menus_data_array -- return
@@ -830,15 +881,24 @@ struct MenuJsonIO_v
 
 
 	/*  Loads multiple saved menu data dictionaries from JSON file.
-	    Converts JSON back to array of Dictionary #name roots.
+	    Empty or missing file returns empty array.
 	*/
 	function loadMenusDataFromJsonFile json_file_path =
 	(
-		source_text = this.readTextFile json_file_path
-		this.setJsonText source_text
+		menus_data_array = #()
 
-		json_root = this.parseJsonValue()
-		menus_data_array = this.jsonRootToMenusData json_root
+		if doesFileExist json_file_path then
+		(
+			source_text = this.readTextFile json_file_path
+
+			if source_text.count > 0 then
+			(
+				this.setJsonText source_text
+
+				json_root = this.parseJsonValue()
+				menus_data_array = this.jsonRootToMenusData json_root
+			)
+		)
 
 		menus_data_array -- return
 	),
@@ -866,5 +926,6 @@ struct MenuJsonIO_v
 		ok
 	)
 )
+
 
 

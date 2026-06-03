@@ -1,11 +1,10 @@
 
-
 /*  Menu rebuilder.
     Pure worker: rebuilds saved menu_data into passed menu manager or quad menu manager.
 */
 struct MenuRebuilder_v
 (
-	version = 0.08,
+	version = 0.09,
 	menu_data = Dictionary #name,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
@@ -504,6 +503,5 @@ struct MenuRebuilder_v
 		ok
 	)
 )
-
 
 
