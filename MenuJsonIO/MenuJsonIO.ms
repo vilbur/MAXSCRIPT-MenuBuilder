@@ -748,6 +748,9 @@ struct MenuJsonIO_v
 
 	function loadMenusDataFromJsonFile json_file_path =
 	(
+		format "\n"; print "MenuBuildManager_v.loadMenusDataFromJsonFile()"
+		timer_load = timeStamp()
+		
 		menus_data_array = #()
 
 		if doesFileExist json_file_path then
@@ -763,6 +766,8 @@ struct MenuJsonIO_v
 			)
 		)
 
+		format "load: % ms\n" (( timeStamp()) - timer_load)
+		
 		menus_data_array -- return
 	),
 

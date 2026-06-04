@@ -22,11 +22,11 @@ filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	-
     ====================================================================================================
 */
 
-function createTestMenuDefinition =
+function createTestMenuDefinition menu_title:"_MENU_REBUILDER_TEST_MENU" =
 (
 	menu_definition = MenuDefinition_v \
 		type:#menu \
-		title:"_MENU_REBUILDER_TEST_MENU"
+		title:menu_title
 
 	menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_1" title:"Menu Item 1"
 	menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Menu Item 2"
@@ -181,6 +181,25 @@ function testAddItemsToMenu index:undefined =
 	saved_menus_data -- return
 )
 
+/** Test build quee
+ */
+function testBuildQuee =
+(
+	--format "\n"; print ".testBuildQuee()"
+	
+	manager = MenuBuildManager_v()
+	
+	menu_data_01 = createTestMenuDefinition menu_title:"_MENU_01"
+	menu_data_02 = createTestMenuDefinition menu_title:"_MENU_02"
+	menu_data_03 = createTestMenuDefinition menu_title:"_MENU_03"
+
+	
+	manager.addToBuildQuee menu_data_01
+	manager.addToBuildQuee menu_data_02
+	manager.addToBuildQuee menu_data_03
+	
+	manager.build()
+)
 
 /*  ====================================================================================================
     SECTION 10: MANUAL TEST CALLS
@@ -192,7 +211,6 @@ function testAddItemsToMenu index:undefined =
 	testAddItemsToMenu index:1
 	testAddItemsToMenu index:2
 	
-
 
     ------ Injects into existing Default Viewport Quad:
     saved_menus_data = testMenuBuildManagerDefaultQuadInject()
@@ -216,12 +234,14 @@ function testAddItemsToMenu index:undefined =
     qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
 
 
-*/
-	
-	--testAddItemsToMenu()
-	testAddItemsToMenu index:1
-	testAddItemsToMenu index:2
-	testAddItemsToMenu index:3
+	------- TEST BUILD QUEE
+	testBuildQuee()
+
+	====================================================================================================*/
+
+	testBuildQuee()
+
+	----testAddItemsToMenu()
 	
 
     -- Injects into existing Default Viewport Quad:
@@ -246,9 +266,6 @@ function testAddItemsToMenu index:undefined =
     --qmnx_clear = QuadDefaultQmnxClear_v()
     --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\topRight-clear.qmnx"
     --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
-    --
-
-
 
 
 /*------------------------------------------------------------------------------
