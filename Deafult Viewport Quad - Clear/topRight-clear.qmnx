@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MaxQuadMenuTransformations>
+    <DeleteItem Id="0fc23248-5ebd-432c-9c4f-138d2b98a23b"/>
+    <DeleteItem Id="b7688142-47fe-41a0-bdcc-5650f86d9621"/>
+    <DeleteItem Id="647c4c93-bcef-4fac-a35a-0222ea74aaa3"/>
+    <DeleteItem Id="a8df0039-8559-43c3-bcf9-4f45d377de06"/>
+    <DeleteItem Id="eafffb55-f839-4838-9775-4824ba60b330"/>
+    <DeleteItem Id="378bfcdd-b18f-4788-b1a6-e6ab2712d759"/>
+    <DeleteItem Id="e68aee24-23f4-44f0-9502-0bcf54adc6d1"/>
+    <DeleteItem Id="8ea355fc-a376-4af6-bf58-1953b7d3a20d"/>
+    <DeleteItem Id="46d24a12-bb72-497d-8613-72fb689bdb3e"/>
+    <DeleteItem Id="1ed389b5-d21d-400d-ba8d-f7b8815944a6"/>
+    <DeleteItem Id="2013df27-e800-499c-9ea7-dc4b578fcdc0"/>
+    <DeleteItem Id="28343e18-5582-450c-88dc-e45580d26a75"/>
+    <DeleteItem Id="45eb99c7-1ddf-4bda-98d1-ce9ee7e20bf7"/>
+    <DeleteItem Id="5fa19004-91ee-4180-8961-100e53f45c2b"/>
+    <DeleteItem Id="25653a98-6c07-4191-850a-c0b9d9bc9052"/>
+    <DeleteItem Id="09950491-13ac-4b66-bdb8-f08d129a9383"/>
+    <DeleteItem Id="d3488be4-fc68-4953-b0f6-4c646e8e853d"/>
+    <DeleteItem Id="abdb4507-ed57-4c44-ac92-925a0baee1ac"/>
+</MaxQuadMenuTransformations>

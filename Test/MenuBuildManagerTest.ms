@@ -5,11 +5,14 @@ global MenuRebuilder
 global MenuBuildManager
 
 /* IMPORT HELPERS */ 
-filein( getFilenamePath(getSourceFileName()) + "/Lib/printHelpers.ms" )	--"./Lib/printHelpers.ms"
-filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLevel.ms" )	--"./Lib/createSavedTestMenuDataLevel.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/Lib/printHelpers.ms" )	--"./Lib/printHelpers.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLevel.ms" )	--"./Lib/createSavedTestMenuDataLevel.ms"
+
+--filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+
+filein( getFilenamePath(getSourceFileName()) + "/../../MAXSCRIPT-UI-framework/Lib/Menus/MenuRebuilder_update.ms" )	--"./../../MAXSCRIPT-UI-framework/Lib/Menus/MenuRebuilder_update.ms"
 
 /* IMPORT LIBRARY */ 
-filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../include-menus.ms"
 
 	/*  ====================================================================================================
     SECTION 08: PRINT AND DEBUG HELPERS
@@ -215,7 +218,7 @@ function printSavedMenusData saved_menus_data =
 /*  Creates saved menu data from test source dictionary.
     Compatibility helper for old createSavedTestMenuDataLevel calls.
 */
-function createSavedTestMenuDataLevel level_index menu_title:"" item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_MENU_REBUILDER_TEST_CATEGORY" minimum_submenu_item_count:1 =
+function createSavedTestMenuDataLevel level_index menu_title:"" item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_TEST_CATEGORY" minimum_submenu_item_count:1 =
 (
 	source_menu_items = createTestMacroDictionaryLevel \
 		level_index \
@@ -260,11 +263,11 @@ function createTestMenuDefinition =
 		type:#menu \
 		title:"_MENU_REBUILDER_TEST_MENU"
 
-	menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_1" title:"Menu Item 1"
-	menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Menu Item 2"
+	menu_definition.addItem "_TEST_CATEGORY" "_TEST_MACRO_1" title:"Menu Item 1"
+	menu_definition.addItem "_TEST_CATEGORY" "_TEST_MACRO_2" title:"Menu Item 2"
 
 	submenu_definition = menu_definition.addMenu "Submenu 1"
-	submenu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_3" title:"Submenu Item 1"
+	submenu_definition.addItem "_TEST_CATEGORY" "_TEST_MACRO_3" title:"Submenu Item 1"
 
 	menu_definition -- return
 )
@@ -278,20 +281,21 @@ function createTestQuadDefinition =
 	quad_definition = MenuDefinition_v \
 		type:#quad \
 		title:"_MENU_REBUILDER_TEST_QUAD"
+		--quad_modifier:#nonePressed \
 
 	quad_definition.data = #()
 
 	quad_top_right = quad_definition.addQuad "Top Right" position:#TopRight
-	quad_top_right.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_4" title:"Top Right Item"
+	quad_top_right.addItem "_TEST_CATEGORY" "_TEST_MACRO_4" title:"Top Right Item"
 
 	quad_top_left = quad_definition.addQuad "Top Left" position:#TopLeft
-	quad_top_left.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_5" title:"Top Left Item"
+	quad_top_left.addItem "_TEST_CATEGORY" "_TEST_MACRO_5" title:"Top Left Item"
 
 	quad_bottom_left = quad_definition.addQuad "Bottom Left" position:#BottomLeft
-	quad_bottom_left.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_6" title:"Bottom Left Item"
+	quad_bottom_left.addItem "_TEST_CATEGORY" "_TEST_MACRO_6" title:"Bottom Left Item"
 
 	quad_bottom_right = quad_definition.addQuad "Bottom Right" position:#BottomRight
-	quad_bottom_right.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_7" title:"Bottom Right Item"
+	quad_bottom_right.addItem "_TEST_CATEGORY" "_TEST_MACRO_7" title:"Bottom Right Item"
 
 	quad_definition -- return
 )
@@ -332,7 +336,7 @@ function testMenuBuildManagerGenerated =
 		submenu_count:1 \
 		nested_level_count:1 \
 		macro_counter:test_macro_counter \
-		macro_category:"_MENU_REBUILDER_TEST_CATEGORY" \
+		macro_category:"_TEST_CATEGORY" \
 		minimum_submenu_item_count:1
 
 	test_macro_counter = #(0)
@@ -343,22 +347,22 @@ function testMenuBuildManagerGenerated =
 		submenu_count:1 \
 		nested_level_count:1 \
 		macro_counter:test_macro_counter \
-		macro_category:"_MENU_REBUILDER_TEST_CATEGORY" \
+		macro_category:"_TEST_CATEGORY" \
 		minimum_submenu_item_count:1
 
 	menu_definition = MenuDefinition_v \
 		type:#menu \
-		title:"_MENU_REBUILDER_TEST_GENERATED_MENU" \
+		title:"_TEST_GENERATED_MENU" \
 		data:simple_user_menu_data
 
 	quad_definition = MenuDefinition_v \
 		type:#quad \
-		title:"_MENU_REBUILDER_TEST_GENERATED_QUAD"
+		title:"_TEST_GENERATED_QUAD"
 
-	quad_definition.data = #()
-
-	quad_top_right = quad_definition.addQuad "Top Right" position:#TopRight
-	quad_top_right.data = simple_user_menu_data_quad
+	--quad_definition.data = #()
+	--
+	--quad_top_right = quad_definition.addQuad "Top Right" position:#TopRight
+	--quad_top_right.data = simple_user_menu_data_quad
 
 	menus_data = #(menu_definition, quad_definition)
 
@@ -397,7 +401,7 @@ function testMenuBuildManagerMultipleTools =
 		type:#menu \
 		title:"_MENU_REBUILDER_TOOL_A_MENU"
 
-	first_menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_1" title:"Tool A Item"
+	first_menu_definition.addItem "_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_1" title:"Tool A Item"
 
 	first_manager = MenuBuildManager_v menus_data:#(first_menu_definition)
 	first_manager.run()
@@ -406,7 +410,7 @@ function testMenuBuildManagerMultipleTools =
 		type:#menu \
 		title:"_MENU_REBUILDER_TOOL_B_MENU"
 
-	second_menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Tool B Item"
+	second_menu_definition.addItem "_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Tool B Item"
 
 	second_manager = MenuBuildManager_v menus_data:#(second_menu_definition)
 	saved_menus_data = second_manager.run()
@@ -438,10 +442,40 @@ function testMenuBuildManagerMultipleTools =
 
 
 */
-    saved_menus_data = testMenuBuildManagerGenerated()
+
+    --saved_menus_data = testMenuBuildManagerMass()
+
+    --openMenuBuildManagerJsonRollout()
+	
+    --saved_menus_data = testMenuBuildManagerGenerated()
     --openMenuBuildManagerJsonRollout()
     
-    menu_manager = MenuBuildManager_v()
+    --menu_manager = MenuBuildManager_v()
     --menu_manager.clearJsonFile()
+	
+	
+/*  ====================================================================================================
+    	TEST INJECTION TO "Default Viewport Quad"
+    ====================================================================================================*/
 
+  -- Injects into existing Default Viewport Quad:
+    saved_menus_data = testMenuBuildManagerDefaultQuadInject()
 
+    ---- Creates custom Ctrl+Shift+RMB quad:
+    --saved_menus_data = testMenuBuildManagerCustomModifierQuad()
+    --
+    ---- Reload from JSON:
+    --saved_menus_data = testMenuBuildManagerFromJson()
+    --
+    ---- Open JSON manager:
+    --openMenuBuildManagerJsonRollout()
+    --
+    ---- Clear JSON:
+    --menu_manager = MenuBuildManager_v()
+    --menu_manager.clearJsonFile()
+    --
+    ---- Debug qmnx roots:
+    --qmnx_clear = QuadDefaultQmnxClear_v()
+    --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\topRight-clear.qmnx"
+    --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
+    --

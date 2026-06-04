@@ -1,6 +1,18 @@
 
 /*  Menu definition.
     Data can be Dictionary #string or array of MenuDefinition_v.
+	
+	quad_modifier:
+		#nonePressed
+		#shiftPressed
+		#altPressed
+		#controlPressed
+		#shiftAndAltPressed
+		#shiftAndControlPressed
+		#controlAndAltPressed
+		#shiftAndAltAndControlPressed
+		
+	
 */
 struct MenuDefinition_v
 (
@@ -8,7 +20,7 @@ struct MenuDefinition_v
 	title = "",
 	data = undefined,
 	_data = undefined,
-	quad_modifier = #shiftAndControlPressed,
+	quad_modifier = #altPressed,
 	quad_position = #TopRight,
 	quad_context_id = "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e",
 

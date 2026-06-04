@@ -1,3 +1,4 @@
+filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../include-menus.ms"
 
 /*  Menu build manager.
     Owns definitions, saved JSON data, startup loader and callback routing.

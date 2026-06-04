@@ -1,4 +1,3 @@
-
 /*  Menu rebuilder.
     Pure worker: rebuilds saved menu_data into passed menu manager or quad menu manager.
 */
