@@ -6,7 +6,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../
 */ 
 struct MenuBuildManager_v
 (
-	version = 0.30,
+	version = 0.31,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -709,12 +709,12 @@ struct MenuBuildManager_v
 	(
 		timer_save_split = timeStamp()
 		json_io = MenuJsonIO_v()
-		menus_data_array = this.groupMenusUnderCustomMenuRoot menus_data_array
+		split_menus_data_array = this.explodeCustomMenuRootForSplitJson menus_data_array
 
 		this.ensureSplitJsonDirectories()
 		this.clearSplitJsonFiles()
 
-		for menu_data in menus_data_array do
+		for menu_data in split_menus_data_array do
 		(
 			if this.isValidSavedMenuData menu_data then
 			(
@@ -723,7 +723,7 @@ struct MenuBuildManager_v
 			)
 		)
 
-		format "SPLIT JSON SAVE: % files in % ms\n" menus_data_array.count ((timeStamp()) - timer_save_split)
+		format "SPLIT JSON SAVE: % files in % ms\n" split_menus_data_array.count ((timeStamp()) - timer_save_split)
 
 		this.getSplitDataRootDirectory() -- return
 	),
@@ -1406,6 +1406,70 @@ struct MenuBuildManager_v
 		)
 
 		grouped_menus_data -- return
+	),
+
+
+	function createMenuRootDataFromCustomRootChild child_key child_data =
+	(
+		child_menu_data = Dictionary #name
+		child_title = ""
+		child_items = Dictionary #string
+
+		if this.hasDictValueSafe child_data #title then
+		(
+			child_title = child_data[#title]
+		)
+
+		if this.hasDictValueSafe child_data #items then
+		(
+			child_items = child_data[#items]
+		)
+
+		child_menu_data[#version] = this.version
+		child_menu_data[#id] = child_key
+		child_menu_data[#title] = child_title
+		child_menu_data[#type] = #menu
+		child_menu_data[#items] = child_items
+		child_menu_data[#quad_context_id] = ""
+		child_menu_data[#quad_modifier] = undefined
+		child_menu_data[#quad_position] = undefined
+		child_menu_data[#quad_menu_id] = ""
+		child_menu_data[#qmnx_clear_directory] = this.qmnx_clear_directory
+		child_menu_data[#clear_defaul_menu] = false
+		child_menu_data[#quad_menus] = #()
+
+		child_menu_data -- return
+	),
+
+
+	function explodeCustomMenuRootForSplitJson menus_data_array =
+	(
+		split_menus_data = #()
+		grouped_menus_data = this.groupMenusUnderCustomMenuRoot menus_data_array
+
+		for menu_data in grouped_menus_data do
+		(
+			if this.isCustomMenuRootData menu_data then
+			(
+				if this.hasDictValueSafe menu_data #items then
+				(
+					custom_items = menu_data[#items]
+					custom_item_keys = GetDictKeys custom_items
+
+					for custom_item_key in custom_item_keys do
+					(
+						child_data = custom_items[custom_item_key]
+						append split_menus_data (this.createMenuRootDataFromCustomRootChild custom_item_key child_data)
+					)
+				)
+			)
+			else
+			(
+				append split_menus_data menu_data
+			)
+		)
+
+		split_menus_data -- return
 	),
 
 
@@ -2349,5 +2413,7 @@ struct MenuBuildManager_v
 		)
 	)
 )
+
+
 
 
