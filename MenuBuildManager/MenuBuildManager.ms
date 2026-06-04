@@ -1,8 +1,7 @@
 filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../include-menus.ms"
-
 struct MenuBuildManager_v
 (
-	version = 0.15,
+	version = 0.17,
 	menus_data = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
@@ -300,19 +299,35 @@ struct MenuBuildManager_v
 
 		if this.isDictionaryValue items_value then
 		(
-			if this.isSavedItemsDictionary items_value then
+			item_keys = GetDictKeys items_value
+
+			for item_key in item_keys do
 			(
-				normalized_items = items_value
-			)
-			else
-			(
-				normalized_items = this.convertSourceItemsToSavedItems items_value
+				item_value = items_value[item_key]
+
+				if this.isSavedItemData item_value then
+				(
+					normalized_items[item_key] = item_value
+				)
+				else if this.isDictionaryValue item_value then
+				(
+					submenu_items = this.normalizeMenuItems item_value
+					saved_guid = this.createGuidString()
+					normalized_items[saved_guid] = this.createSavedSubMenuData item_key submenu_items
+				)
+				else if classOf item_value == Array then
+				(
+					if item_value.count >= 2 then
+					(
+						saved_guid = this.createGuidString()
+						normalized_items[saved_guid] = this.createSavedMacroItemData item_key item_value[1] item_value[2]
+					)
+				)
 			)
 		)
 
 		normalized_items -- return
 	),
-
 
 	function createSavedRootData menu_definition definition_type =
 	(
@@ -324,10 +339,31 @@ struct MenuBuildManager_v
 		)
 		else
 		(
+			clear_flag = false
+
+			if menu_definition.clear_defaul_menu then
+			(
+				clear_flag = true
+			)
+
+			if menu_definition.clear_default_menu then
+			(
+				clear_flag = true
+			)
+
 			root_data = Dictionary #name
 
 			root_data[#version] = this.version
-			root_data[#id] = this.createGuidString()
+
+			if menu_definition.id != "" then
+			(
+				root_data[#id] = menu_definition.id
+			)
+			else
+			(
+				root_data[#id] = this.createGuidString()
+			)
+
 			root_data[#title] = menu_definition.title
 			root_data[#type] = definition_type
 			root_data[#items] = Dictionary #string
@@ -343,14 +379,28 @@ struct MenuBuildManager_v
 				root_data[#quad_position] = menu_definition.quad_position
 			)
 
-			root_data[#quad_menu_id] = this.createGuidString()
-			root_data[#qmnx_clear_directory] = this.qmnx_clear_directory
+			if menu_definition.quad_menu_id != "" then
+			(
+				root_data[#quad_menu_id] = menu_definition.quad_menu_id
+			)
+			else
+			(
+				root_data[#quad_menu_id] = this.createGuidString()
+			)
+			if menu_definition.qmnx_clear_directory != "" then
+			(
+				root_data[#qmnx_clear_directory] = menu_definition.qmnx_clear_directory
+			)
+			else
+			(
+				root_data[#qmnx_clear_directory] = this.qmnx_clear_directory
+			)
+			root_data[#clear_defaul_menu] = clear_flag
 			root_data[#quad_menus] = #()
 		)
 
 		root_data -- return
 	),
-
 
 	function buildSavedQuadDataFromDefinition quad_definition =
 	(
@@ -359,7 +409,16 @@ struct MenuBuildManager_v
 
 		quad_data[#title] = quad_definition.title
 		quad_data[#quad_position] = quad_definition.quad_position
-		quad_data[#quad_menu_id] = this.createGuidString()
+
+		if quad_definition.quad_menu_id != "" then
+		(
+			quad_data[#quad_menu_id] = quad_definition.quad_menu_id
+		)
+		else
+		(
+			quad_data[#quad_menu_id] = this.createGuidString()
+		)
+
 		quad_data[#items] = this.normalizeMenuItems quad_source_data
 
 		quad_data -- return
@@ -550,6 +609,171 @@ struct MenuBuildManager_v
 	),
 
 
+	function getSavedClearDefaulMenu menu_data =
+	(
+		clear_flag = false
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #clear_defaul_menu then
+			(
+				clear_flag = menu_data[#clear_defaul_menu]
+			)
+		)
+
+		clear_flag -- return
+	),
+
+
+	function findMenuDefinitionByTitle menu_title =
+	(
+		found_definition = undefined
+
+		for menu_definition in this.menus_data while found_definition == undefined do
+		(
+			if menu_definition.title == menu_title then
+			(
+				found_definition = menu_definition
+			)
+		)
+
+		found_definition -- return
+	),
+
+
+	function findSavedMenuDataByTitle menu_title =
+	(
+		found_menu_data = undefined
+		json_menus_data = this.loadSavedMenusDataFromJson()
+
+		for menu_data in json_menus_data while found_menu_data == undefined do
+		(
+			if this.getSavedMenuTitle menu_data == menu_title then
+			(
+				found_menu_data = menu_data
+			)
+		)
+
+		found_menu_data -- return
+	),
+
+
+	function createQuadDefinitionFromSavedQuadData quad_data root_menu_data =
+	(
+		quad_definition = MenuDefinition_v \
+			type:#quad \
+			title:quad_data[#title] \
+			id:"" \
+			quad_menu_id:quad_data[#quad_menu_id] \
+			data:quad_data[#items] \
+			quad_modifier:(this.getSavedQuadModifier root_menu_data) \
+			quad_position:quad_data[#quad_position] \
+			quad_context_id:root_menu_data[#quad_context_id] \
+			qmnx_clear_directory:(this.getSavedQmnxClearDirectory root_menu_data) \
+			clear_defaul_menu:(this.getSavedClearDefaulMenu root_menu_data)
+
+		quad_definition -- return
+	),
+
+
+	function createMenuDefinitionFromSavedMenuData menu_data =
+	(
+		definition_type = this.getSavedMenuType menu_data
+		definition_title = this.getSavedMenuTitle menu_data
+		definition_clear_flag = this.getSavedClearDefaulMenu menu_data
+
+		menu_definition = MenuDefinition_v \
+			type:definition_type \
+			title:definition_title \
+			id:menu_data[#id] \
+			quad_menu_id:menu_data[#quad_menu_id] \
+			quad_modifier:(this.getSavedQuadModifier menu_data) \
+			quad_position:menu_data[#quad_position] \
+			quad_context_id:menu_data[#quad_context_id] \
+			qmnx_clear_directory:(this.getSavedQmnxClearDirectory menu_data) \
+			clear_defaul_menu:definition_clear_flag
+
+		if definition_type == #quad then
+		(
+			if this.hasDictValueSafe menu_data #quad_menus then
+			(
+				quad_menus = menu_data[#quad_menus]
+
+				if classOf quad_menus == Array and quad_menus.count > 0 then
+				(
+					menu_definition.data = #()
+
+					for quad_data in quad_menus do
+					(
+						append menu_definition.data (this.createQuadDefinitionFromSavedQuadData quad_data menu_data)
+					)
+				)
+				else
+				(
+					menu_definition.data = menu_data[#items]
+				)
+			)
+			else
+			(
+				menu_definition.data = menu_data[#items]
+			)
+		)
+		else
+		(
+			menu_definition.data = menu_data[#items]
+		)
+
+		menu_definition -- return
+	),
+
+
+	function menu title type:#menu clear_defaul_menu:false clear_default_menu:false =
+	(
+		menu_definition = this.findMenuDefinitionByTitle title
+
+		if menu_definition == undefined then
+		(
+			saved_menu_data = this.findSavedMenuDataByTitle title
+
+			if saved_menu_data != undefined then
+			(
+				menu_definition = this.createMenuDefinitionFromSavedMenuData saved_menu_data
+
+				if (clear_defaul_menu or clear_default_menu) then
+				(
+					menu_definition.setClearDefaulMenu true
+				)
+			)
+			else
+			(
+				definition_type = this.normalizeMenuType type
+				definition_quad_modifier = undefined
+				definition_quad_position = undefined
+
+				if title == "Default Viewport Quad" then
+				(
+					definition_type = #quad
+					definition_quad_modifier = #nonePressed
+					definition_quad_position = #TopRight
+				)
+
+				menu_definition = MenuDefinition_v \
+					type:definition_type \
+					title:title \
+					quad_modifier:definition_quad_modifier \
+					quad_position:definition_quad_position \
+					qmnx_clear_directory:this.qmnx_clear_directory \
+					clear_defaul_menu:clear_defaul_menu \
+					clear_default_menu:clear_default_menu
+			)
+
+			append this.menus_data menu_definition
+		)
+
+		menu_definition -- return
+	),
+
+
 	function isValidSavedMenuData menu_data =
 	(
 		this.getSavedMenuTitle menu_data != "" -- return
@@ -650,6 +874,291 @@ struct MenuBuildManager_v
 	),
 
 
+	function getSavedItemTitle item_data =
+	(
+		item_title = ""
+
+		if this.isDictionaryValue item_data then
+		(
+			if this.hasDictValueSafe item_data #title then
+			(
+				item_title = item_data[#title]
+			)
+		)
+
+		item_title -- return
+	),
+
+
+	function findSavedItemKeyByTitle saved_items item_title =
+	(
+		found_key = undefined
+
+		if this.isDictionaryValue saved_items then
+		(
+			saved_item_keys = GetDictKeys saved_items
+
+			for saved_item_key in saved_item_keys while found_key == undefined do
+			(
+				saved_item_data = saved_items[saved_item_key]
+
+				if this.getSavedItemTitle saved_item_data == item_title then
+				(
+					found_key = saved_item_key
+				)
+			)
+		)
+
+		found_key -- return
+	),
+
+
+	function mergeSavedItemData old_item_data new_item_data =
+	(
+		merged_item_data = new_item_data
+
+		if this.isSubMenuData old_item_data and this.isSubMenuData new_item_data then
+		(
+			merged_item_data = old_item_data
+			merged_item_data[#title] = new_item_data[#title]
+			merged_item_data[#items] = this.mergeSavedItems old_item_data[#items] new_item_data[#items]
+		)
+
+		merged_item_data -- return
+	),
+
+
+	function mergeSavedItems old_items new_items =
+	(
+		merged_items = Dictionary #string
+
+		if this.isDictionaryValue old_items then
+		(
+			old_item_keys = GetDictKeys old_items
+
+			for old_item_key in old_item_keys do
+			(
+				merged_items[old_item_key] = old_items[old_item_key]
+			)
+		)
+
+		if this.isDictionaryValue new_items then
+		(
+			new_item_keys = GetDictKeys new_items
+
+			for new_item_key in new_item_keys do
+			(
+				new_item_data = new_items[new_item_key]
+				new_item_title = this.getSavedItemTitle new_item_data
+				old_item_key = this.findSavedItemKeyByTitle merged_items new_item_title
+
+				if old_item_key != undefined and new_item_title != "" then
+				(
+					old_item_data = merged_items[old_item_key]
+					merged_items[old_item_key] = this.mergeSavedItemData old_item_data new_item_data
+				)
+				else
+				(
+					merged_items[new_item_key] = new_item_data
+				)
+			)
+		)
+
+		merged_items -- return
+	),
+
+
+	function getSavedQuadPositionText quad_data =
+	(
+		position_text = ""
+
+		if this.isDictionaryValue quad_data then
+		(
+			if this.hasDictValueSafe quad_data #quad_position then
+			(
+				position_text = quad_data[#quad_position] as string
+			)
+		)
+
+		position_text -- return
+	),
+
+
+	function findSavedQuadDataIndexByPosition quad_menus position_text =
+	(
+		found_index = 0
+
+		if classOf quad_menus == Array then
+		(
+			for quad_index = 1 to quad_menus.count while found_index == 0 do
+			(
+				if this.getSavedQuadPositionText quad_menus[quad_index] == position_text then
+				(
+					found_index = quad_index
+				)
+			)
+		)
+
+		found_index -- return
+	),
+
+
+	function mergeSavedQuadData old_quad_data new_quad_data =
+	(
+		merged_quad_data = old_quad_data
+
+		if this.hasDictValueSafe new_quad_data #title then
+		(
+			merged_quad_data[#title] = new_quad_data[#title]
+		)
+
+		if this.hasDictValueSafe new_quad_data #quad_position then
+		(
+			merged_quad_data[#quad_position] = new_quad_data[#quad_position]
+		)
+
+		if not this.hasDictValueSafe merged_quad_data #quad_menu_id then
+		(
+			if this.hasDictValueSafe new_quad_data #quad_menu_id then
+			(
+				merged_quad_data[#quad_menu_id] = new_quad_data[#quad_menu_id]
+			)
+		)
+
+		old_items = Dictionary #string
+		new_items = Dictionary #string
+
+		if this.hasDictValueSafe old_quad_data #items then
+		(
+			old_items = old_quad_data[#items]
+		)
+
+		if this.hasDictValueSafe new_quad_data #items then
+		(
+			new_items = new_quad_data[#items]
+		)
+
+		merged_quad_data[#items] = this.mergeSavedItems old_items new_items
+
+		merged_quad_data -- return
+	),
+
+
+	function mergeSavedQuadMenus old_quad_menus new_quad_menus =
+	(
+		merged_quad_menus = #()
+
+		if classOf old_quad_menus == Array then
+		(
+			for old_quad_data in old_quad_menus do
+			(
+				append merged_quad_menus old_quad_data
+			)
+		)
+
+		if classOf new_quad_menus == Array then
+		(
+			for new_quad_data in new_quad_menus do
+			(
+				new_position_text = this.getSavedQuadPositionText new_quad_data
+				old_quad_index = this.findSavedQuadDataIndexByPosition merged_quad_menus new_position_text
+
+				if old_quad_index > 0 and new_position_text != "" then
+				(
+					merged_quad_menus[old_quad_index] = this.mergeSavedQuadData merged_quad_menus[old_quad_index] new_quad_data
+				)
+				else
+				(
+					append merged_quad_menus new_quad_data
+				)
+			)
+		)
+
+		merged_quad_menus -- return
+	),
+
+
+	function mergeSavedMenuData old_menu_data new_menu_data =
+	(
+		merged_menu_data = old_menu_data
+
+		merged_menu_data[#version] = this.version
+
+		if this.hasDictValueSafe new_menu_data #title then
+		(
+			merged_menu_data[#title] = new_menu_data[#title]
+		)
+
+		if this.hasDictValueSafe new_menu_data #type then
+		(
+			merged_menu_data[#type] = new_menu_data[#type]
+		)
+
+		if this.hasDictValueSafe new_menu_data #quad_context_id then
+		(
+			merged_menu_data[#quad_context_id] = new_menu_data[#quad_context_id]
+		)
+
+		if this.hasDictValueSafe new_menu_data #quad_modifier then
+		(
+			merged_menu_data[#quad_modifier] = new_menu_data[#quad_modifier]
+		)
+
+		if this.hasDictValueSafe new_menu_data #quad_position then
+		(
+			merged_menu_data[#quad_position] = new_menu_data[#quad_position]
+		)
+
+		if this.hasDictValueSafe new_menu_data #qmnx_clear_directory then
+		(
+			if new_menu_data[#qmnx_clear_directory] != "" then
+			(
+				merged_menu_data[#qmnx_clear_directory] = new_menu_data[#qmnx_clear_directory]
+			)
+		)
+
+		if this.hasDictValueSafe new_menu_data #clear_defaul_menu then
+		(
+			if new_menu_data[#clear_defaul_menu] == true then
+			(
+				merged_menu_data[#clear_defaul_menu] = true
+			)
+		)
+
+		old_items = Dictionary #string
+		new_items = Dictionary #string
+
+		if this.hasDictValueSafe old_menu_data #items then
+		(
+			old_items = old_menu_data[#items]
+		)
+
+		if this.hasDictValueSafe new_menu_data #items then
+		(
+			new_items = new_menu_data[#items]
+		)
+
+		merged_menu_data[#items] = this.mergeSavedItems old_items new_items
+
+		old_quad_menus = #()
+		new_quad_menus = #()
+
+		if this.hasDictValueSafe old_menu_data #quad_menus then
+		(
+			old_quad_menus = old_menu_data[#quad_menus]
+		)
+
+		if this.hasDictValueSafe new_menu_data #quad_menus then
+		(
+			new_quad_menus = new_menu_data[#quad_menus]
+		)
+
+		merged_menu_data[#quad_menus] = this.mergeSavedQuadMenus old_quad_menus new_quad_menus
+
+		merged_menu_data -- return
+	),
+
+
 	function mergeSavedMenusData old_menus_data new_menus_data =
 	(
 		merged_menus_data = #()
@@ -670,19 +1179,19 @@ struct MenuBuildManager_v
 
 			if new_signature != "" then
 			(
-				replace_index = 0
+				merge_index = 0
 
-				for menu_index = 1 to merged_menus_data.count while replace_index == 0 do
+				for menu_index = 1 to merged_menus_data.count while merge_index == 0 do
 				(
 					if this.getMenuDataSignature merged_menus_data[menu_index] == new_signature then
 					(
-						replace_index = menu_index
+						merge_index = menu_index
 					)
 				)
 
-				if replace_index > 0 then
+				if merge_index > 0 then
 				(
-					merged_menus_data[replace_index] = new_menu_data
+					merged_menus_data[merge_index] = this.mergeSavedMenuData merged_menus_data[merge_index] new_menu_data
 				)
 				else
 				(
@@ -693,7 +1202,6 @@ struct MenuBuildManager_v
 
 		merged_menus_data -- return
 	),
-
 
 	function deleteMenusFromJsonBySignatures signatures =
 	(
@@ -762,7 +1270,7 @@ struct MenuBuildManager_v
 
 		for menu_data in this.saved_menus_data do
 		(
-			if this.isDefaultQuadInjectionData menu_data then
+			if (this.isDefaultQuadInjectionData menu_data) and (this.getSavedClearDefaulMenu menu_data) then
 			(
 				if clear_directory == "" then
 				(
@@ -938,7 +1446,6 @@ struct MenuBuildManager_v
 			ok -- return
 		)
 	),
-
 
 	function hasMenuCallbackData =
 	(

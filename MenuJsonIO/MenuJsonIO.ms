@@ -1,4 +1,3 @@
-
 struct MenuJsonIO_v
 (
 	json_text = "",
@@ -159,6 +158,19 @@ struct MenuJsonIO_v
 	),
 
 
+	function boolToJson bool_value =
+	(
+		if bool_value then
+		(
+			"true" -- return
+		)
+		else
+		(
+			"false" -- return
+		)
+	),
+
+
 	function stringToJson source_string =
 	(
 		"\"" + this.escapeJsonString source_string + "\"" -- return
@@ -269,9 +281,18 @@ struct MenuJsonIO_v
 		json_value += "\t\"type\": " + this.stringToJson (this.nameToText menu_data[#type] default_text:"menu") + ",\n"
 		json_value += "\t\"quad_context_id\": " + this.stringToJson menu_data[#quad_context_id] + ",\n"
 		json_value += "\t\"quad_modifier\": " + this.stringToJson (this.nameToText menu_data[#quad_modifier] default_text:"") + ",\n"
-		json_value += "\t\"quad_position\": " + this.stringToJson (this.nameToText menu_data[#quad_position] default_text:"") + ",\n"
+		json_value += "\t\"quad_position\": " + this.stringToJson (this.nameToText menu_data[#quad_position] default_text:"TopRight") + ",\n"
 		json_value += "\t\"quad_menu_id\": " + this.stringToJson menu_data[#quad_menu_id] + ",\n"
 		json_value += "\t\"qmnx_clear_directory\": " + this.stringToJson menu_data[#qmnx_clear_directory] + ",\n"
+
+		if this.hasDictValueSafe menu_data #clear_defaul_menu then
+		(
+			json_value += "\t\"clear_defaul_menu\": " + this.boolToJson menu_data[#clear_defaul_menu] + ",\n"
+		)
+		else
+		(
+			json_value += "\t\"clear_defaul_menu\": false,\n"
+		)
 
 		if this.hasDictValueSafe menu_data #quad_menus then
 		(
@@ -296,7 +317,7 @@ struct MenuJsonIO_v
 	(
 		json_value = "{\n"
 
-		json_value += "\t\"version\": 0.13,\n"
+		json_value += "\t\"version\": 0.17,\n"
 		json_value += "\t\"menus\": [\n"
 
 		for menu_index = 1 to menus_data_array.count do
@@ -568,7 +589,7 @@ struct MenuJsonIO_v
 		(
 			result_value = this.parseJsonString()
 		)
-		else if findString "-+0123456789" current_char != undefined then
+		else if findString "-+0123456789" (current_char) != undefined then
 		(
 			result_value = this.parseJsonNumber()
 		)
@@ -660,25 +681,16 @@ struct MenuJsonIO_v
 			(
 				menu_data = Dictionary #name
 
-				menu_data[#version] = this.getJsonValue json_root "version" 0.15
+				menu_data[#version] = this.getJsonValue json_root "version" 0.17
 				menu_data[#id] = this.getJsonValue json_root "id" ""
 				menu_data[#title] = menu_title
-				menu_type = this.textToMenuType (this.getJsonValue json_root "type" "menu")
-				menu_data[#type] = menu_type
+				menu_data[#type] = this.textToMenuType (this.getJsonValue json_root "type" "menu")
 				menu_data[#quad_context_id] = this.getJsonValue json_root "quad_context_id" "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
 				menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "")
-
-				if menu_type == #menu then
-				(
-					menu_data[#quad_position] = undefined
-				)
-				else
-				(
-					menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
-				)
-
+				menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
 				menu_data[#quad_menu_id] = this.getJsonValue json_root "quad_menu_id" ""
 				menu_data[#qmnx_clear_directory] = this.getJsonValue json_root "qmnx_clear_directory" ""
+				menu_data[#clear_defaul_menu] = this.getJsonValue json_root "clear_defaul_menu" false
 				menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_root "items" (Dictionary #string))
 
 				if this.hasDictValueSafe json_root "quad_menus" then

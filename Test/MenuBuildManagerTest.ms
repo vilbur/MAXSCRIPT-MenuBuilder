@@ -9,13 +9,18 @@ filein( getFilenamePath(getSourceFileName()) + "/Lib/printHelpers.ms" )	--"./Lib
 filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLevel.ms" )	--"./Lib/createSavedTestMenuDataLevel.ms"
 
 
-/* IMPORT LIBRARY */
+/* PRODUCTION */
 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
---filein( getFilenamePath(getSourceFileName()) + "/../../MAXSCRIPT-UI-framework/Lib/Menus/MenuRebuilder_update.ms" )	--"./../../MAXSCRIPT-UI-framework/Lib/Menus/MenuRebuilder_update.ms"
+/* DEVELOPEMNT */ 
+filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	--"./../MenuRebuilder_update.ms"
 
 
+/*  ====================================================================================================
+    SECTION 09: TESTS
+    ====================================================================================================
+*/
 
 function createTestMenuDefinition =
 (
@@ -108,36 +113,6 @@ function testMenuBuildManagerCustomModifierQuad =
 	saved_menus_data -- return
 )
 
-function testAddItemsToMenu index:undefined =
-(
-	global MenuBuildManager
-
-	for macro_index = 1 to 2 do
-	(
-		generateMockMacroScript "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_" + (macro_index as string))
-	)
-	
-
-	menu_definition = MenuDefinition_v \
-		type:#MENU \
-		title:"_MENU_ADD_ITEMS" \
-
-		
-	if index != undefined then
-	(
-		menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_"+index as string ) title:("Custom Quad Item "+index as string )
-		
-	)
-	--menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Custom Quad Item 2"
-
-	--menu_definition = createTestCustomModifierQuadDefinition()
-	--
-	MenuBuildManager = MenuBuildManager_v menus_data:#(menu_definition)
-	
-	saved_menus_data = MenuBuildManager.run()
-
-	saved_menus_data -- return
-)
 
 function testMenuBuildManagerFromJson =
 (
@@ -154,7 +129,57 @@ function testMenuBuildManagerFromJson =
 )
 
 
+function testMenuGetterDefaultViewportQuadModify =
+(
+	global MenuBuildManager
 
+	generateMockMacroScript "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_7"
+	generateMockMacroScript "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_8"
+
+	MenuBuildManager = MenuBuildManager_v()
+
+	default_quad_definition = MenuBuildManager.menu \
+		"Default Viewport Quad" \
+		type:#quad \
+		clear_defaul_menu:true
+
+	top_right = default_quad_definition.addQuad "Top Right" position:#TopRight
+	top_right.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_7" title:"Getter Top Right"
+
+	bottom_right = default_quad_definition.addQuad "Bottom Right" position:#BottomRight
+	bottom_right.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_8" title:"Getter Bottom Right"
+
+	saved_menus_data = MenuBuildManager.run()
+
+	saved_menus_data -- return
+)
+
+
+
+
+function testAddItemsToMenu index:undefined =
+(
+	global MenuBuildManager
+
+	
+	MenuBuildManager = MenuBuildManager_v()
+	
+	menu_definition = MenuBuildManager.menu "_MENU_ADD_ITEMS" type:#menu
+
+		
+	if index != undefined then
+	(
+		generateMockMacroScript "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_" + (index as string))
+
+		menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_"+index as string ) title:("Custom Quad Item "+index as string )
+	)
+
+	MenuBuildManager.menus_data = #(menu_definition)
+	
+	saved_menus_data = MenuBuildManager.run()
+
+	saved_menus_data -- return
+)
 
 
 /*  ====================================================================================================
@@ -193,9 +218,10 @@ function testMenuBuildManagerFromJson =
 
 */
 	
-	testAddItemsToMenu()
+	--testAddItemsToMenu()
 	testAddItemsToMenu index:1
 	testAddItemsToMenu index:2
+	testAddItemsToMenu index:3
 	
 
     -- Injects into existing Default Viewport Quad:
