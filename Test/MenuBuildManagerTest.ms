@@ -11,10 +11,10 @@ filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLeve
 
 /* PRODUCTION */
 
---filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
 /* DEVELOPEMNT */ 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	--"./../MenuRebuilder_update.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	--"./../MenuRebuilder_update.ms"
 
 
 /*  ====================================================================================================
@@ -239,9 +239,8 @@ function testBuildQuee =
 
 	====================================================================================================*/
 
-	testBuildQuee()
 
-	----testAddItemsToMenu()
+	testAddItemsToMenu()
 	
 
     -- Injects into existing Default Viewport Quad:

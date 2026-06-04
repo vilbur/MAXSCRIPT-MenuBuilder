@@ -1,9 +1,18 @@
+/*
+	MenuJsonIO_v 0.36
+
+	JSON read/write for MenuBuildManager_v.
+
+	Rules:
+	- has version property
+	- writes clear_default_menu only
+*/
 
 struct MenuJsonIO_v
 (
-	json_text = "",
-	json_position = 1,
-	json_length = 0,
+	version = 0.36,
+	source_text = "",
+	current_index = 1,
 
 
 	function isDictionaryValue value =
@@ -19,6 +28,22 @@ struct MenuJsonIO_v
 		)
 
 		was_dictionary -- return
+	),
+
+
+	function isArrayValue value =
+	(
+		was_array = false
+
+		if value != undefined then
+		(
+			if classOf value == Array then
+			(
+				was_array = true
+			)
+		)
+
+		was_array -- return
 	),
 
 
@@ -42,313 +67,12 @@ struct MenuJsonIO_v
 	),
 
 
-	function getJsonValue json_object key_string default_value =
+	function createGuidString =
 	(
-		result_value = default_value
+		guid_class = dotNetClass "System.Guid"
+		guid_value = guid_class.NewGuid()
 
-		if this.hasDictValueSafe json_object key_string then
-		(
-			result_value = json_object[key_string]
-		)
-
-		result_value -- return
-	),
-
-
-	function nameToText name_value default_text:"" =
-	(
-		text_value = default_text
-
-		if name_value != undefined then
-		(
-			text_value = name_value as string
-
-			if text_value.count > 0 then
-			(
-				if substring text_value 1 1 == "#" then
-				(
-					text_value = substring text_value 2 (text_value.count - 1)
-				)
-			)
-		)
-
-		text_value -- return
-	),
-
-
-	function textToMenuType text_value =
-	(
-		menu_type_value = #menu
-
-		if text_value == "quad" then menu_type_value = #quad
-		if text_value == "#quad" then menu_type_value = #quad
-		if text_value == "QUAD" then menu_type_value = #quad
-		if text_value == "#QUAD" then menu_type_value = #quad
-
-		if text_value == "both" then menu_type_value = #both
-		if text_value == "#both" then menu_type_value = #both
-		if text_value == "BOTH" then menu_type_value = #both
-		if text_value == "#BOTH" then menu_type_value = #both
-
-		menu_type_value -- return
-	),
-
-
-	function textToQuadModifier text_value =
-	(
-		modifier_value = undefined
-
-		if text_value == "nonePressed" then modifier_value = #nonePressed
-		if text_value == "#nonePressed" then modifier_value = #nonePressed
-		if text_value == "nonePresses" then modifier_value = #nonePressed
-		if text_value == "#nonePresses" then modifier_value = #nonePressed
-
-		if text_value == "shiftPressed" then modifier_value = #shiftPressed
-		if text_value == "#shiftPressed" then modifier_value = #shiftPressed
-
-		if text_value == "controlPressed" then modifier_value = #controlPressed
-		if text_value == "#controlPressed" then modifier_value = #controlPressed
-
-		if text_value == "altPressed" then modifier_value = #altPressed
-		if text_value == "#altPressed" then modifier_value = #altPressed
-
-		if text_value == "shiftAndControlPressed" then modifier_value = #shiftAndControlPressed
-		if text_value == "#shiftAndControlPressed" then modifier_value = #shiftAndControlPressed
-
-		modifier_value -- return
-	),
-
-
-	function textToQuadPosition text_value =
-	(
-		position_value = #TopRight
-
-		if text_value == "TopLeft" then position_value = #TopLeft
-		if text_value == "#TopLeft" then position_value = #TopLeft
-
-		if text_value == "TopRight" then position_value = #TopRight
-		if text_value == "#TopRight" then position_value = #TopRight
-
-		if text_value == "BottomLeft" then position_value = #BottomLeft
-		if text_value == "#BottomLeft" then position_value = #BottomLeft
-
-		if text_value == "BottomRight" then position_value = #BottomRight
-		if text_value == "#BottomRight" then position_value = #BottomRight
-
-		position_value -- return
-	),
-
-
-	function escapeJsonString source_string =
-	(
-		escaped_string = source_string
-
-		if escaped_string == undefined then
-		(
-			escaped_string = ""
-		)
-
-		escaped_string = escaped_string as string
-		escaped_string = substituteString escaped_string "\\" "\\\\"
-		escaped_string = substituteString escaped_string "\"" "\\\""
-		escaped_string = substituteString escaped_string "\t" "\\t"
-		escaped_string = substituteString escaped_string "\n" "\\n"
-		escaped_string = substituteString escaped_string "\r" "\\r"
-
-		escaped_string -- return
-	),
-
-
-	function boolToJson bool_value =
-	(
-		if bool_value then
-		(
-			"true" -- return
-		)
-		else
-		(
-			"false" -- return
-		)
-	),
-
-
-	function stringToJson source_string =
-	(
-		"\"" + this.escapeJsonString source_string + "\"" -- return
-	),
-
-
-	function savedItemToJson item_data indent:"" =
-	(
-		json_value = ""
-
-		if this.hasDictValueSafe item_data #items then
-		(
-			json_value += indent + "{\n"
-			json_value += indent + "\t\"title\": " + this.stringToJson item_data[#title] + ",\n"
-			json_value += indent + "\t\"items\": "
-			json_value += this.savedItemsToJson item_data[#items] indent:(indent + "\t")
-			json_value += "\n" + indent + "}"
-		)
-		else
-		(
-			json_value += indent + "{\n"
-			json_value += indent + "\t\"title\": " + this.stringToJson item_data[#title] + ",\n"
-			json_value += indent + "\t\"category\": " + this.stringToJson item_data[#category] + ",\n"
-			json_value += indent + "\t\"macro\": " + this.stringToJson item_data[#macro] + "\n"
-			json_value += indent + "}"
-		)
-
-		json_value -- return
-	),
-
-
-	function savedItemsToJson saved_items indent:"" =
-	(
-		json_value = "{\n"
-
-		if this.isDictionaryValue saved_items then
-		(
-			saved_guid_array = GetDictKeys saved_items
-
-			for saved_index = 1 to saved_guid_array.count do
-			(
-				saved_guid = saved_guid_array[saved_index]
-				item_data = saved_items[saved_guid]
-
-				json_value += indent + "\t" + this.stringToJson saved_guid + ": "
-				json_value += this.savedItemToJson item_data indent:(indent + "\t")
-
-				if saved_index < saved_guid_array.count then
-				(
-					json_value += ","
-				)
-
-				json_value += "\n"
-			)
-		)
-
-		json_value += indent + "}"
-
-		json_value -- return
-	),
-
-
-	function quadMenuToJson quad_data indent:"" =
-	(
-		json_value = ""
-
-		json_value += indent + "{\n"
-		json_value += indent + "\t\"title\": " + this.stringToJson quad_data[#title] + ",\n"
-		json_value += indent + "\t\"quad_position\": " + this.stringToJson (this.nameToText quad_data[#quad_position] default_text:"TopRight") + ",\n"
-		json_value += indent + "\t\"quad_menu_id\": " + this.stringToJson quad_data[#quad_menu_id] + ",\n"
-		json_value += indent + "\t\"items\": "
-		json_value += this.savedItemsToJson quad_data[#items] indent:(indent + "\t")
-		json_value += "\n" + indent + "}"
-
-		json_value -- return
-	),
-
-
-	function quadMenusToJson quad_menus indent:"" =
-	(
-		json_value = "[\n"
-
-		for quad_index = 1 to quad_menus.count do
-		(
-			json_value += this.quadMenuToJson quad_menus[quad_index] indent:(indent + "\t")
-
-			if quad_index < quad_menus.count then
-			(
-				json_value += ","
-			)
-
-			json_value += "\n"
-		)
-
-		json_value += indent + "]"
-
-		json_value -- return
-	),
-
-
-	function menuDataToJson menu_data =
-	(
-		json_value = "{\n"
-
-		json_value += "\t\"version\": " + (menu_data[#version] as string) + ",\n"
-		json_value += "\t\"id\": " + this.stringToJson menu_data[#id] + ",\n"
-		json_value += "\t\"title\": " + this.stringToJson menu_data[#title] + ",\n"
-		json_value += "\t\"type\": " + this.stringToJson (this.nameToText menu_data[#type] default_text:"menu") + ",\n"
-		json_value += "\t\"quad_context_id\": " + this.stringToJson menu_data[#quad_context_id] + ",\n"
-		json_value += "\t\"quad_modifier\": " + this.stringToJson (this.nameToText menu_data[#quad_modifier] default_text:"") + ",\n"
-		json_value += "\t\"quad_position\": " + this.stringToJson (this.nameToText menu_data[#quad_position] default_text:"TopRight") + ",\n"
-		json_value += "\t\"quad_menu_id\": " + this.stringToJson menu_data[#quad_menu_id] + ",\n"
-		json_value += "\t\"qmnx_clear_directory\": " + this.stringToJson menu_data[#qmnx_clear_directory] + ",\n"
-
-		if this.hasDictValueSafe menu_data #clear_defaul_menu then
-		(
-			json_value += "\t\"clear_defaul_menu\": " + this.boolToJson menu_data[#clear_defaul_menu] + ",\n"
-		)
-		else
-		(
-			json_value += "\t\"clear_defaul_menu\": false,\n"
-		)
-
-		if this.hasDictValueSafe menu_data #quad_menus then
-		(
-			json_value += "\t\"quad_menus\": "
-			json_value += this.quadMenusToJson menu_data[#quad_menus] indent:"\t"
-			json_value += ",\n"
-		)
-		else
-		(
-			json_value += "\t\"quad_menus\": [],\n"
-		)
-
-		json_value += "\t\"items\": "
-		json_value += this.savedItemsToJson menu_data[#items] indent:"\t"
-		json_value += "\n}"
-
-		json_value -- return
-	),
-
-
-	function menusDataToJson menus_data_array =
-	(
-		json_value = "{\n"
-
-		json_value += "\t\"version\": 0.17,\n"
-		json_value += "\t\"menus\": [\n"
-
-		for menu_index = 1 to menus_data_array.count do
-		(
-			json_value += this.menuDataToJson menus_data_array[menu_index]
-
-			if menu_index < menus_data_array.count then
-			(
-				json_value += ","
-			)
-
-			json_value += "\n"
-		)
-
-		json_value += "\t]\n"
-		json_value += "}"
-
-		json_value -- return
-	),
-
-
-	function saveMenusDataToJsonFile menus_data_array json_file_path =
-	(
-		json_value = this.menusDataToJson menus_data_array
-
-		json_file = createFile json_file_path
-		format "%" json_value to:json_file
-		close json_file
-
-		json_file_path -- return
+		guid_value.ToString() -- return
 	),
 
 
@@ -358,21 +82,17 @@ struct MenuJsonIO_v
 
 		if doesFileExist file_path then
 		(
-			text_file = openFile file_path mode:"rt"
+			input_file = openFile file_path mode:"r"
 
-			if text_file != undefined then
+			if input_file != undefined then
 			(
-				while not eof text_file do
+				while not eof input_file do
 				(
-					file_text += readLine text_file
-
-					if not eof text_file then
-					(
-						file_text += "\n"
-					)
+					file_text += readLine input_file
+					file_text += "\n"
 				)
 
-				close text_file
+				close input_file
 			)
 		)
 
@@ -380,118 +100,483 @@ struct MenuJsonIO_v
 	),
 
 
-	function setJsonText source_text =
+	function writeTextFile file_path file_text =
 	(
-		this.json_text = source_text
-		this.json_position = 1
-		this.json_length = this.json_text.count
+		output_directory = getFilenamePath file_path
 
-		ok -- return
+		try
+		(
+			makeDir output_directory all:true
+		)
+		catch
+		(
+			ok
+		)
+
+		output_file = createFile file_path
+		format "%" file_text to:output_file
+		close output_file
+
+		file_path -- return
+	),
+
+
+	function escapeJsonString source_value =
+	(
+		source_string = source_value as string
+
+		source_string = substituteString source_string "\\" "\\\\"
+		source_string = substituteString source_string "\"" "\\\""
+		source_string = substituteString source_string "\t" "\\t"
+		source_string = substituteString source_string "\r" "\\r"
+		source_string = substituteString source_string "\n" "\\n"
+
+		source_string -- return
+	),
+
+
+	function indent level =
+	(
+		indent_text = ""
+
+		for indent_index = 1 to level do
+		(
+			indent_text += "\t"
+		)
+
+		indent_text -- return
+	),
+
+
+	function boolToJson bool_value =
+	(
+		json_text = "false"
+
+		if bool_value == true then
+		(
+			json_text = "true"
+		)
+
+		json_text -- return
+	),
+
+
+	function nameToJson name_value =
+	(
+		name_text = ""
+
+		if name_value != undefined then
+		(
+			name_text = name_value as string
+
+			if name_text.count > 0 then
+			(
+				if substring name_text 1 1 == "#" then
+				(
+					name_text = substring name_text 2 (name_text.count - 1)
+				)
+			)
+		)
+
+		"\"" + this.escapeJsonString name_text + "\"" -- return
+	),
+
+
+	function stringToJson string_value =
+	(
+		"\"" + this.escapeJsonString string_value + "\"" -- return
+	),
+
+
+	function valueToJson value =
+	(
+		json_text = "null"
+
+		if value == undefined then
+		(
+			json_text = "null"
+		)
+		else if classOf value == String then
+		(
+			json_text = this.stringToJson value
+		)
+		else if classOf value == Name then
+		(
+			json_text = this.nameToJson value
+		)
+		else if value == true or value == false then
+		(
+			json_text = this.boolToJson value
+		)
+		else
+		(
+			json_text = value as string
+		)
+
+		json_text -- return
+	),
+
+
+	function getDictValue dictionary_value dictionary_key default_value =
+	(
+		result_value = default_value
+
+		if this.hasDictValueSafe dictionary_value dictionary_key then
+		(
+			result_value = dictionary_value[dictionary_key]
+		)
+
+		result_value -- return
+	),
+
+
+	function itemDataToJson item_data level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		item_title = this.getDictValue item_data #title ""
+
+		json_text += "{\n"
+		json_text += child_indent + "\"title\": " + this.stringToJson item_title
+
+		if this.hasDictValueSafe item_data #items then
+		(
+			json_text += ",\n"
+			json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson item_data[#items] (level + 1) + "\n"
+		)
+		else
+		(
+			item_category = this.getDictValue item_data #category ""
+			item_macro = this.getDictValue item_data #macro ""
+
+			json_text += ",\n"
+			json_text += child_indent + "\"category\": " + this.stringToJson item_category + ",\n"
+			json_text += child_indent + "\"macro\": " + this.stringToJson item_macro + "\n"
+		)
+
+		json_text += line_indent + "}"
+
+		json_text -- return
+	),
+
+
+	function itemsDictionaryToJson items_dictionary level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		json_text += "{\n"
+
+		if this.isDictionaryValue items_dictionary then
+		(
+			item_keys = GetDictKeys items_dictionary
+
+			for item_index = 1 to item_keys.count do
+			(
+				item_key = item_keys[item_index]
+				item_data = items_dictionary[item_key]
+
+				json_text += child_indent + this.stringToJson (item_key as string) + ": "
+				json_text += this.itemDataToJson item_data (level + 1)
+
+				if item_index < item_keys.count then
+				(
+					json_text += ","
+				)
+
+				json_text += "\n"
+			)
+		)
+
+		json_text += line_indent + "}"
+
+		json_text -- return
+	),
+
+
+	function quadDataToJson quad_data level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		quad_title = this.getDictValue quad_data #title ""
+		quad_position = this.getDictValue quad_data #quad_position undefined
+		quad_menu_id = this.getDictValue quad_data #quad_menu_id ""
+		quad_items = this.getDictValue quad_data #items (Dictionary #string)
+
+		json_text += "{\n"
+		json_text += child_indent + "\"title\": " + this.stringToJson quad_title + ",\n"
+		json_text += child_indent + "\"quad_position\": " + this.valueToJson quad_position + ",\n"
+		json_text += child_indent + "\"quad_menu_id\": " + this.stringToJson quad_menu_id + ",\n"
+		json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson quad_items (level + 1) + "\n"
+		json_text += line_indent + "}"
+
+		json_text -- return
+	),
+
+
+	function quadArrayToJson quad_array level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		json_text += "[\n"
+
+		if this.isArrayValue quad_array then
+		(
+			for quad_index = 1 to quad_array.count do
+			(
+				json_text += child_indent + this.quadDataToJson quad_array[quad_index] (level + 1)
+
+				if quad_index < quad_array.count then
+				(
+					json_text += ","
+				)
+
+				json_text += "\n"
+			)
+		)
+
+		json_text += line_indent + "]"
+
+		json_text -- return
+	),
+
+
+	function menuDataToJson menu_data level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		menu_version = this.getDictValue menu_data #version this.version
+		menu_id = this.getDictValue menu_data #id ""
+		menu_title = this.getDictValue menu_data #title ""
+		menu_type = this.getDictValue menu_data #type #menu
+		menu_items = this.getDictValue menu_data #items (Dictionary #string)
+		quad_context_id = this.getDictValue menu_data #quad_context_id ""
+		quad_modifier = this.getDictValue menu_data #quad_modifier undefined
+		quad_position = this.getDictValue menu_data #quad_position undefined
+		quad_menu_id = this.getDictValue menu_data #quad_menu_id ""
+		qmnx_clear_directory = this.getDictValue menu_data #qmnx_clear_directory ""
+		clear_default_menu = this.getDictValue menu_data #clear_default_menu false
+		quad_menus = this.getDictValue menu_data #quad_menus #()
+
+		json_text += "{\n"
+		json_text += child_indent + "\"version\": " + (menu_version as string) + ",\n"
+		json_text += child_indent + "\"id\": " + this.stringToJson menu_id + ",\n"
+		json_text += child_indent + "\"title\": " + this.stringToJson menu_title + ",\n"
+		json_text += child_indent + "\"type\": " + this.valueToJson menu_type + ",\n"
+		json_text += child_indent + "\"quad_context_id\": " + this.stringToJson quad_context_id + ",\n"
+		json_text += child_indent + "\"quad_modifier\": " + this.valueToJson quad_modifier + ",\n"
+		json_text += child_indent + "\"quad_position\": " + this.valueToJson quad_position + ",\n"
+		json_text += child_indent + "\"quad_menu_id\": " + this.stringToJson quad_menu_id + ",\n"
+		json_text += child_indent + "\"qmnx_clear_directory\": " + this.stringToJson qmnx_clear_directory + ",\n"
+		json_text += child_indent + "\"clear_default_menu\": " + this.boolToJson clear_default_menu + ",\n"
+		json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson menu_items (level + 1) + ",\n"
+		json_text += child_indent + "\"quad_menus\": " + this.quadArrayToJson quad_menus (level + 1) + "\n"
+		json_text += line_indent + "}"
+
+		json_text -- return
+	),
+
+
+	function menusArrayToJson menus_data_array level =
+	(
+		json_text = ""
+		line_indent = this.indent level
+		child_indent = this.indent (level + 1)
+
+		json_text += "[\n"
+
+		if this.isArrayValue menus_data_array then
+		(
+			for menu_index = 1 to menus_data_array.count do
+			(
+				json_text += child_indent + this.menuDataToJson menus_data_array[menu_index] (level + 1)
+
+				if menu_index < menus_data_array.count then
+				(
+					json_text += ","
+				)
+
+				json_text += "\n"
+			)
+		)
+
+		json_text += line_indent + "]"
+
+		json_text -- return
+	),
+
+
+	function menusDataToJson menus_data_array =
+	(
+		json_text = ""
+
+		json_text += "{\n"
+		json_text += "\t\"version\": " + (this.version as string) + ",\n"
+		json_text += "\t\"menus\": " + this.menusArrayToJson menus_data_array 1 + "\n"
+		json_text += "}\n"
+
+		json_text -- return
+	),
+
+
+	function saveMenusDataToJsonFile menus_data_array file_path =
+	(
+		json_text = this.menusDataToJson menus_data_array
+		this.writeTextFile file_path json_text
+
+		file_path -- return
 	),
 
 
 	function getCurrentChar =
 	(
-		char_value = ""
+		current_char = ""
 
-		if this.json_position <= this.json_length then
+		if this.current_index <= this.source_text.count then
 		(
-			char_value = substring this.json_text this.json_position 1
+			current_char = substring this.source_text this.current_index 1
 		)
 
-		char_value -- return
+		current_char -- return
 	),
 
 
-	function skipJsonWhitespace =
+	function advance count_value =
 	(
-		while this.json_position <= this.json_length and findString " \t\r\n" (this.getCurrentChar()) != undefined do
+		this.current_index += count_value
+
+		this.current_index -- return
+	),
+
+
+	function isWhiteSpace character_value =
+	(
+		was_white_space = false
+
+		if character_value != "" then
 		(
-			this.json_position += 1
+			was_white_space = (findString " \t\r\n" character_value) != undefined
 		)
 
-		ok -- return
+		was_white_space -- return
+	),
+
+
+	function skipWhiteSpace =
+	(
+		while this.current_index <= this.source_text.count and this.isWhiteSpace (this.getCurrentChar()) do
+		(
+			this.advance 1
+		)
+
+		this.current_index -- return
 	),
 
 
 	function parseJsonString =
 	(
-		result_string = ""
+		result_text = ""
+
+		this.skipWhiteSpace()
 
 		if this.getCurrentChar() == "\"" then
 		(
-			this.json_position += 1
+			this.advance 1
 
-			while this.json_position <= this.json_length and this.getCurrentChar() != "\"" do
+			while this.current_index <= this.source_text.count do
 			(
 				current_char = this.getCurrentChar()
 
-				if current_char == "\\" then
+				if current_char == "\"" then
 				(
-					this.json_position += 1
+					this.advance 1
+					exit
+				)
+				else if current_char == "\\" then
+				(
+					this.advance 1
 					escape_char = this.getCurrentChar()
 
-					if escape_char == "\"" then result_string += "\""
-					else if escape_char == "\\" then result_string += "\\"
-					else if escape_char == "/" then result_string += "/"
-					else if escape_char == "t" then result_string += "\t"
-					else if escape_char == "n" then result_string += "\n"
-					else if escape_char == "r" then result_string += "\r"
-					else result_string += escape_char
+					case escape_char of
+					(
+						"\"": result_text += "\""
+						"\\": result_text += "\\"
+						"/": result_text += "/"
+						"n": result_text += "\n"
+						"r": result_text += "\r"
+						"t": result_text += "\t"
+						default: result_text += escape_char
+					)
+
+					this.advance 1
 				)
 				else
 				(
-					result_string += current_char
+					result_text += current_char
+					this.advance 1
 				)
-
-				this.json_position += 1
 			)
+		)
 
-			if this.getCurrentChar() == "\"" then
+		result_text -- return
+	),
+
+
+	function parseJsonNumberOrLiteral =
+	(
+		token_text = ""
+
+		this.skipWhiteSpace()
+
+		while this.current_index <= this.source_text.count do
+		(
+			current_char = this.getCurrentChar()
+
+			if (findString ",]} \t\r\n" current_char) != undefined then
 			(
-				this.json_position += 1
+				exit
+			)
+			else
+			(
+				token_text += current_char
+				this.advance 1
 			)
 		)
 
-		result_string -- return
-	),
+		result_value = token_text
 
-
-	function parseJsonNumber =
-	(
-		number_text = ""
-
-		while this.json_position <= this.json_length and findString "-+0123456789.eE" (this.getCurrentChar()) != undefined do
+		case token_text of
 		(
-			number_text += this.getCurrentChar()
-			this.json_position += 1
-		)
-
-		number_value = number_text as float
-
-		number_value -- return
-	),
-
-
-	function parseJsonLiteral =
-	(
-		result_value = undefined
-		rest_text = substring this.json_text this.json_position (this.json_length - this.json_position + 1)
-
-		if matchPattern rest_text pattern:"true*" then
-		(
-			this.json_position += 4
-			result_value = true
-		)
-		else if matchPattern rest_text pattern:"false*" then
-		(
-			this.json_position += 5
-			result_value = false
-		)
-		else if matchPattern rest_text pattern:"null*" then
-		(
-			this.json_position += 4
-			result_value = undefined
+			"true": result_value = true
+			"false": result_value = false
+			"null": result_value = undefined
+			default:
+			(
+				try
+				(
+					if (findString token_text ".") != undefined then
+					(
+						result_value = token_text as float
+					)
+					else
+					(
+						result_value = token_text as integer
+					)
+				)
+				catch
+				(
+					result_value = token_text
+				)
+			)
 		)
 
 		result_value -- return
@@ -500,83 +585,90 @@ struct MenuJsonIO_v
 
 	function parseJsonArray =
 	(
-		array_value = #()
+		result_array = #()
+
+		this.skipWhiteSpace()
 
 		if this.getCurrentChar() == "[" then
 		(
-			this.json_position += 1
-			this.skipJsonWhitespace()
+			this.advance 1
+			this.skipWhiteSpace()
 
-			while this.json_position <= this.json_length and this.getCurrentChar() != "]" do
+			while this.current_index <= this.source_text.count do
 			(
-				append array_value (this.parseJsonValue())
-				this.skipJsonWhitespace()
+				this.skipWhiteSpace()
+
+				if this.getCurrentChar() == "]" then
+				(
+					this.advance 1
+					exit
+				)
+
+				append result_array (this.parseJsonValue())
+				this.skipWhiteSpace()
 
 				if this.getCurrentChar() == "," then
 				(
-					this.json_position += 1
-					this.skipJsonWhitespace()
+					this.advance 1
 				)
-			)
-
-			if this.getCurrentChar() == "]" then
-			(
-				this.json_position += 1
 			)
 		)
 
-		array_value -- return
+		result_array -- return
 	),
 
 
 	function parseJsonObject =
 	(
-		object_value = Dictionary #string
+		result_object = Dictionary #string
+
+		this.skipWhiteSpace()
 
 		if this.getCurrentChar() == "{" then
 		(
-			this.json_position += 1
-			this.skipJsonWhitespace()
+			this.advance 1
+			this.skipWhiteSpace()
 
-			while this.json_position <= this.json_length and this.getCurrentChar() != "}" do
+			while this.current_index <= this.source_text.count do
 			(
-				key_string = this.parseJsonString()
-				this.skipJsonWhitespace()
+				this.skipWhiteSpace()
+
+				if this.getCurrentChar() == "}" then
+				(
+					this.advance 1
+					exit
+				)
+
+				object_key = this.parseJsonString()
+				this.skipWhiteSpace()
 
 				if this.getCurrentChar() == ":" then
 				(
-					this.json_position += 1
+					this.advance 1
 				)
 
-				this.skipJsonWhitespace()
+				object_value = this.parseJsonValue()
+				result_object[object_key] = object_value
 
-				object_value[key_string] = this.parseJsonValue()
-
-				this.skipJsonWhitespace()
+				this.skipWhiteSpace()
 
 				if this.getCurrentChar() == "," then
 				(
-					this.json_position += 1
-					this.skipJsonWhitespace()
+					this.advance 1
 				)
-			)
-
-			if this.getCurrentChar() == "}" then
-			(
-				this.json_position += 1
 			)
 		)
 
-		object_value -- return
+		result_object -- return
 	),
 
 
 	function parseJsonValue =
 	(
-		this.skipJsonWhitespace()
-
-		current_char = this.getCurrentChar()
 		result_value = undefined
+
+		this.skipWhiteSpace()
+		current_char = this.getCurrentChar()
 
 		if current_char == "{" then
 		(
@@ -590,16 +682,67 @@ struct MenuJsonIO_v
 		(
 			result_value = this.parseJsonString()
 		)
-		else if findString "-+0123456789" (current_char) != undefined then
-		(
-			result_value = this.parseJsonNumber()
-		)
 		else
 		(
-			result_value = this.parseJsonLiteral()
+			result_value = this.parseJsonNumberOrLiteral()
 		)
 
 		result_value -- return
+	),
+
+
+	function parseJsonText json_text =
+	(
+		this.source_text = json_text
+		this.current_index = 1
+
+		this.parseJsonValue() -- return
+	),
+
+
+	function getJsonValue json_object json_key default_value =
+	(
+		result_value = default_value
+
+		if this.isDictionaryValue json_object then
+		(
+			if this.hasDictValueSafe json_object json_key then
+			(
+				result_value = json_object[json_key]
+			)
+		)
+
+		result_value -- return
+	),
+
+
+	function stringToName value default_name =
+	(
+		result_name = default_name
+
+		if value != undefined then
+		(
+			try
+			(
+				value_text = value as string
+
+				if value_text != "" and value_text != "undefined" then
+				(
+					if substring value_text 1 1 == "#" then
+					(
+						value_text = substring value_text 2 (value_text.count - 1)
+					)
+
+					result_name = execute ("#" + value_text)
+				)
+			)
+			catch
+			(
+				result_name = default_name
+			)
+		)
+
+		result_name -- return
 	),
 
 
@@ -611,7 +754,7 @@ struct MenuJsonIO_v
 
 		if this.hasDictValueSafe json_item "items" then
 		(
-			item_data[#items] = this.jsonItemsToSavedItems json_item["items"]
+			item_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_item "items" (Dictionary #string))
 		)
 		else
 		(
@@ -629,11 +772,11 @@ struct MenuJsonIO_v
 
 		if this.isDictionaryValue json_items then
 		(
-			json_guid_array = GetDictKeys json_items
+			item_keys = GetDictKeys json_items
 
-			for json_guid in json_guid_array do
+			for item_key in item_keys do
 			(
-				saved_items[json_guid] = this.jsonItemToSavedItem json_items[json_guid]
+				saved_items[item_key as string] = this.jsonItemToSavedItem json_items[item_key]
 			)
 		)
 
@@ -641,12 +784,12 @@ struct MenuJsonIO_v
 	),
 
 
-	function jsonQuadMenuToData json_quad =
+	function jsonQuadToSavedQuad json_quad =
 	(
 		quad_data = Dictionary #name
 
 		quad_data[#title] = this.getJsonValue json_quad "title" ""
-		quad_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_quad "quad_position" "TopRight")
+		quad_data[#quad_position] = this.stringToName (this.getJsonValue json_quad "quad_position" undefined) undefined
 		quad_data[#quad_menu_id] = this.getJsonValue json_quad "quad_menu_id" ""
 		quad_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_quad "items" (Dictionary #string))
 
@@ -654,129 +797,95 @@ struct MenuJsonIO_v
 	),
 
 
-	function jsonQuadMenusToData json_quad_menus =
+	function jsonQuadArrayToSavedQuadArray json_quad_array =
 	(
-		quad_menus = #()
+		quad_array = #()
 
-		if classOf json_quad_menus == Array then
+		if this.isArrayValue json_quad_array then
 		(
-			for json_quad in json_quad_menus do
+			for json_quad in json_quad_array do
 			(
-				append quad_menus (this.jsonQuadMenuToData json_quad)
+				append quad_array (this.jsonQuadToSavedQuad json_quad)
 			)
 		)
 
-		quad_menus -- return
+		quad_array -- return
 	),
 
 
-	function jsonRootToMenuData json_root =
+	function jsonMenuToSavedMenu json_menu =
 	(
-		menu_data = undefined
+		menu_data = Dictionary #name
 
-		if this.isDictionaryValue json_root then
-		(
-			menu_title = this.getJsonValue json_root "title" ""
+		menu_data[#version] = this.getJsonValue json_menu "version" this.version
+		menu_data[#id] = this.getJsonValue json_menu "id" (this.createGuidString())
+		menu_data[#title] = this.getJsonValue json_menu "title" ""
+		menu_data[#type] = this.stringToName (this.getJsonValue json_menu "type" "menu") #menu
+		menu_data[#quad_context_id] = this.getJsonValue json_menu "quad_context_id" ""
+		menu_data[#quad_modifier] = this.stringToName (this.getJsonValue json_menu "quad_modifier" undefined) undefined
+		menu_data[#quad_position] = this.stringToName (this.getJsonValue json_menu "quad_position" undefined) undefined
+		menu_data[#quad_menu_id] = this.getJsonValue json_menu "quad_menu_id" ""
+		menu_data[#qmnx_clear_directory] = this.getJsonValue json_menu "qmnx_clear_directory" ""
 
-			if menu_title != "" then
-			(
-				menu_data = Dictionary #name
-
-				menu_data[#version] = this.getJsonValue json_root "version" 0.17
-				menu_data[#id] = this.getJsonValue json_root "id" ""
-				menu_data[#title] = menu_title
-				menu_data[#type] = this.textToMenuType (this.getJsonValue json_root "type" "menu")
-				menu_data[#quad_context_id] = this.getJsonValue json_root "quad_context_id" "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
-				menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "")
-				menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
-				menu_data[#quad_menu_id] = this.getJsonValue json_root "quad_menu_id" ""
-				menu_data[#qmnx_clear_directory] = this.getJsonValue json_root "qmnx_clear_directory" ""
-				menu_data[#clear_defaul_menu] = this.getJsonValue json_root "clear_defaul_menu" false
-				menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_root "items" (Dictionary #string))
-
-				if this.hasDictValueSafe json_root "quad_menus" then
-				(
-					menu_data[#quad_menus] = this.jsonQuadMenusToData json_root["quad_menus"]
-				)
-				else
-				(
-					menu_data[#quad_menus] = #()
-				)
-			)
-		)
+		menu_data[#clear_default_menu] = this.getJsonValue json_menu "clear_default_menu" false
+		menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_menu "items" (Dictionary #string))
+		menu_data[#quad_menus] = this.jsonQuadArrayToSavedQuadArray (this.getJsonValue json_menu "quad_menus" #())
 
 		menu_data -- return
 	),
 
 
-	function jsonRootToMenusData json_root =
+	function jsonRootToMenuData json_root =
 	(
-		menus_data_array = #()
+		menus_data = #()
 
 		if this.isDictionaryValue json_root then
 		(
-			if this.hasDictValueSafe json_root "menus" then
+			json_menus = this.getJsonValue json_root "menus" #()
+
+			if this.isArrayValue json_menus then
 			(
-				json_menus_array = json_root["menus"]
-
-				if classOf json_menus_array == Array then
+				for json_menu in json_menus do
 				(
-					for json_menu_data in json_menus_array do
-					(
-						menu_data = this.jsonRootToMenuData json_menu_data
-
-						if menu_data != undefined then
-						(
-							append menus_data_array menu_data
-						)
-					)
-				)
-			)
-			else
-			(
-				menu_data = this.jsonRootToMenuData json_root
-
-				if menu_data != undefined then
-				(
-					append menus_data_array menu_data
+					append menus_data (this.jsonMenuToSavedMenu json_menu)
 				)
 			)
 		)
-
-		menus_data_array -- return
-	),
-
-
-	function loadMenusDataFromJsonFile json_file_path =
-	(
-		format "\n"; print "MenuBuildManager_v.loadMenusDataFromJsonFile()"
-		timer_load = timeStamp()
-		
-		menus_data_array = #()
-
-		if doesFileExist json_file_path then
+		else if this.isArrayValue json_root then
 		(
-			source_text = this.readTextFile json_file_path
-
-			if source_text.count > 0 then
+			for json_menu in json_root do
 			(
-				this.setJsonText source_text
-
-				json_root = this.parseJsonValue()
-				menus_data_array = this.jsonRootToMenusData json_root
+				append menus_data (this.jsonMenuToSavedMenu json_menu)
 			)
 		)
 
-		format "JSON LOAD: % ms\n" (( timeStamp()) - timer_load)
-		
-		menus_data_array -- return
+		menus_data -- return
 	),
 
 
-	on create do
+	function loadMenusDataFromJsonFile file_path =
 	(
-		ok
+		menus_data = #()
+
+		if doesFileExist file_path then
+		(
+			json_text = this.readTextFile file_path
+
+			if json_text != "" then
+			(
+				try
+				(
+					json_root = this.parseJsonText json_text
+					menus_data = this.jsonRootToMenuData json_root
+				)
+				catch
+				(
+					format "MenuJsonIO_v.loadMenusDataFromJsonFile failed:\n%\n" file_path
+					menus_data = #()
+				)
+			)
+		)
+
+		menus_data -- return
 	)
 )
-
-
