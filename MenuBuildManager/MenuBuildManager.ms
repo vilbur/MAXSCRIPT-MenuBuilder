@@ -6,7 +6,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../
 */ 
 struct MenuBuildManager_v
 (
-	version = 0.18,
+	version = 0.19,
 	menus_data = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
@@ -15,6 +15,9 @@ struct MenuBuildManager_v
 	startup_file_path = "",
 	rebuilder_file_path = "",
 	qmnx_clear_directory = "",
+	default_menu_parent_title = "_CustomMenus",
+	default_menu_parent_id = "4a93a53d-8cf7-4d16-b217-8fe6c2b9d6f1",
+	main_menu_bar_title = "Main Menu Bar",
 	auto_register_callback = true,
 	merge_existing_data = true,
 	callback_id = #menuBuildManagerCuiRegisterMenus,
@@ -149,6 +152,90 @@ struct MenuBuildManager_v
 		menu_rebuilder = MenuRebuilder_v()
 		menu_rebuilder.normalizeQuadModifier modifier_value -- return
 	),
+
+
+	function isMainMenuBarTitle menu_title =
+	(
+		was_found = false
+
+		if menu_title == this.main_menu_bar_title then
+		(
+			was_found = true
+		)
+
+		was_found -- return
+	),
+
+
+	function isDefaultMenuParentTitle menu_title =
+	(
+		was_found = false
+
+		if menu_title == this.default_menu_parent_title then
+		(
+			was_found = true
+		)
+
+		was_found -- return
+	),
+
+
+	function shouldPlaceMenuUnderDefaultParent menu_title menu_type =
+	(
+		should_place = false
+		normalized_type = this.normalizeMenuType menu_type
+
+		if normalized_type == #menu then
+		(
+			if not this.isMainMenuBarTitle menu_title then
+			(
+				if not this.isDefaultMenuParentTitle menu_title then
+				(
+					should_place = true
+				)
+			)
+		)
+
+		should_place -- return
+	),
+
+
+	function getDefinitionStringProperty menu_definition property_name default_value =
+	(
+		property_value = default_value
+
+		try
+		(
+			property_value = getProperty menu_definition property_name
+		)
+		catch
+		(
+			property_value = default_value
+		)
+
+		if property_value == undefined then
+		(
+			property_value = default_value
+		)
+
+		property_value -- return
+	),
+
+
+	function setDefinitionPropertySafe menu_definition property_name property_value =
+	(
+		try
+		(
+			setProperty menu_definition property_name property_value
+		)
+		catch
+		(
+			ok
+		)
+
+		menu_definition -- return
+	),
+
 
 
 	function getDefinitionData menu_definition =
@@ -401,6 +488,26 @@ struct MenuBuildManager_v
 				root_data[#qmnx_clear_directory] = this.qmnx_clear_directory
 			)
 			root_data[#clear_defaul_menu] = clear_flag
+
+			parent_menu_title = this.getDefinitionStringProperty menu_definition #parent_menu_title ""
+			parent_menu_id = this.getDefinitionStringProperty menu_definition #parent_menu_id ""
+
+			if this.shouldPlaceMenuUnderDefaultParent menu_definition.title definition_type then
+			(
+				if parent_menu_title == "" then
+				(
+					parent_menu_title = this.default_menu_parent_title
+				)
+
+				if parent_menu_id == "" then
+				(
+					parent_menu_id = this.default_menu_parent_id
+				)
+			)
+
+			root_data[#parent_menu_title] = parent_menu_title
+			root_data[#parent_menu_id] = parent_menu_id
+			root_data[#main_menu_bar_title] = this.main_menu_bar_title
 			root_data[#quad_menus] = #()
 		)
 
@@ -499,6 +606,148 @@ struct MenuBuildManager_v
 	),
 
 
+	function createDefaultMenuParentData =
+	(
+		parent_menu_data = Dictionary #name
+
+		parent_menu_data[#version] = this.version
+		parent_menu_data[#id] = this.default_menu_parent_id
+		parent_menu_data[#title] = this.default_menu_parent_title
+		parent_menu_data[#type] = #menu
+		parent_menu_data[#items] = Dictionary #string
+		parent_menu_data[#quad_context_id] = ""
+		parent_menu_data[#quad_modifier] = undefined
+		parent_menu_data[#quad_position] = undefined
+		parent_menu_data[#quad_menu_id] = ""
+		parent_menu_data[#qmnx_clear_directory] = this.qmnx_clear_directory
+		parent_menu_data[#clear_defaul_menu] = false
+		parent_menu_data[#parent_menu_title] = ""
+		parent_menu_data[#parent_menu_id] = ""
+		parent_menu_data[#main_menu_bar_title] = this.main_menu_bar_title
+		parent_menu_data[#quad_menus] = #()
+
+		parent_menu_data -- return
+	),
+
+
+	function isDefaultMenuParentData menu_data =
+	(
+		was_found = false
+
+		if this.getSavedMenuType menu_data == #menu then
+		(
+			if this.getSavedMenuTitle menu_data == this.default_menu_parent_title then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function findDefaultMenuParentDataIndex menus_data_array =
+	(
+		found_index = 0
+
+		for menu_index = 1 to menus_data_array.count while found_index == 0 do
+		(
+			if this.isDefaultMenuParentData menus_data_array[menu_index] then
+			(
+				found_index = menu_index
+			)
+		)
+
+		found_index -- return
+	),
+
+
+	function createSavedSubMenuItemFromMenuData menu_data =
+	(
+		submenu_data = Dictionary #name
+
+		submenu_data[#title] = menu_data[#title]
+		submenu_data[#items] = menu_data[#items]
+
+		submenu_data -- return
+	),
+
+
+	function addMenuDataAsChildOfDefaultParent parent_menu_data menu_data =
+	(
+		parent_items = parent_menu_data[#items]
+		child_title = menu_data[#title]
+		child_key = menu_data[#id]
+
+		if child_key == undefined or child_key == "" then
+		(
+			child_key = this.createGuidString()
+		)
+
+		new_child_data = this.createSavedSubMenuItemFromMenuData menu_data
+		existing_child_key = this.findSavedItemKeyByTitle parent_items child_title
+
+		if existing_child_key != undefined then
+		(
+			existing_child_data = parent_items[existing_child_key]
+			parent_items[existing_child_key] = this.mergeSavedItemData existing_child_data new_child_data
+		)
+		else
+		(
+			parent_items[child_key] = new_child_data
+		)
+
+		parent_menu_data[#items] = parent_items
+
+		parent_menu_data -- return
+	),
+
+
+	function groupMainMenusUnderDefaultParent menus_data_array =
+	(
+		grouped_menus_data = #()
+		parent_menu_data = undefined
+
+		for menu_data in menus_data_array do
+		(
+			if this.isDefaultMenuParentData menu_data then
+			(
+				parent_menu_data = menu_data
+			)
+		)
+
+		for menu_data in menus_data_array do
+		(
+			menu_title = this.getSavedMenuTitle menu_data
+			menu_type = this.getSavedMenuType menu_data
+
+			if this.shouldPlaceMenuUnderDefaultParent menu_title menu_type then
+			(
+				if parent_menu_data == undefined then
+				(
+					parent_menu_data = this.createDefaultMenuParentData()
+				)
+
+				this.addMenuDataAsChildOfDefaultParent parent_menu_data menu_data
+			)
+			else
+			(
+				if not this.isDefaultMenuParentData menu_data then
+				(
+					append grouped_menus_data menu_data
+				)
+			)
+		)
+
+		if parent_menu_data != undefined then
+		(
+			append grouped_menus_data parent_menu_data
+		)
+
+		grouped_menus_data -- return
+	),
+
+
 	function buildSavedMenusData =
 	(
 		this.saved_menus_data = #()
@@ -513,9 +762,10 @@ struct MenuBuildManager_v
 			)
 		)
 
+		this.saved_menus_data = this.groupMainMenusUnderDefaultParent this.saved_menus_data
+
 		this.saved_menus_data -- return
 	),
-
 
 	function loadSavedMenusDataFromJson =
 	(
@@ -698,6 +948,9 @@ struct MenuBuildManager_v
 			qmnx_clear_directory:(this.getSavedQmnxClearDirectory menu_data) \
 			clear_defaul_menu:definition_clear_flag
 
+		this.setDefinitionPropertySafe menu_definition #parent_menu_title (this.getSavedParentMenuTitle menu_data)
+		this.setDefinitionPropertySafe menu_definition #parent_menu_id (this.getSavedParentMenuId menu_data)
+
 		if definition_type == #quad then
 		(
 			if this.hasDictValueSafe menu_data #quad_menus then
@@ -732,32 +985,144 @@ struct MenuBuildManager_v
 	),
 
 
+	function getSavedParentMenuTitle menu_data =
+	(
+		parent_title = ""
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #parent_menu_title then
+			(
+				parent_title = menu_data[#parent_menu_title]
+			)
+		)
+
+		parent_title -- return
+	),
+
+
+	function getSavedParentMenuId menu_data =
+	(
+		parent_id = ""
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #parent_menu_id then
+			(
+				parent_id = menu_data[#parent_menu_id]
+			)
+		)
+
+		parent_id -- return
+	),
+
+
+	function findSavedDefaultParentMenuData =
+	(
+		found_menu_data = undefined
+		json_menus_data = this.loadSavedMenusDataFromJson()
+
+		for menu_data in json_menus_data while found_menu_data == undefined do
+		(
+			if this.isDefaultMenuParentData menu_data then
+			(
+				found_menu_data = menu_data
+			)
+		)
+
+		found_menu_data -- return
+	),
+
+
+	function findSavedChildMenuDataByTitle menu_title =
+	(
+		found_data = undefined
+		parent_menu_data = this.findSavedDefaultParentMenuData()
+
+		if parent_menu_data != undefined then
+		(
+			if this.hasDictValueSafe parent_menu_data #items then
+			(
+				parent_items = parent_menu_data[#items]
+				child_key = this.findSavedItemKeyByTitle parent_items menu_title
+
+				if child_key != undefined then
+				(
+					found_data = Dictionary #name
+					found_data[#id] = child_key
+					found_data[#title] = menu_title
+					found_data[#type] = #menu
+					found_data[#items] = parent_items[child_key][#items]
+					found_data[#parent_menu_title] = this.default_menu_parent_title
+					found_data[#parent_menu_id] = this.default_menu_parent_id
+				)
+			)
+		)
+
+		found_data -- return
+	),
+
+
+	function createMenuDefinitionFromSavedChildMenuData child_menu_data =
+	(
+		menu_definition = MenuDefinition_v \
+			type:#menu \
+			title:child_menu_data[#title] \
+			id:child_menu_data[#id] \
+			data:child_menu_data[#items]
+
+		this.setDefinitionPropertySafe menu_definition #parent_menu_title child_menu_data[#parent_menu_title]
+		this.setDefinitionPropertySafe menu_definition #parent_menu_id child_menu_data[#parent_menu_id]
+
+		menu_definition -- return
+	),
+
+
 	function menu title type:#menu clear_defaul_menu:false clear_default_menu:false =
 	(
+		definition_type = this.normalizeMenuType type
+
+		if title == "Default Viewport Quad" then
+		(
+			definition_type = #quad
+		)
+
 		menu_definition = this.findMenuDefinitionByTitle title
 
 		if menu_definition == undefined then
 		(
-			saved_menu_data = this.findSavedMenuDataByTitle title
-
-			if saved_menu_data != undefined then
+			if this.shouldPlaceMenuUnderDefaultParent title definition_type then
 			(
-				menu_definition = this.createMenuDefinitionFromSavedMenuData saved_menu_data
+				child_menu_data = this.findSavedChildMenuDataByTitle title
 
-				if (clear_defaul_menu or clear_default_menu) then
+				if child_menu_data != undefined then
 				(
-					menu_definition.setClearDefaulMenu true
+					menu_definition = this.createMenuDefinitionFromSavedChildMenuData child_menu_data
 				)
 			)
-			else
+
+			if menu_definition == undefined then
 			(
-				definition_type = this.normalizeMenuType type
+				saved_menu_data = this.findSavedMenuDataByTitle title
+
+				if saved_menu_data != undefined then
+				(
+					menu_definition = this.createMenuDefinitionFromSavedMenuData saved_menu_data
+
+					if (clear_defaul_menu or clear_default_menu) then
+					(
+						menu_definition.setClearDefaulMenu true
+					)
+				)
+			)
+
+			if menu_definition == undefined then
+			(
 				definition_quad_modifier = undefined
 				definition_quad_position = undefined
 
 				if title == "Default Viewport Quad" then
 				(
-					definition_type = #quad
 					definition_quad_modifier = #nonePressed
 					definition_quad_position = #TopRight
 				)
@@ -770,6 +1135,12 @@ struct MenuBuildManager_v
 					qmnx_clear_directory:this.qmnx_clear_directory \
 					clear_defaul_menu:clear_defaul_menu \
 					clear_default_menu:clear_default_menu
+
+				if this.shouldPlaceMenuUnderDefaultParent title definition_type then
+				(
+					this.setDefinitionPropertySafe menu_definition #parent_menu_title this.default_menu_parent_title
+					this.setDefinitionPropertySafe menu_definition #parent_menu_id this.default_menu_parent_id
+				)
 			)
 
 			append this.menus_data menu_definition
@@ -777,7 +1148,6 @@ struct MenuBuildManager_v
 
 		menu_definition -- return
 	),
-
 
 	function isValidSavedMenuData menu_data =
 	(
@@ -1130,6 +1500,22 @@ struct MenuBuildManager_v
 			)
 		)
 
+		if this.hasDictValueSafe new_menu_data #parent_menu_title then
+		(
+			if new_menu_data[#parent_menu_title] != "" then
+			(
+				merged_menu_data[#parent_menu_title] = new_menu_data[#parent_menu_title]
+			)
+		)
+
+		if this.hasDictValueSafe new_menu_data #parent_menu_id then
+		(
+			if new_menu_data[#parent_menu_id] != "" then
+			(
+				merged_menu_data[#parent_menu_id] = new_menu_data[#parent_menu_id]
+			)
+		)
+
 		old_items = Dictionary #string
 		new_items = Dictionary #string
 
@@ -1205,8 +1591,63 @@ struct MenuBuildManager_v
 			)
 		)
 
+		merged_menus_data = this.groupMainMenusUnderDefaultParent merged_menus_data
+		merged_menus_data = this.removeRootMenusDuplicatedInsideDefaultParent merged_menus_data
+
 		merged_menus_data -- return
 	),
+
+	function isMenuTitleInsideDefaultParent parent_menu_data menu_title =
+	(
+		was_found = false
+
+		if parent_menu_data != undefined then
+		(
+			if this.hasDictValueSafe parent_menu_data #items then
+			(
+				parent_items = parent_menu_data[#items]
+				item_key = this.findSavedItemKeyByTitle parent_items menu_title
+
+				if item_key != undefined then
+				(
+					was_found = true
+				)
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function removeRootMenusDuplicatedInsideDefaultParent menus_data_array =
+	(
+		clean_menus_data = #()
+		parent_menu_data = undefined
+		parent_index = this.findDefaultMenuParentDataIndex menus_data_array
+
+		if parent_index > 0 then
+		(
+			parent_menu_data = menus_data_array[parent_index]
+		)
+
+		for menu_data in menus_data_array do
+		(
+			menu_title = this.getSavedMenuTitle menu_data
+			menu_type = this.getSavedMenuType menu_data
+
+			if this.shouldPlaceMenuUnderDefaultParent menu_title menu_type and this.isMenuTitleInsideDefaultParent parent_menu_data menu_title then
+			(
+				format "MenuBuildManager_v: skipped duplicate root menu already under %: %\n" this.default_menu_parent_title menu_title
+			)
+			else
+			(
+				append clean_menus_data menu_data
+			)
+		)
+
+		clean_menus_data -- return
+	),
+
 
 	function deleteMenusFromJsonBySignatures signatures =
 	(
