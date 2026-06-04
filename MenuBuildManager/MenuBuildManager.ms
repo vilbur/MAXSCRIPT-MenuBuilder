@@ -1,7 +1,12 @@
 filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../include-menus.ms"
+
+/*
+
+
+*/ 
 struct MenuBuildManager_v
 (
-	version = 0.17,
+	version = 0.18,
 	menus_data = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
@@ -1522,6 +1527,19 @@ struct MenuBuildManager_v
 
 		this.saveStartupScript()
 
+		this.saved_menus_data -- return
+	),
+	
+	/** Build
+	 */
+	function build menu_data =
+	(
+		format "\n"; print "MenuBuildManager_v.build()"
+		this.menus_data = #(menu_data)
+		
+		this.buildMenus()
+		this.saveJsonData()
+		
 		this.saved_menus_data -- return
 	),
 
