@@ -1,17 +1,13 @@
-/*  Menu rebuilder.
-    Pure worker: rebuilds saved menu_data into passed menu manager or quad menu manager.
-*/
+
 struct MenuRebuilder_v
 (
-	version = 0.09,
+	version = 0.15,
 	menu_data = Dictionary #name,
+	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
 
 
-	/*  Checks if value is Dictionary.
-	    Prevents dictionary operation crashes.
-	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -28,9 +24,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Checks if value is array.
-	    Used for quad quadrant array.
-	*/
 	function isArrayValue value =
 	(
 		was_array = false
@@ -47,9 +40,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Creates new guid string.
-	    Used only as fallback when saved data is incomplete.
-	*/
 	function createGuidString =
 	(
 		guid_class = dotNetClass "System.Guid"
@@ -59,9 +49,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Safely checks dictionary key.
-	    Prevents #name key crash on Dictionary #string.
-	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
 	(
 		was_found = false
@@ -82,9 +69,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets root data value safely.
-	    Returns default value when key is missing.
-	*/
 	function getMenuDataValue dictionary_key default_value =
 	(
 		value = default_value
@@ -98,9 +82,37 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets saved menu id.
-	    Same id is used to delete and recreate main menu or quad root.
-	*/
+	function normalizeQuadModifier modifier_value =
+	(
+		normalized_modifier = undefined
+		modifier_text = ""
+
+		if modifier_value != undefined then
+		(
+			modifier_text = modifier_value as string
+		)
+
+		if modifier_text == "#nonePressed" then normalized_modifier = #nonePressed
+		if modifier_text == "nonePressed" then normalized_modifier = #nonePressed
+		if modifier_text == "#nonePresses" then normalized_modifier = #nonePressed
+		if modifier_text == "nonePresses" then normalized_modifier = #nonePressed
+
+		if modifier_text == "#shiftPressed" then normalized_modifier = #shiftPressed
+		if modifier_text == "shiftPressed" then normalized_modifier = #shiftPressed
+
+		if modifier_text == "#controlPressed" then normalized_modifier = #controlPressed
+		if modifier_text == "controlPressed" then normalized_modifier = #controlPressed
+
+		if modifier_text == "#altPressed" then normalized_modifier = #altPressed
+		if modifier_text == "altPressed" then normalized_modifier = #altPressed
+
+		if modifier_text == "#shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
+		if modifier_text == "shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
+
+		normalized_modifier -- return
+	),
+
+
 	function getMenuId =
 	(
 		menu_id = this.getMenuDataValue #id ""
@@ -115,18 +127,12 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets saved menu title.
-	    Empty title means menu is invalid and must not be created.
-	*/
 	function getMenuTitle =
 	(
 		this.getMenuDataValue #title "" -- return
 	),
 
 
-	/*  Checks if saved menu has valid title.
-	    No title means no menu creation.
-	*/
 	function hasValidMenuTitle =
 	(
 		menu_title = this.getMenuTitle()
@@ -135,9 +141,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets saved menu items.
-	    Used for normal menu or single quadrant quad menu.
-	*/
 	function getMenuItems =
 	(
 		menu_items = this.getMenuDataValue #items (Dictionary #string)
@@ -151,36 +154,24 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets saved quad context id.
-	    Default is viewport context.
-	*/
 	function getQuadContextId =
 	(
 		this.getMenuDataValue #quad_context_id "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e" -- return
 	),
 
 
-	/*  Gets saved quad modifier.
-	    Used by quad rebuild only.
-	*/
 	function getQuadModifier =
 	(
-		this.getMenuDataValue #quad_modifier #shiftAndControlPressed -- return
+		this.normalizeQuadModifier (this.getMenuDataValue #quad_modifier undefined) -- return
 	),
 
 
-	/*  Gets saved quad position.
-	    Used by single quadrant quad rebuild only.
-	*/
 	function getQuadPosition =
 	(
 		this.getMenuDataValue #quad_position #TopRight -- return
 	),
 
 
-	/*  Gets saved quad quadrant id.
-	    Used by single quadrant quad rebuild only.
-	*/
 	function getQuadMenuId =
 	(
 		quad_menu_id = this.getMenuDataValue #quad_menu_id ""
@@ -195,9 +186,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets saved quad quadrant array.
-	    Used for multi-quadrant quad menus.
-	*/
 	function getQuadMenus =
 	(
 		quad_menus = this.getMenuDataValue #quad_menus #()
@@ -211,9 +199,18 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Checks if saved item is submenu.
-	    Submenu item has #items key.
-	*/
+	function getQmnxClearDirectory =
+	(
+		this.getMenuDataValue #qmnx_clear_directory "" -- return
+	),
+
+
+	function isDefaultQuadInjectionMode =
+	(
+		this.getQuadModifier() == #nonePressed -- return
+	),
+
+
 	function isSubMenuData item_data =
 	(
 		was_found = false
@@ -227,9 +224,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Checks if saved item is macro item.
-	    Macro item has #category and #macro keys.
-	*/
 	function isMacroItemData item_data =
 	(
 		was_found = false
@@ -248,9 +242,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Builds persistent macro action id.
-	    Format is macro name, backtick, category.
-	*/
 	function getMacroActionId macro_category macro_name =
 	(
 		persistent_action_id = macro_name + "`" + macro_category
@@ -259,9 +250,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Rebuilds menu items from saved dictionary.
-	    Dictionary key is reused as CUI item guid.
-	*/
 	function rebuildMenuItems parent_menu saved_items =
 	(
 		if not this.isDictionaryValue saved_items then
@@ -308,9 +296,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Deletes root main menu by saved id.
-	    This is only for normal menu bar menu.
-	*/
 	function deleteMainMenu main_menu_bar =
 	(
 		was_deleted = false
@@ -332,9 +317,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Rebuilds saved data as normal menu bar menu.
-	    This must be called only from #cuiRegisterMenus.
-	*/
 	function rebuildAsMainMenu menu_manager =
 	(
 		if not this.hasValidMenuTitle() then
@@ -368,9 +350,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Gets quad context from quad menu manager.
-	    This must be called only from #cuiRegisterQuadMenus.
-	*/
 	function getQuadContext quad_menu_manager =
 	(
 		quad_context = undefined
@@ -391,16 +370,18 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Creates custom quad root menu.
-	    This does not touch normal menu bar.
-	*/
-	function createQuadRootMenu quad_context =
+	function createCustomQuadRootMenu quad_context =
 	(
 		quad_menu = undefined
+		quad_modifier = this.getQuadModifier()
 
 		if not this.hasValidMenuTitle() then
 		(
-			format "MenuRebuilder_v.createQuadRootMenu skipped. Missing menu title.\n"
+			format "MenuRebuilder_v.createCustomQuadRootMenu skipped. Missing menu title.\n"
+		)
+		else if quad_modifier == undefined then
+		(
+			format "MenuRebuilder_v.createCustomQuadRootMenu skipped. quad_modifier is undefined.\n"
 		)
 		else if quad_context != undefined then
 		(
@@ -410,7 +391,7 @@ struct MenuRebuilder_v
 
 				if quad_menu != undefined then
 				(
-					quad_context.SetRightClickModifiers quad_menu (this.getQuadModifier())
+					quad_context.SetRightClickModifiers quad_menu quad_modifier
 				)
 			)
 			catch
@@ -423,10 +404,27 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Rebuilds one quad quadrant.
-	    Quad menu position menu receives saved item dictionary.
-	*/
-	function rebuildQuadPositionMenu quad_menu quad_title quad_position_value quad_menu_id_value quad_items_value =
+	function getDefaultViewportQuadMenu quad_context =
+	(
+		default_quad = undefined
+
+		if quad_context != undefined then
+		(
+			try
+			(
+				default_quad = quad_context.GetRightClickMenuByModifiers #nonePressed
+			)
+			catch
+			(
+				default_quad = undefined
+			)
+		)
+
+		default_quad -- return
+	),
+
+
+	function rebuildCustomQuadPositionMenu quad_menu quad_title quad_position_value quad_menu_id_value quad_items_value =
 	(
 		quad_position_menu = undefined
 
@@ -451,25 +449,88 @@ struct MenuRebuilder_v
 	),
 
 
-	/*  Rebuilds saved data as quad menu.
-	    This must be called only from #cuiRegisterQuadMenus.
-	*/
-	function rebuildAsQuadMenu quad_menu_manager =
+	function injectDefaultQuadPositionMenu default_quad quad_position_value quad_items_value =
 	(
-		if not this.hasValidMenuTitle() then
+		quad_position_menu = undefined
+
+		if default_quad != undefined then
 		(
-			format "MenuRebuilder_v.rebuildAsQuadMenu skipped. Missing menu title.\n"
-			false -- return
+			try
+			(
+				quad_position_menu = default_quad.GetMenuByPos quad_position_value
+			)
+			catch
+			(
+				quad_position_menu = undefined
+			)
+
+			if quad_position_menu != undefined then
+			(
+				this.rebuildMenuItems quad_position_menu quad_items_value
+			)
+			else
+			(
+				format "MenuRebuilder_v.injectDefaultQuadPositionMenu failed. Quad position not found: %\n" quad_position_value
+			)
 		)
-		else if quad_menu_manager == undefined then
+
+		quad_position_menu -- return
+	),
+
+
+	function collectDefaultQuadClearPositions =
+	(
+		clear_positions = #()
+		quad_menus = this.getQuadMenus()
+
+		if quad_menus.count > 0 then
 		(
-			format "MenuRebuilder_v.rebuildAsQuadMenu failed. quad_menu_manager is undefined.\n"
+			for quad_data in quad_menus do
+			(
+				if this.hasDictValueSafe quad_data #quad_position then
+				(
+					append clear_positions quad_data[#quad_position]
+				)
+			)
+		)
+		else
+		(
+			append clear_positions (this.getQuadPosition())
+		)
+
+		clear_positions -- return
+	),
+
+
+	function clearDefaultViewportQuadByQmnx =
+	(
+		was_loaded = false
+
+		if this.isDefaultQuadInjectionMode() then
+		(
+			clear_positions = this.collectDefaultQuadClearPositions()
+
+			qmnx_clear = QuadDefaultQmnxClear_v \
+				qmnx_clear_directory:(this.getQmnxClearDirectory())
+
+			was_loaded = qmnx_clear.clearPositions clear_positions
+		)
+
+		was_loaded -- return
+	),
+
+
+	function rebuildAsCustomModifierQuad quad_menu_manager =
+	(
+		if quad_menu_manager == undefined then
+		(
+			format "MenuRebuilder_v.rebuildAsCustomModifierQuad failed. quad_menu_manager is undefined.\n"
 			false -- return
 		)
 		else
 		(
 			quad_context = this.getQuadContext quad_menu_manager
-			quad_menu = this.createQuadRootMenu quad_context
+			quad_menu = this.createCustomQuadRootMenu quad_context
 			quad_menus = this.getQuadMenus()
 
 			if quad_menu != undefined then
@@ -483,16 +544,82 @@ struct MenuRebuilder_v
 						quad_menu_id_value = quad_data[#quad_menu_id]
 						quad_items_value = quad_data[#items]
 
-						this.rebuildQuadPositionMenu quad_menu quad_title quad_position_value quad_menu_id_value quad_items_value
+						this.rebuildCustomQuadPositionMenu quad_menu quad_title quad_position_value quad_menu_id_value quad_items_value
 					)
 				)
 				else
 				(
-					this.rebuildQuadPositionMenu quad_menu (this.getMenuTitle()) (this.getQuadPosition()) (this.getQuadMenuId()) (this.getMenuItems())
+					this.rebuildCustomQuadPositionMenu quad_menu (this.getMenuTitle()) (this.getQuadPosition()) (this.getQuadMenuId()) (this.getMenuItems())
 				)
 			)
 
 			true -- return
+		)
+	),
+
+
+	function injectAsDefaultViewportQuad quad_menu_manager =
+	(
+		if quad_menu_manager == undefined then
+		(
+			format "MenuRebuilder_v.injectAsDefaultViewportQuad failed. quad_menu_manager is undefined.\n"
+			false -- return
+		)
+		else
+		(
+			if not this.skip_default_qmnx_clear then
+			(
+				this.clearDefaultViewportQuadByQmnx()
+			)
+
+			quad_context = this.getQuadContext quad_menu_manager
+			default_quad = this.getDefaultViewportQuadMenu quad_context
+			quad_menus = this.getQuadMenus()
+
+			if default_quad == undefined then
+			(
+				format "MenuRebuilder_v.injectAsDefaultViewportQuad failed. Default viewport quad not found.\n"
+				false -- return
+			)
+			else
+			(
+				if quad_menus.count > 0 then
+				(
+					for quad_data in quad_menus do
+					(
+						quad_position_value = quad_data[#quad_position]
+						quad_items_value = quad_data[#items]
+
+						this.injectDefaultQuadPositionMenu default_quad quad_position_value quad_items_value
+					)
+				)
+				else
+				(
+					this.injectDefaultQuadPositionMenu default_quad (this.getQuadPosition()) (this.getMenuItems())
+				)
+
+				format "MenuRebuilder_v: injected menu '%' into Default Viewport Quad.\n" (this.getMenuTitle())
+
+				true -- return
+			)
+		)
+	),
+
+
+	function rebuildAsQuadMenu quad_menu_manager =
+	(
+		if not this.hasValidMenuTitle() then
+		(
+			format "MenuRebuilder_v.rebuildAsQuadMenu skipped. Missing menu title.\n"
+			false -- return
+		)
+		else if this.isDefaultQuadInjectionMode() then
+		(
+			this.injectAsDefaultViewportQuad quad_menu_manager -- return
+		)
+		else
+		(
+			this.rebuildAsCustomModifierQuad quad_menu_manager -- return
 		)
 	),
 

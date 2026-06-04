@@ -1,33 +1,15 @@
 
-/*  Menu definition.
-    Data can be Dictionary #string or array of MenuDefinition_v.
-	
-	quad_modifier:
-		#nonePressed
-		#shiftPressed
-		#altPressed
-		#controlPressed
-		#shiftAndAltPressed
-		#shiftAndControlPressed
-		#controlAndAltPressed
-		#shiftAndAltAndControlPressed
-		
-	
-*/
 struct MenuDefinition_v
 (
 	type = #menu,
 	title = "",
 	data = undefined,
 	_data = undefined,
-	quad_modifier = #altPressed,
+	quad_modifier = undefined,
 	quad_position = #TopRight,
 	quad_context_id = "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e",
 
 
-	/*  Checks if value is Dictionary.
-	    Used before dictionary operations.
-	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -44,9 +26,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Checks if value is array.
-	    Used for quad definitions array.
-	*/
 	function isArrayValue value =
 	(
 		was_array = false
@@ -63,9 +42,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Reads constructor alias _data.
-	    Alias exists only to support typo-safe constructor calls.
-	*/
 	function readDataAlias =
 	(
 		if this._data != undefined then
@@ -77,9 +53,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Ensures data property is Dictionary #string.
-	    Used for normal menu content.
-	*/
 	function ensureMenuData =
 	(
 		this.readDataAlias()
@@ -93,9 +66,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Ensures data property is array.
-	    Used when definition owns multiple quad definitions.
-	*/
 	function ensureQuadData =
 	(
 		this.readDataAlias()
@@ -109,9 +79,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Adds macro item to menu data.
-	    Value is #(category, macro_name).
-	*/
 	function addItem category macro_name title:"" =
 	(
 		this.ensureMenuData()
@@ -129,9 +96,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Adds submenu definition to menu data.
-	    Returns new submenu definition instance.
-	*/
 	function addMenu title =
 	(
 		this.ensureMenuData()
@@ -146,9 +110,6 @@ struct MenuDefinition_v
 	),
 
 
-	/*  Adds quad quadrant definition.
-	    Parent data becomes array of MenuDefinition_v.
-	*/
 	function addQuad title position:#TopRight =
 	(
 		this.ensureQuadData()
@@ -169,6 +130,28 @@ struct MenuDefinition_v
 	on create do
 	(
 		this.readDataAlias()
+
+		type_text = this.type as string
+
+		if type_text == "#menu" then
+		(
+			this.quad_position = undefined
+		)
+
+		if type_text == "#MENU" then
+		(
+			this.quad_position = undefined
+		)
+
+		if type_text == "menu" then
+		(
+			this.quad_position = undefined
+		)
+
+		if type_text == "MENU" then
+		(
+			this.quad_position = undefined
+		)
 
 		if this.data == undefined then
 		(

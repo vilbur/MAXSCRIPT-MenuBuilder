@@ -6,9 +6,6 @@ struct MenuJsonIO_v
 	json_length = 0,
 
 
-	/*  Checks if value is Dictionary.
-	    Used before dictionary operations.
-	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -25,9 +22,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Safely checks dictionary key.
-	    Key type must match dictionary type.
-	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
 	(
 		was_found = false
@@ -48,9 +42,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Gets JSON object string key value.
-	    Returns default value if key is missing.
-	*/
 	function getJsonValue json_object key_string default_value =
 	(
 		result_value = default_value
@@ -64,9 +55,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts name value to clean string.
-	    Removes leading # from name string.
-	*/
 	function nameToText name_value default_text:"" =
 	(
 		text_value = default_text
@@ -88,113 +76,69 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts string to menu type name.
-	    Used after loading JSON.
-	*/
 	function textToMenuType text_value =
 	(
 		menu_type_value = #menu
 
-		if text_value == "quad" then
-		(
-			menu_type_value = #quad
-		)
-		else if text_value == "#quad" then
-		(
-			menu_type_value = #quad
-		)
-		else if text_value == "QUAD" then
-		(
-			menu_type_value = #quad
-		)
-		else if text_value == "#QUAD" then
-		(
-			menu_type_value = #quad
-		)
-		else if text_value == "both" then
-		(
-			menu_type_value = #both
-		)
-		else if text_value == "#both" then
-		(
-			menu_type_value = #both
-		)
-		else if text_value == "BOTH" then
-		(
-			menu_type_value = #both
-		)
-		else if text_value == "#BOTH" then
-		(
-			menu_type_value = #both
-		)
+		if text_value == "quad" then menu_type_value = #quad
+		if text_value == "#quad" then menu_type_value = #quad
+		if text_value == "QUAD" then menu_type_value = #quad
+		if text_value == "#QUAD" then menu_type_value = #quad
+
+		if text_value == "both" then menu_type_value = #both
+		if text_value == "#both" then menu_type_value = #both
+		if text_value == "BOTH" then menu_type_value = #both
+		if text_value == "#BOTH" then menu_type_value = #both
 
 		menu_type_value -- return
 	),
 
 
-	/*  Converts string to quad modifier name.
-	    Used after loading JSON.
-	*/
 	function textToQuadModifier text_value =
 	(
-		modifier_value = #shiftAndControlPressed
+		modifier_value = undefined
 
-		if text_value == "nonePressed" then
-		(
-			modifier_value = #nonePressed
-		)
-		else if text_value == "shiftPressed" then
-		(
-			modifier_value = #shiftPressed
-		)
-		else if text_value == "controlPressed" then
-		(
-			modifier_value = #controlPressed
-		)
-		else if text_value == "altPressed" then
-		(
-			modifier_value = #altPressed
-		)
-		else if text_value == "shiftAndControlPressed" then
-		(
-			modifier_value = #shiftAndControlPressed
-		)
+		if text_value == "nonePressed" then modifier_value = #nonePressed
+		if text_value == "#nonePressed" then modifier_value = #nonePressed
+		if text_value == "nonePresses" then modifier_value = #nonePressed
+		if text_value == "#nonePresses" then modifier_value = #nonePressed
+
+		if text_value == "shiftPressed" then modifier_value = #shiftPressed
+		if text_value == "#shiftPressed" then modifier_value = #shiftPressed
+
+		if text_value == "controlPressed" then modifier_value = #controlPressed
+		if text_value == "#controlPressed" then modifier_value = #controlPressed
+
+		if text_value == "altPressed" then modifier_value = #altPressed
+		if text_value == "#altPressed" then modifier_value = #altPressed
+
+		if text_value == "shiftAndControlPressed" then modifier_value = #shiftAndControlPressed
+		if text_value == "#shiftAndControlPressed" then modifier_value = #shiftAndControlPressed
 
 		modifier_value -- return
 	),
 
 
-	/*  Converts string to quad position name.
-	    Used after loading JSON.
-	*/
 	function textToQuadPosition text_value =
 	(
 		position_value = #TopRight
 
-		if text_value == "TopLeft" then
-		(
-			position_value = #TopLeft
-		)
-		else if text_value == "TopRight" then
-		(
-			position_value = #TopRight
-		)
-		else if text_value == "BottomLeft" then
-		(
-			position_value = #BottomLeft
-		)
-		else if text_value == "BottomRight" then
-		(
-			position_value = #BottomRight
-		)
+		if text_value == "TopLeft" then position_value = #TopLeft
+		if text_value == "#TopLeft" then position_value = #TopLeft
+
+		if text_value == "TopRight" then position_value = #TopRight
+		if text_value == "#TopRight" then position_value = #TopRight
+
+		if text_value == "BottomLeft" then position_value = #BottomLeft
+		if text_value == "#BottomLeft" then position_value = #BottomLeft
+
+		if text_value == "BottomRight" then position_value = #BottomRight
+		if text_value == "#BottomRight" then position_value = #BottomRight
 
 		position_value -- return
 	),
 
 
-	/*  Escapes string for JSON.
-	    Used by JSON writer.
-	*/
 	function escapeJsonString source_string =
 	(
 		escaped_string = source_string
@@ -215,18 +159,12 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Writes JSON string value.
-	    Adds quotes and escaping.
-	*/
 	function stringToJson source_string =
 	(
 		"\"" + this.escapeJsonString source_string + "\"" -- return
 	),
 
 
-	/*  Serializes saved item dictionary to JSON.
-	    Saved item is macro item or submenu item.
-	*/
 	function savedItemToJson item_data indent:"" =
 	(
 		json_value = ""
@@ -252,9 +190,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Serializes saved items dictionary to JSON.
-	    Dictionary keys are saved CUI GUID strings.
-	*/
 	function savedItemsToJson saved_items indent:"" =
 	(
 		json_value = "{\n"
@@ -286,9 +221,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Serializes quad quadrant data to JSON.
-	    Quad data contains title, position, id and items.
-	*/
 	function quadMenuToJson quad_data indent:"" =
 	(
 		json_value = ""
@@ -305,9 +237,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Serializes quad quadrant array to JSON.
-	    Used by multi-quadrant quad menu data.
-	*/
 	function quadMenusToJson quad_menus indent:"" =
 	(
 		json_value = "[\n"
@@ -330,9 +259,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Serializes saved root menu data to JSON.
-	    This is one menu object.
-	*/
 	function menuDataToJson menu_data =
 	(
 		json_value = "{\n"
@@ -342,9 +268,10 @@ struct MenuJsonIO_v
 		json_value += "\t\"title\": " + this.stringToJson menu_data[#title] + ",\n"
 		json_value += "\t\"type\": " + this.stringToJson (this.nameToText menu_data[#type] default_text:"menu") + ",\n"
 		json_value += "\t\"quad_context_id\": " + this.stringToJson menu_data[#quad_context_id] + ",\n"
-		json_value += "\t\"quad_modifier\": " + this.stringToJson (this.nameToText menu_data[#quad_modifier] default_text:"shiftAndControlPressed") + ",\n"
-		json_value += "\t\"quad_position\": " + this.stringToJson (this.nameToText menu_data[#quad_position] default_text:"TopRight") + ",\n"
+		json_value += "\t\"quad_modifier\": " + this.stringToJson (this.nameToText menu_data[#quad_modifier] default_text:"") + ",\n"
+		json_value += "\t\"quad_position\": " + this.stringToJson (this.nameToText menu_data[#quad_position] default_text:"") + ",\n"
 		json_value += "\t\"quad_menu_id\": " + this.stringToJson menu_data[#quad_menu_id] + ",\n"
+		json_value += "\t\"qmnx_clear_directory\": " + this.stringToJson menu_data[#qmnx_clear_directory] + ",\n"
 
 		if this.hasDictValueSafe menu_data #quad_menus then
 		(
@@ -365,14 +292,11 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Serializes multiple saved menu data dictionaries to JSON.
-	    JSON root contains array named menus.
-	*/
 	function menusDataToJson menus_data_array =
 	(
 		json_value = "{\n"
 
-		json_value += "\t\"version\": 0.09,\n"
+		json_value += "\t\"version\": 0.13,\n"
 		json_value += "\t\"menus\": [\n"
 
 		for menu_index = 1 to menus_data_array.count do
@@ -394,9 +318,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Saves multiple saved menu data dictionaries to JSON file.
-	    Used by MenuBuildManager_v.
-	*/
 	function saveMenusDataToJsonFile menus_data_array json_file_path =
 	(
 		json_value = this.menusDataToJson menus_data_array
@@ -409,18 +330,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Saves single saved root menu data to JSON file.
-	    Backward compatibility helper.
-	*/
-	function saveMenuDataToJsonFile menu_data json_file_path =
-	(
-		this.saveMenusDataToJsonFile #(menu_data) json_file_path -- return
-	),
-
-
-	/*  Reads entire text file.
-	    Used by JSON loader.
-	*/
 	function readTextFile file_path =
 	(
 		file_text = ""
@@ -449,9 +358,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Initializes JSON parser.
-	    Sets parser text and cursor position.
-	*/
 	function setJsonText source_text =
 	(
 		this.json_text = source_text
@@ -462,9 +368,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Gets one character at current parser position.
-	    Returns empty string at end.
-	*/
 	function getCurrentChar =
 	(
 		char_value = ""
@@ -478,9 +381,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Skips whitespace in JSON.
-	    Used before parsing every value.
-	*/
 	function skipJsonWhitespace =
 	(
 		while this.json_position <= this.json_length and findString " \t\r\n" (this.getCurrentChar()) != undefined do
@@ -492,9 +392,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses JSON string.
-	    Supports common escape sequences.
-	*/
 	function parseJsonString =
 	(
 		result_string = ""
@@ -503,7 +400,7 @@ struct MenuJsonIO_v
 		(
 			this.json_position += 1
 
-			while this.json_position <= this.json_length and (this.getCurrentChar()) != "\"" do
+			while this.json_position <= this.json_length and this.getCurrentChar() != "\"" do
 			(
 				current_char = this.getCurrentChar()
 
@@ -512,34 +409,13 @@ struct MenuJsonIO_v
 					this.json_position += 1
 					escape_char = this.getCurrentChar()
 
-					if escape_char == "\"" then
-					(
-						result_string += "\""
-					)
-					else if escape_char == "\\" then
-					(
-						result_string += "\\"
-					)
-					else if escape_char == "/" then
-					(
-						result_string += "/"
-					)
-					else if escape_char == "t" then
-					(
-						result_string += "\t"
-					)
-					else if escape_char == "n" then
-					(
-						result_string += "\n"
-					)
-					else if escape_char == "r" then
-					(
-						result_string += "\r"
-					)
-					else
-					(
-						result_string += escape_char
-					)
+					if escape_char == "\"" then result_string += "\""
+					else if escape_char == "\\" then result_string += "\\"
+					else if escape_char == "/" then result_string += "/"
+					else if escape_char == "t" then result_string += "\t"
+					else if escape_char == "n" then result_string += "\n"
+					else if escape_char == "r" then result_string += "\r"
+					else result_string += escape_char
 				)
 				else
 				(
@@ -559,9 +435,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses JSON number.
-	    Returns float.
-	*/
 	function parseJsonNumber =
 	(
 		number_text = ""
@@ -578,9 +451,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses JSON literal.
-	    Supports true false null.
-	*/
 	function parseJsonLiteral =
 	(
 		result_value = undefined
@@ -606,9 +476,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses JSON array.
-	    Returned as MaxScript array.
-	*/
 	function parseJsonArray =
 	(
 		array_value = #()
@@ -640,9 +507,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses JSON object.
-	    Returned as Dictionary #string.
-	*/
 	function parseJsonObject =
 	(
 		object_value = Dictionary #string
@@ -685,9 +549,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Parses any JSON value.
-	    Returns string, float, bool, undefined, array or Dictionary #string.
-	*/
 	function parseJsonValue =
 	(
 		this.skipJsonWhitespace()
@@ -720,9 +581,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts JSON item dictionary to saved item data.
-	    Output item uses Dictionary #name keys.
-	*/
 	function jsonItemToSavedItem json_item =
 	(
 		item_data = Dictionary #name
@@ -743,9 +601,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts JSON items dictionary to saved items.
-	    Output dictionary is Dictionary #string keyed by GUID.
-	*/
 	function jsonItemsToSavedItems json_items =
 	(
 		saved_items = Dictionary #string
@@ -764,9 +619,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts JSON quad quadrant object to Dictionary #name.
-	    Used when loading multi-quadrant quad data.
-	*/
 	function jsonQuadMenuToData json_quad =
 	(
 		quad_data = Dictionary #name
@@ -780,9 +632,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts JSON quad quadrant array to MaxScript array.
-	    Each array item is Dictionary #name.
-	*/
 	function jsonQuadMenusToData json_quad_menus =
 	(
 		quad_menus = #()
@@ -799,9 +648,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts parsed JSON root to saved menu data.
-	    Missing title returns undefined.
-	*/
 	function jsonRootToMenuData json_root =
 	(
 		menu_data = undefined
@@ -814,14 +660,25 @@ struct MenuJsonIO_v
 			(
 				menu_data = Dictionary #name
 
-				menu_data[#version] = this.getJsonValue json_root "version" 0.09
+				menu_data[#version] = this.getJsonValue json_root "version" 0.15
 				menu_data[#id] = this.getJsonValue json_root "id" ""
 				menu_data[#title] = menu_title
-				menu_data[#type] = this.textToMenuType (this.getJsonValue json_root "type" "menu")
+				menu_type = this.textToMenuType (this.getJsonValue json_root "type" "menu")
+				menu_data[#type] = menu_type
 				menu_data[#quad_context_id] = this.getJsonValue json_root "quad_context_id" "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
-				menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "shiftAndControlPressed")
-				menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
+				menu_data[#quad_modifier] = this.textToQuadModifier (this.getJsonValue json_root "quad_modifier" "")
+
+				if menu_type == #menu then
+				(
+					menu_data[#quad_position] = undefined
+				)
+				else
+				(
+					menu_data[#quad_position] = this.textToQuadPosition (this.getJsonValue json_root "quad_position" "TopRight")
+				)
+
 				menu_data[#quad_menu_id] = this.getJsonValue json_root "quad_menu_id" ""
+				menu_data[#qmnx_clear_directory] = this.getJsonValue json_root "qmnx_clear_directory" ""
 				menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_root "items" (Dictionary #string))
 
 				if this.hasDictValueSafe json_root "quad_menus" then
@@ -839,9 +696,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Converts parsed JSON root to array of saved menu data.
-	    Supports multi-menu JSON and old single-menu JSON.
-	*/
 	function jsonRootToMenusData json_root =
 	(
 		menus_data_array = #()
@@ -880,9 +734,6 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Loads multiple saved menu data dictionaries from JSON file.
-	    Empty or missing file returns empty array.
-	*/
 	function loadMenusDataFromJsonFile json_file_path =
 	(
 		menus_data_array = #()
@@ -904,28 +755,10 @@ struct MenuJsonIO_v
 	),
 
 
-	/*  Loads first saved menu data dictionary from JSON file.
-	    Backward compatibility helper.
-	*/
-	function loadMenuDataFromJsonFile json_file_path =
-	(
-		menus_data_array = this.loadMenusDataFromJsonFile json_file_path
-		menu_data = Dictionary #name
-
-		if menus_data_array.count > 0 then
-		(
-			menu_data = menus_data_array[1]
-		)
-
-		menu_data -- return
-	),
-
-
 	on create do
 	(
 		ok
 	)
 )
-
 
 

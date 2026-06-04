@@ -1,11 +1,8 @@
 filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../include-menus.ms"
 
-/*  Menu build manager.
-    Owns definitions, saved JSON data, startup loader and callback routing.
-*/
 struct MenuBuildManager_v
 (
-	version = 0.09,
+	version = 0.15,
 	menus_data = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
@@ -13,15 +10,13 @@ struct MenuBuildManager_v
 	data_file_path = "",
 	startup_file_path = "",
 	rebuilder_file_path = "",
+	qmnx_clear_directory = "",
 	auto_register_callback = true,
 	merge_existing_data = true,
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
 
 
-	/*  Creates new guid string.
-	    Used for saved root, menu item and quad ids.
-	*/
 	function createGuidString =
 	(
 		guid_class = dotNetClass "System.Guid"
@@ -31,9 +26,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if value is Dictionary.
-	    Used before dictionary operations.
-	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -50,9 +42,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if value is array.
-	    Used for MenuDefinition_v data arrays.
-	*/
 	function isArrayValue value =
 	(
 		was_array = false
@@ -69,9 +58,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Safely checks dictionary key.
-	    Prevents #name key crash on Dictionary #string.
-	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
 	(
 		was_found = false
@@ -92,9 +78,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Gets default startup directory.
-	    JSON data and startup loader are written there.
-	*/
 	function getDefaultStartupDirectory =
 	(
 		startup_directory = ""
@@ -121,9 +104,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Gets current source file path.
-	    Startup loader needs this to fileIn MenuRebuilder.ms.
-	*/
 	function getCurrentSourceFilePath =
 	(
 		source_file_path = ""
@@ -141,54 +121,32 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Normalizes menu type.
-	    Accepts names and strings.
-	*/
 	function normalizeMenuType type_value =
 	(
 		normalized_type = #menu
 		type_text = type_value as string
 
-		if type_text == "#quad" then
-		(
-			normalized_type = #quad
-		)
-		else if type_text == "quad" then
-		(
-			normalized_type = #quad
-		)
-		else if type_text == "#QUAD" then
-		(
-			normalized_type = #quad
-		)
-		else if type_text == "QUAD" then
-		(
-			normalized_type = #quad
-		)
-		else if type_text == "#both" then
-		(
-			normalized_type = #both
-		)
-		else if type_text == "both" then
-		(
-			normalized_type = #both
-		)
-		else if type_text == "#BOTH" then
-		(
-			normalized_type = #both
-		)
-		else if type_text == "BOTH" then
-		(
-			normalized_type = #both
-		)
+		if type_text == "#quad" then normalized_type = #quad
+		if type_text == "quad" then normalized_type = #quad
+		if type_text == "#QUAD" then normalized_type = #quad
+		if type_text == "QUAD" then normalized_type = #quad
+
+		if type_text == "#both" then normalized_type = #both
+		if type_text == "both" then normalized_type = #both
+		if type_text == "#BOTH" then normalized_type = #both
+		if type_text == "BOTH" then normalized_type = #both
 
 		normalized_type -- return
 	),
 
 
-	/*  Gets data from MenuDefinition_v.
-	    Supports both data: and _data: constructor names.
-	*/
+	function normalizeQuadModifier modifier_value =
+	(
+		menu_rebuilder = MenuRebuilder_v()
+		menu_rebuilder.normalizeQuadModifier modifier_value -- return
+	),
+
+
 	function getDefinitionData menu_definition =
 	(
 		definition_data = menu_definition.data
@@ -202,9 +160,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Creates saved macro item data.
-	    Saved macro item contains #title #category #macro.
-	*/
 	function createSavedMacroItemData item_title macro_category macro_name =
 	(
 		item_data = Dictionary #name
@@ -217,9 +172,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Creates saved submenu data.
-	    Saved submenu contains #title #items.
-	*/
 	function createSavedSubMenuData submenu_title submenu_items =
 	(
 		submenu_data = Dictionary #name
@@ -231,9 +183,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if saved item is submenu.
-	    Submenu item has #items key.
-	*/
 	function isSubMenuData item_data =
 	(
 		was_found = false
@@ -247,9 +196,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if saved item is macro item.
-	    Macro item has #category and #macro keys.
-	*/
 	function isMacroItemData item_data =
 	(
 		was_found = false
@@ -268,9 +214,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if value is saved item data.
-	    Saved item has #title and submenu or macro keys.
-	*/
 	function isSavedItemData item_data =
 	(
 		was_found = false
@@ -296,9 +239,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if dictionary is saved GUID item dictionary.
-	    Saved values are Dictionary #name item data.
-	*/
 	function isSavedItemsDictionary dictionary_value =
 	(
 		was_found = false
@@ -322,9 +262,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Converts simple title-key dictionary to saved GUID-key dictionary.
-	    Source value is macro array or submenu dictionary.
-	*/
 	function convertSourceItemsToSavedItems source_items =
 	(
 		saved_items = Dictionary #string
@@ -357,9 +294,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Normalizes menu items.
-	    Accepts saved GUID format or simple title-key format.
-	*/
 	function normalizeMenuItems items_value =
 	(
 		normalized_items = Dictionary #string
@@ -380,9 +314,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds empty saved root menu data.
-	    Empty title returns undefined and no menu is generated.
-	*/
 	function createSavedRootData menu_definition definition_type =
 	(
 		root_data = undefined
@@ -401,9 +332,19 @@ struct MenuBuildManager_v
 			root_data[#type] = definition_type
 			root_data[#items] = Dictionary #string
 			root_data[#quad_context_id] = menu_definition.quad_context_id
-			root_data[#quad_modifier] = menu_definition.quad_modifier
-			root_data[#quad_position] = menu_definition.quad_position
+			root_data[#quad_modifier] = this.normalizeQuadModifier menu_definition.quad_modifier
+
+			if definition_type == #menu then
+			(
+				root_data[#quad_position] = undefined
+			)
+			else
+			(
+				root_data[#quad_position] = menu_definition.quad_position
+			)
+
 			root_data[#quad_menu_id] = this.createGuidString()
+			root_data[#qmnx_clear_directory] = this.qmnx_clear_directory
 			root_data[#quad_menus] = #()
 		)
 
@@ -411,9 +352,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds one quad quadrant data from child MenuDefinition_v.
-	    Output is Dictionary #name used inside #quad_menus array.
-	*/
 	function buildSavedQuadDataFromDefinition quad_definition =
 	(
 		quad_source_data = this.getDefinitionData quad_definition
@@ -428,9 +366,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds saved quad root menu with multiple quadrants.
-	    Definition data must be array of MenuDefinition_v.
-	*/
 	function buildSavedQuadRootDataFromDefinition menu_definition =
 	(
 		root_data = this.createSavedRootData menu_definition #quad
@@ -452,9 +387,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds saved single menu or single quadrant quad root data.
-	    Used when definition data is Dictionary #string.
-	*/
 	function buildSavedSingleRootDataFromDefinition menu_definition definition_type =
 	(
 		root_data = this.createSavedRootData menu_definition definition_type
@@ -471,9 +403,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds saved menu data from one MenuDefinition_v.
-	    Empty title returns undefined.
-	*/
 	function buildSavedMenuDataFromDefinition menu_definition =
 	(
 		menu_data = undefined
@@ -506,9 +435,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds saved menu data array from menus_data.
-	    Invalid menu definitions with empty title are skipped.
-	*/
 	function buildSavedMenusData =
 	(
 		this.saved_menus_data = #()
@@ -527,9 +453,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Loads saved menu data array from JSON.
-	    Missing file returns empty array.
-	*/
 	function loadSavedMenusDataFromJson =
 	(
 		json_io = MenuJsonIO_v()
@@ -537,9 +460,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Saves given menu data array to shared JSON file.
-	    This is low level write method.
-	*/
 	function writeSavedMenusDataToJson menus_data_array =
 	(
 		json_io = MenuJsonIO_v()
@@ -549,9 +469,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Clears shared JSON file.
-	    File stays valid and contains empty menus array.
-	*/
 	function clearJsonFile =
 	(
 		this.saved_menus_data = #()
@@ -563,18 +480,12 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Deletes all menus from JSON file.
-	    Alias for clearJsonFile.
-	*/
 	function deleteAllMenusFromJson =
 	(
 		this.clearJsonFile() -- return
 	),
 
 
-	/*  Gets saved menu type from root data.
-	    Defaults to #menu.
-	*/
 	function getSavedMenuType menu_data =
 	(
 		saved_type = #menu
@@ -591,9 +502,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Gets saved menu title.
-	    Empty title means invalid menu data.
-	*/
 	function getSavedMenuTitle menu_data =
 	(
 		menu_title = ""
@@ -610,18 +518,44 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if saved menu data has title.
-	    Invalid data is skipped.
-	*/
+	function getSavedQuadModifier menu_data =
+	(
+		quad_modifier = undefined
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #quad_modifier then
+			(
+				quad_modifier = this.normalizeQuadModifier menu_data[#quad_modifier]
+			)
+		)
+
+		quad_modifier -- return
+	),
+
+
+	function getSavedQmnxClearDirectory menu_data =
+	(
+		clear_directory = ""
+
+		if this.isDictionaryValue menu_data then
+		(
+			if this.hasDictValueSafe menu_data #qmnx_clear_directory then
+			(
+				clear_directory = menu_data[#qmnx_clear_directory]
+			)
+		)
+
+		clear_directory -- return
+	),
+
+
 	function isValidSavedMenuData menu_data =
 	(
 		this.getSavedMenuTitle menu_data != "" -- return
 	),
 
 
-	/*  Checks if saved root data should be loaded by menu callback.
-	    Only #menu and #both are allowed here.
-	*/
 	function isMenuCallbackData menu_data =
 	(
 		saved_type = this.getSavedMenuType menu_data
@@ -645,9 +579,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if saved root data should be loaded by quad callback.
-	    Only #quad and #both are allowed here.
-	*/
 	function isQuadCallbackData menu_data =
 	(
 		saved_type = this.getSavedMenuType menu_data
@@ -671,9 +602,22 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Gets signature for merge and delete.
-	    Same type and same title replaces previous saved definition.
-	*/
+	function isDefaultQuadInjectionData menu_data =
+	(
+		was_found = false
+
+		if this.isQuadCallbackData menu_data then
+		(
+			if this.getSavedQuadModifier menu_data == #nonePressed then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
 	function getMenuDataSignature menu_data =
 	(
 		signature = ""
@@ -690,9 +634,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if string exists in array.
-	    Used by JSON delete methods.
-	*/
 	function isStringInArray string_array string_value =
 	(
 		was_found = false
@@ -709,9 +650,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Merges old and new saved menu data arrays.
-	    New data replaces old data with same type and title.
-	*/
 	function mergeSavedMenusData old_menus_data new_menus_data =
 	(
 		merged_menus_data = #()
@@ -757,9 +695,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Deletes menu entries from JSON by signatures.
-	    Signatures are built from type and title.
-	*/
 	function deleteMenusFromJsonBySignatures signatures =
 	(
 		old_menus_data = this.loadSavedMenusDataFromJson()
@@ -782,9 +717,77 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds current saved menu data.
-	    No callbacks are registered here.
-	*/
+	function collectDefaultQuadClearPositionsFromMenuData menu_data =
+	(
+		clear_positions = #()
+
+		if this.hasDictValueSafe menu_data #quad_menus then
+		(
+			quad_menus = menu_data[#quad_menus]
+
+			if classOf quad_menus == Array and quad_menus.count > 0 then
+			(
+				for quad_data in quad_menus do
+				(
+					if this.hasDictValueSafe quad_data #quad_position then
+					(
+						append clear_positions quad_data[#quad_position]
+					)
+				)
+			)
+			else
+			(
+				if this.hasDictValueSafe menu_data #quad_position then
+				(
+					append clear_positions menu_data[#quad_position]
+				)
+			)
+		)
+		else
+		(
+			if this.hasDictValueSafe menu_data #quad_position then
+			(
+				append clear_positions menu_data[#quad_position]
+			)
+		)
+
+		clear_positions -- return
+	),
+
+
+	function clearDefaultQuadPositionsForAllData =
+	(
+		clear_positions = #()
+		clear_directory = this.qmnx_clear_directory
+
+		for menu_data in this.saved_menus_data do
+		(
+			if this.isDefaultQuadInjectionData menu_data then
+			(
+				if clear_directory == "" then
+				(
+					clear_directory = this.getSavedQmnxClearDirectory menu_data
+				)
+
+				menu_clear_positions = this.collectDefaultQuadClearPositionsFromMenuData menu_data
+
+				for position_value in menu_clear_positions do
+				(
+					append clear_positions position_value
+				)
+			)
+		)
+
+		if clear_positions.count > 0 then
+		(
+			qmnx_clear = QuadDefaultQmnxClear_v qmnx_clear_directory:clear_directory
+			qmnx_clear.clearPositions clear_positions
+		)
+
+		clear_positions -- return
+	),
+
+
 	function buildMenus =
 	(
 		if this.saved_menus_data.count == 0 then
@@ -796,9 +799,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Saves saved menu data array to JSON file.
-	    Existing JSON is merged by default so separate tools can add own menus.
-	*/
 	function saveJsonData =
 	(
 		json_io = MenuJsonIO_v()
@@ -822,9 +822,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Creates startup loader script text.
-	    Loader reads all menus from JSON and registers manager callbacks.
-	*/
 	function createStartupScriptText =
 	(
 		startup_text = ""
@@ -834,7 +831,8 @@ struct MenuBuildManager_v
 		startup_text += "    Data file: " + this.data_file_path + "\n"
 		startup_text += "*/\n\n"
 
-		startup_text += "global MenuBuildManager\n\n"
+		startup_text += "global MenuBuildManager\n"
+		startup_text += "global MenuRebuilder_qmnx_clear_guard = false\n\n"
 
 		if this.rebuilder_file_path != "" then
 		(
@@ -852,9 +850,9 @@ struct MenuBuildManager_v
 		startup_text += "(\n"
 		startup_text += "\tmenu_json_io = MenuJsonIO_v()\n"
 		startup_text += "\tsaved_menus_data = menu_json_io.loadMenusDataFromJsonFile @\"" + this.data_file_path + "\"\n"
-		startup_text += "\tMenuBuildManager = MenuBuildManager_v saved_menus_data:saved_menus_data merge_existing_data:false\n"
+		startup_text += "\tMenuBuildManager = MenuBuildManager_v saved_menus_data:saved_menus_data merge_existing_data:false qmnx_clear_directory:@\"" + this.qmnx_clear_directory + "\"\n"
 		startup_text += "\tMenuBuildManager.registerCallback()\n"
-		startup_text += "\tformat \"Menu build manager callbacks registered from JSON data.\\n\"\n"
+		startup_text += "\tformat \"MenuBuildManager callbacks registered from JSON data.\\n\"\n"
 		startup_text += ")\n"
 		startup_text += "catch\n"
 		startup_text += "(\n"
@@ -865,9 +863,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Saves startup loader script.
-	    Startup file contains code only, data stays in JSON.
-	*/
 	function saveStartupScript =
 	(
 		startup_text = this.createStartupScriptText()
@@ -882,9 +877,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Loads all normal menus from saved_menus_data.
-	    Called only by #cuiRegisterMenus.
-	*/
 	function loadAllMenus =
 	(
 		menu_manager = callbacks.notificationParam()
@@ -909,36 +901,45 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Loads all quad menus from saved_menus_data.
-	    Called only by #cuiRegisterQuadMenus.
-	*/
 	function loadAllQuadMenus =
 	(
-		quad_menu_manager = callbacks.notificationParam()
+		global MenuRebuilder_qmnx_clear_guard
 
-		if quad_menu_manager == undefined then
+		if MenuRebuilder_qmnx_clear_guard then
 		(
-			format "MenuBuildManager_v.loadAllQuadMenus failed. quad_menu_manager is undefined.\n"
+			format "MenuBuildManager_v.loadAllQuadMenus skipped. QMNX clear guard is active.\n"
+			ok -- return
 		)
 		else
 		(
-			for menu_data in this.saved_menus_data do
+			quad_menu_manager = callbacks.notificationParam()
+
+			if quad_menu_manager == undefined then
 			(
-				if this.isQuadCallbackData menu_data then
+				format "MenuBuildManager_v.loadAllQuadMenus failed. quad_menu_manager is undefined.\n"
+			)
+			else
+			(
+				this.clearDefaultQuadPositionsForAllData()
+
+				for menu_data in this.saved_menus_data do
 				(
-					menu_rebuilder = MenuRebuilder_v menu_data:menu_data
-					menu_rebuilder.rebuildAsQuadMenu quad_menu_manager
+					if this.isQuadCallbackData menu_data then
+					(
+						menu_rebuilder = MenuRebuilder_v \
+							menu_data:menu_data \
+							skip_default_qmnx_clear:true
+
+						menu_rebuilder.rebuildAsQuadMenu quad_menu_manager
+					)
 				)
 			)
-		)
 
-		ok -- return
+			ok -- return
+		)
 	),
 
 
-	/*  Checks if manager needs normal menu callback.
-	    True if any saved data type is #menu or #both.
-	*/
 	function hasMenuCallbackData =
 	(
 		was_found = false
@@ -952,9 +953,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Checks if manager needs quad menu callback.
-	    True if any saved data type is #quad or #both.
-	*/
 	function hasQuadCallbackData =
 	(
 		was_found = false
@@ -968,9 +966,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Registers manager callbacks.
-	    One callback handles all normal menus, one callback handles all quad menus.
-	*/
 	function registerCallback =
 	(
 		global MenuBuildManager
@@ -999,9 +994,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Removes manager callbacks.
-	    Existing already-created menus are not removed here.
-	*/
 	function unregisterCallback =
 	(
 		callbacks.removeScripts id:this.callback_id
@@ -1011,9 +1003,6 @@ struct MenuBuildManager_v
 	),
 
 
-	/*  Builds menus, merges them into JSON, registers callbacks and saves startup loader.
-	    Main manager entry point for all tools.
-	*/
 	function run =
 	(
 		this.buildMenus()

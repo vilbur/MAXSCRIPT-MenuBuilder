@@ -1,4 +1,3 @@
-elf
 rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 (
 	local json_manager = undefined
@@ -22,9 +21,6 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 	button clear_json_button "Clear JSON File" pos:[10,350] width:450 height:28
 
 
-	/*  Creates rollout manager instance.
-	    Uses default shared JSON file path.
-	*/
 	function getManager =
 	(
 		if json_manager == undefined then
@@ -36,12 +32,9 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 	)
 
 
-	/*  Refreshes multilistboxes from JSON file.
-	    Lists normal menus and quad menus separately.
-	*/
 	function refreshLists =
 	(
-		manager_value = getManager()
+		manager_value = this.getManager()
 		json_path_text.text = manager_value.data_file_path
 
 		menu_title_array = #()
@@ -83,9 +76,6 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 	)
 
 
-	/*  Gets selected menu signatures from both multilistboxes.
-	    Signatures are used to delete JSON entries.
-	*/
 	function getSelectedSignatures =
 	(
 		selected_signatures = #()
@@ -110,9 +100,6 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 	)
 
 
-	/*  Deletes selected JSON entries.
-	    Current already-created UI menus are not removed until CUI rebuild/restart.
-	*/
 	function deleteSelectedFromJson =
 	(
 		selected_signatures = this.getSelectedSignatures()
@@ -132,9 +119,6 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 	)
 
 
-	/*  Deletes all JSON entries.
-	    JSON file remains valid with empty menus array.
-	*/
 	function deleteAllFromJson =
 	(
 		if queryBox "Delete all menu and quad menu entries from JSON file?" title:"Menu JSON Manager" then
@@ -150,34 +134,31 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:470 height:390
 
 	on MenuBuildManagerJsonRollout open do
 	(
-		refreshLists()
+		this.refreshLists()
 	)
 
 	on refresh_button pressed do
 	(
-		refreshLists()
+		this.refreshLists()
 	)
 
 	on delete_selected_button pressed do
 	(
-		deleteSelectedFromJson()
+		this.deleteSelectedFromJson()
 	)
 
 	on delete_all_button pressed do
 	(
-		deleteAllFromJson()
+		this.deleteAllFromJson()
 	)
 
 	on clear_json_button pressed do
 	(
-		deleteAllFromJson()
+		this.deleteAllFromJson()
 	)
 )
 
 
-/*  Opens menu JSON manager rollout.
-    Lists menus and quad menus stored in shared JSON file.
-*/
 function openMenuBuildManagerJsonRollout =
 (
 	try
@@ -193,4 +174,5 @@ function openMenuBuildManagerJsonRollout =
 
 	ok -- return
 )
+
 

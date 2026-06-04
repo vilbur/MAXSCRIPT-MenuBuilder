@@ -5,10 +5,16 @@
 --filein( getFilenamePath(getSourceFileName()) + "/MenuCreator/MenuCreator.ms" )	--"./MenuCreator/MenuCreator.ms"
 --
 
+global menu_rebuilder_file_version = 0.15
+global MenuBuildManager
+global MenuRebuilder_qmnx_clear_guard = false
+global QuadDefaultQmnxClear_v
+
 
 /* HEPERS */ 
 filein( getFilenamePath(getSourceFileName()) + "/XmlParser/XmlParser.ms" )	--"./XmlParser/XmlParser.ms"
 filein( getFilenamePath(getSourceFileName()) + "/MenuJsonIO/MenuJsonIO.ms" )	--"./MenuJsonIO/MenuJsonIO.ms"
+filein( getFilenamePath(getSourceFileName()) + "/QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms" )	--"./QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms"
 
 /* LIBRARY */ 
 filein( getFilenamePath(getSourceFileName()) + "/MenuDefinition/MenuDefinition.ms" )	--"./MenuDefinition/MenuDefinition.ms"

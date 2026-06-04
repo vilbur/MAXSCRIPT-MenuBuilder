@@ -1,8 +1,4 @@
 ﻿
-
-/*  Creates new guid string.
-    Used by test helpers.
-*/
 function createMenuRebuilderGuidString =
 (
 	guid_class = dotNetClass "System.Guid"
@@ -12,15 +8,15 @@ function createMenuRebuilderGuidString =
 )
 
 
-/*  Generates and executes mock macroscript definition.
-    Macro prints message when called from menu.
-*/
 function generateMockMacroScript macro_category macro_name =
 (
 	macro_script_text = ""
 	macro_script_text += "macroScript " + macro_name + " category:\"" + macro_category + "\"\n"
 	macro_script_text += "(\n"
-	macro_script_text += "\tprint \"Executed mock macro: " + macro_category + " / " + macro_name + "\"\n"
+	macro_script_text += "\ton execute do\n"
+	macro_script_text += "\t(\n"
+	macro_script_text += "\t\tformat \"Executed mock macro: " + macro_category + " / " + macro_name + "\\n\"\n"
+	macro_script_text += "\t)\n"
 	macro_script_text += ")\n"
 
 	execute macro_script_text
@@ -29,9 +25,6 @@ function generateMockMacroScript macro_category macro_name =
 )
 
 
-/*  Creates simplified test menu dictionary.
-    Key is title string, value is macro array or nested submenu dictionary.
-*/
 function createTestMacroDictionaryLevel level_index item_count:2 submenu_count:1 nested_level_count:1 macro_counter:#(0) macro_category:"_MENU_REBUILDER_TEST_CATEGORY" minimum_submenu_item_count:1 =
 (
 	dictionary_value = Dictionary #string
