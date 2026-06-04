@@ -1,4 +1,4 @@
-﻿clearListener(); print("Cleared in: "+getSourceFileName())
+﻿ clearListener(); print("Cleared in: "+getSourceFileName())
 
 global menu_rebuilder_file_version = 0.08
 global MenuRebuilder

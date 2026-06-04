@@ -6,9 +6,9 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )	--"./../
 */ 
 struct MenuBuildManager_v
 (
-	version = 0.22,
+	version = 0.24,
 	menus_data = #(),
-	build_quee = #(),
+	wait_for_build = #(),
 	saved_menus_data = #(),
 	data_file_name = "MenuRebuilder_data.json",
 	startup_file_name = "MenuRebuilder_startup.ms",
@@ -1433,12 +1433,12 @@ struct MenuBuildManager_v
 	),
 
 
-	/** Add menu data to build queue without creating duplicate references.
+	/** Add menu data to wait-for-build list without creating duplicate references.
 		If menu_data already exists in menus_data, it is already owned by this manager,
-		so it is not queued again. This prevents same growing MenuDefinition_v from
+		so it is not waiting again. This prevents same growing MenuDefinition_v from
 		being built dozens of times and exploding memory.
 	*/
-	function addToBuildQuee menu_data =
+	function waitForBuild menu_data =
 	(
 		if menu_data != undefined then
 		(
@@ -1446,7 +1446,7 @@ struct MenuBuildManager_v
 			(
 				for menu_data_item in menu_data do
 				(
-					this.addToBuildQuee menu_data_item
+					this.waitForBuild menu_data_item
 				)
 			)
 			else
@@ -1460,7 +1460,7 @@ struct MenuBuildManager_v
 				)
 				else
 				(
-					this.build_quee = this.addMenuDefinitionToArrayUnique this.build_quee menu_data
+					this.wait_for_build = this.addMenuDefinitionToArrayUnique this.wait_for_build menu_data
 				)
 			)
 		)
@@ -1469,38 +1469,31 @@ struct MenuBuildManager_v
 	),
 
 
-	/** Correct spelling alias.
-	*/
-	function addToBuildQueue menu_data =
-	(
-		this.addToBuildQuee menu_data -- return
-	),
 
-
-	function clearBuildQuee =
+	function clearWaitForBuild =
 	(
-		this.build_quee = #()
+		this.wait_for_build = #()
 
 		this -- return
 	),
 
 
-	function clearBuildQueue =
+	function clearWaitForBuild =
 	(
-		this.clearBuildQuee() -- return
+		this.clearWaitForBuild() -- return
 	),
 
 
-	function applyBuildQueeToMenusData =
+	function applyWaitForBuildToMenusData =
 	(
-		if this.build_quee.count > 0 then
+		if this.wait_for_build.count > 0 then
 		(
-			for menu_data_item in this.build_quee do
+			for menu_data_item in this.wait_for_build do
 			(
 				this.menus_data = this.addMenuDefinitionToArrayUnique this.menus_data menu_data_item
 			)
 
-			this.build_quee = #()
+			this.wait_for_build = #()
 			this.saved_menus_data = #()
 		)
 
@@ -1561,7 +1554,9 @@ struct MenuBuildManager_v
 			startup_text += ")\n"
 			startup_text += "catch\n"
 			startup_text += "(\n"
-			startup_text += "\tformat \"Failed to fileIn MenuRebuilder file.\\n\"\n"
+			startup_text += "\tstartup_exception = getCurrentException()\n"
+			startup_text += "\tformat \"Failed to fileIn MenuRebuilder file.\\n%\\n\" startup_exception\n"
+			startup_text += "\tthrow startup_exception\n"
 			startup_text += ")\n\n"
 		)
 
@@ -1575,7 +1570,9 @@ struct MenuBuildManager_v
 		startup_text += ")\n"
 		startup_text += "catch\n"
 		startup_text += "(\n"
-		startup_text += "\tformat \"Menu rebuild from JSON failed.\\n\"\n"
+		startup_text += "\tstartup_exception = getCurrentException()\n"
+		startup_text += "\tformat \"Menu rebuild from JSON failed.\\n%\\n\" startup_exception\n"
+		startup_text += "\tthrow startup_exception\n"
 		startup_text += ")\n"
 
 		startup_text -- return
@@ -1726,7 +1723,7 @@ struct MenuBuildManager_v
 		format "\n"; print "MenuBuildManager_v.build()"
 		timer_run = timeStamp()
 
-		this.applyBuildQueeToMenusData()
+		this.applyWaitForBuildToMenusData()
 		this.buildMenus()
 		this.saveJsonData()
 
@@ -1742,13 +1739,13 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 	
-	/** Build queued/current menu definitions and update JSON once.
+	/** Build waiting/current menu definitions and update JSON once.
 	*/
 	function build =
 	(
 		format "\n"; print "MenuBuildManager_v.build()"
 		timer_build = timeStamp()
-		this.applyBuildQueeToMenusData()
+		this.applyWaitForBuildToMenusData()
 		this.saved_menus_data = #()
 
 		this.buildMenus()
@@ -1765,7 +1762,7 @@ struct MenuBuildManager_v
 	(
 		format "\n"; print "MenuBuildManager_v.buildMenu()"
 
-		this.addToBuildQuee menu_data
+		this.waitForBuild menu_data
 		this.build()
 
 		this.saved_menus_data -- return

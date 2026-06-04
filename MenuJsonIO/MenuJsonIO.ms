@@ -766,7 +766,7 @@ struct MenuJsonIO_v
 			)
 		)
 
-		format "load: % ms\n" (( timeStamp()) - timer_load)
+		format "JSON LOAD: % ms\n" (( timeStamp()) - timer_load)
 		
 		menus_data_array -- return
 	),
