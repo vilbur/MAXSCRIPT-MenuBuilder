@@ -5,8 +5,8 @@ global MenuRebuilder
 global MenuBuildManager
 
 /* IMPORT HELPERS */ 
---filein( getFilenamePath(getSourceFileName()) + "/Lib/printHelpers.ms" )	--"./Lib/printHelpers.ms"
---filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLevel.ms" )	--"./Lib/createSavedTestMenuDataLevel.ms"
+filein( getFilenamePath(getSourceFileName()) + "/Lib/printHelpers.ms" )	--"./Lib/printHelpers.ms"
+filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLevel.ms" )	--"./Lib/createSavedTestMenuDataLevel.ms"
 
 
 /* IMPORT LIBRARY */
@@ -108,6 +108,36 @@ function testMenuBuildManagerCustomModifierQuad =
 	saved_menus_data -- return
 )
 
+function testAddItemsToMenu index:undefined =
+(
+	global MenuBuildManager
+
+	for macro_index = 1 to 2 do
+	(
+		generateMockMacroScript "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_" + (macro_index as string))
+	)
+	
+
+	menu_definition = MenuDefinition_v \
+		type:#MENU \
+		title:"_MENU_ADD_ITEMS" \
+
+		
+	if index != undefined then
+	(
+		menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" ("_MENU_REBUILDER_TEST_MACRO_"+index as string ) title:("Custom Quad Item "+index as string )
+		
+	)
+	--menu_definition.addItem "_MENU_REBUILDER_TEST_CATEGORY" "_MENU_REBUILDER_TEST_MACRO_2" title:"Custom Quad Item 2"
+
+	--menu_definition = createTestCustomModifierQuadDefinition()
+	--
+	MenuBuildManager = MenuBuildManager_v menus_data:#(menu_definition)
+	
+	saved_menus_data = MenuBuildManager.run()
+
+	saved_menus_data -- return
+)
 
 function testMenuBuildManagerFromJson =
 (
@@ -131,36 +161,51 @@ function testMenuBuildManagerFromJson =
     SECTION 10: MANUAL TEST CALLS
     ====================================================================================================
 
-    -- Injects into existing Default Viewport Quad:
+
+	------ ADD ITEMS ONE BY ONE
+	testAddItemsToMenu()
+	testAddItemsToMenu index:1
+	testAddItemsToMenu index:2
+	
+
+
+    ------ Injects into existing Default Viewport Quad:
     saved_menus_data = testMenuBuildManagerDefaultQuadInject()
 
-    -- Creates custom Ctrl+Shift+RMB quad:
+    ------ Creates custom Ctrl+Shift+RMB quad:
     saved_menus_data = testMenuBuildManagerCustomModifierQuad()
 
-    -- Reload from JSON:
+    ------ Reload from JSON:
     saved_menus_data = testMenuBuildManagerFromJson()
 
-    -- Open JSON manager:
+    ------ Open JSON manager:
     openMenuBuildManagerJsonRollout()
 
-    -- Clear JSON:
+    ------ Clear JSON:
     menu_manager = MenuBuildManager_v()
     menu_manager.clearJsonFile()
 
-    -- Debug qmnx roots:
+    ------ Debug qmnx roots:
     qmnx_clear = QuadDefaultQmnxClear_v()
     qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\topRight-clear.qmnx"
     qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
 
-*/
 
+*/
+	
+	testAddItemsToMenu()
+	testAddItemsToMenu index:1
+	testAddItemsToMenu index:2
+	
 
     -- Injects into existing Default Viewport Quad:
-    saved_menus_data = testMenuBuildManagerDefaultQuadInject()
+    --saved_menus_data = testMenuBuildManagerDefaultQuadInject()
     --
     ---- Creates custom Ctrl+Shift+RMB quad:
     --saved_menus_data = testMenuBuildManagerCustomModifierQuad()
-    --
+	
+
+	
     ---- Reload from JSON:
     --saved_menus_data = testMenuBuildManagerFromJson()
     --

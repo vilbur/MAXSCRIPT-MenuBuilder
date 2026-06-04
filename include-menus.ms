@@ -12,7 +12,7 @@ global QuadDefaultQmnxClear_v
 
 
 /* HEPERS */ 
-filein( getFilenamePath(getSourceFileName()) + "/XmlParser/XmlParser.ms" )	--"./XmlParser/XmlParser.ms"
+--filein( getFilenamePath(getSourceFileName()) + "/XmlParser/XmlParser.ms" )	--"./XmlParser/XmlParser.ms"
 filein( getFilenamePath(getSourceFileName()) + "/MenuJsonIO/MenuJsonIO.ms" )	--"./MenuJsonIO/MenuJsonIO.ms"
 filein( getFilenamePath(getSourceFileName()) + "/QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms" )	--"./QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms"
 
