@@ -1,14 +1,14 @@
 /*
 	MenuDefinition_v
-	Version: 0.42
-	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, and quad-safe addMenu flattening.
+	Version: 0.43
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, and deferred menu reference resolving.
 */
 
 global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.42,
+	version = 0.44,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -34,6 +34,8 @@ struct MenuDefinition_v
 
 		guid_value.ToString() -- return
 	),
+
+
 
 
 	/*
@@ -340,9 +342,35 @@ struct MenuDefinition_v
 
 		submenu_data[#id] = submenu_id
 		submenu_data[#title] = submenu_title
+		submenu_data[#source_menu_title] = submenu_title
 		submenu_data[#items] = submenu_items
 
 		submenu_data -- return
+	),
+
+
+	/*
+	Create unresolved flat menu reference.
+	Used when addMenu flat:true is called before target menu items are available.
+	MenuBuildManager resolves this into real copied items during build.
+	*/
+	function makeFlatMenuReferenceData menu_title id:undefined =
+	(
+		flat_menu_data = Dictionary #name
+		flat_menu_id = id
+
+		if flat_menu_id == undefined then
+		(
+			flat_menu_id = this.createGuidString()
+		)
+
+		flat_menu_data[#id] = flat_menu_id
+		flat_menu_data[#title] = menu_title
+		flat_menu_data[#source_menu_title] = menu_title
+		flat_menu_data[#items] = #()
+		flat_menu_data[#flat_menu_reference] = true
+
+		flat_menu_data -- return
 	),
 
 
@@ -572,14 +600,43 @@ struct MenuDefinition_v
 	Append existing menu items into this menu.
 	Used by addMenu flat:true.
 	*/
-	function appendExistingMenuItems menu_title =
+	function appendExistingMenuItems menu_title index:undefined =
 	(
 		target_items = this.ensureItemsArray()
 		source_items = this.loadExistingMenuItems menu_title
 
-		for source_item in source_items do
+		if source_items.count > 0 then
 		(
-			append target_items (this.cloneValue source_item)
+			insert_index = index
+
+			for source_item in source_items do
+			(
+				copied_item = this.cloneValue source_item
+
+				if insert_index == undefined then
+				(
+					append target_items copied_item
+				)
+				else
+				(
+					if insert_index < 1 then
+					(
+						insert_index = 1
+					)
+
+					if insert_index > target_items.count + 1 then
+					(
+						insert_index = target_items.count + 1
+					)
+
+					insertItem copied_item target_items insert_index
+					insert_index += 1
+				)
+			)
+		)
+		else
+		(
+			this.appendSavedItem (this.makeFlatMenuReferenceData menu_title) index:index
 		)
 
 		target_items -- return
@@ -627,7 +684,7 @@ struct MenuDefinition_v
 
 		if effective_flat then
 		(
-			this.appendExistingMenuItems menu_title
+			this.appendExistingMenuItems menu_title index:index
 			result_data = this
 		)
 		else

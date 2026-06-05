@@ -1,7 +1,7 @@
 fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.48
+	MenuBuildManager_v 0.51
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -10,7 +10,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.48,
+	version = 0.51,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -32,6 +32,7 @@ struct MenuBuildManager_v
 	native_data_io_file_path = "",
 	custom_menu_root_title = "_Custom-Menus",
 	custom_menu_root_id = "4a93a53d-8cf7-4d16-b217-8fe6c2b9d6f1",
+	title_alias_category = "_MenuBuilder_Title_Aliases",
 	main_menu_bar_title = "Main Menu Bar",
 	startup_file_name = "MenuRebuilder_startup.ms",
 	data_file_path = "",
@@ -604,15 +605,159 @@ struct MenuBuildManager_v
 	),
 
 
+	function getMenuItemSourceTitle item_data =
+	(
+		source_title = this.getSavedItemTitle item_data
+
+		if this.hasDictValueSafe item_data #source_menu_title then
+		(
+			source_title = item_data[#source_menu_title]
+		)
+
+		source_title -- return
+	),
+
+
+	function isFlatMenuReferenceItem item_data =
+	(
+		was_found = false
+
+		if this.hasDictValueSafe item_data #flat_menu_reference then
+		(
+			if item_data[#flat_menu_reference] == true then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function getMenuItemsFromRootDataByTitle menu_title root_menus_data =
+	(
+		menu_items = #()
+		found_menu_data = this.findSavedMenuDataByTitleInArray menu_title root_menus_data
+
+		if found_menu_data != undefined then
+		(
+			if this.hasDictValueSafe found_menu_data #items then
+			(
+				menu_items = this.cloneArrayValue found_menu_data[#items]
+			)
+		)
+
+		menu_items -- return
+	),
+
+
+	function resolveMenuReferencesInItems source_items root_menus_data =
+	(
+		resolved_items = #()
+
+		if this.isArrayValue source_items then
+		(
+			for source_item in source_items do
+			(
+				if this.isDictionaryValue source_item then
+				(
+					if this.isFlatMenuReferenceItem source_item then
+					(
+						reference_title = this.getMenuItemSourceTitle source_item
+						reference_items = this.getMenuItemsFromRootDataByTitle reference_title root_menus_data
+
+						for reference_item in reference_items do
+						(
+							append resolved_items (this.cloneValue reference_item)
+						)
+					)
+					else
+					(
+						resolved_item = this.cloneValue source_item
+
+						if this.hasDictValueSafe resolved_item #items then
+						(
+							if resolved_item[#items].count == 0 then
+							(
+								reference_title = this.getMenuItemSourceTitle resolved_item
+								reference_items = this.getMenuItemsFromRootDataByTitle reference_title root_menus_data
+
+								if reference_items.count > 0 then
+								(
+									resolved_item[#items] = reference_items
+								)
+							)
+
+							resolved_item[#items] = this.resolveMenuReferencesInItems resolved_item[#items] root_menus_data
+						)
+
+						append resolved_items resolved_item
+					)
+				)
+			)
+		)
+
+		resolved_items -- return
+	),
+
+
+	function resolveMenuReferencesInMenuData menu_data root_menus_data =
+	(
+		resolved_menu_data = this.cloneValue menu_data
+
+		if this.hasDictValueSafe resolved_menu_data #items then
+		(
+			resolved_menu_data[#items] = this.resolveMenuReferencesInItems resolved_menu_data[#items] root_menus_data
+		)
+
+		if this.hasDictValueSafe resolved_menu_data #quad_menus then
+		(
+			if this.isArrayValue resolved_menu_data[#quad_menus] then
+			(
+				for quad_data in resolved_menu_data[#quad_menus] do
+				(
+					if this.hasDictValueSafe quad_data #items then
+					(
+						quad_data[#items] = this.resolveMenuReferencesInItems quad_data[#items] root_menus_data
+					)
+				)
+			)
+		)
+
+		resolved_menu_data -- return
+	),
+
+
+	function resolveMenuReferencesInMenusData menus_data_array =
+	(
+		resolved_menus_data = #()
+
+		for menu_data in menus_data_array do
+		(
+			append resolved_menus_data (this.resolveMenuReferencesInMenuData menu_data menus_data_array)
+		)
+
+		resolved_menus_data -- return
+	),
+
+
 	function buildSavedMenusData =
 	(
 		this.saved_menus_data = #()
+
 		for menu_definition in this.menus_data do
 		(
 			menu_data = this.buildSavedMenuDataFromDefinition menu_definition
-			if menu_data != undefined then append this.saved_menus_data menu_data
+
+			if menu_data != undefined then
+			(
+				append this.saved_menus_data menu_data
+			)
 		)
+
+		this.saved_menus_data = this.resolveMenuReferencesInMenusData this.saved_menus_data
 		this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
+
 		this.saved_menus_data -- return
 	),
 
@@ -1604,6 +1749,190 @@ struct MenuBuildManager_v
 	),
 
 
+
+	function escapeMaxScriptString source_value =
+	(
+		escaped_text = source_value as string
+		escaped_text = substituteString escaped_text "\\" "\\\\"
+		escaped_text = substituteString escaped_text "\"" "\\\""
+		escaped_text = substituteString escaped_text "\r" " "
+		escaped_text = substituteString escaped_text "\n" " "
+
+		escaped_text -- return
+	),
+
+
+	function sanitizeMacroScriptIdentifier source_text =
+	(
+		source_value = source_text as string
+		safe_text = ""
+		allowed_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
+		number_chars = "0123456789"
+
+		for character_index = 1 to source_value.count do
+		(
+			character_text = substring source_value character_index 1
+
+			if findString allowed_chars character_text != undefined then
+			(
+				safe_text += character_text
+			)
+			else
+			(
+				safe_text += "_"
+			)
+		)
+
+		if safe_text == "" then
+		(
+			safe_text = "TitleAlias"
+		)
+
+		first_character = substring safe_text 1 1
+
+		if findString number_chars first_character != undefined then
+		(
+			safe_text = "_" + safe_text
+		)
+
+		safe_text -- return
+	),
+
+
+	function makeTitleAliasMacroName item_data =
+	(
+		item_id = this.getMenuDataValue item_data #id (this.createGuidString())
+		alias_macro_name = "MenuBuilder_TitleAlias_" + (this.sanitizeMacroScriptIdentifier item_id)
+
+		alias_macro_name -- return
+	),
+
+
+	function shouldCreateTitleAliasMacro item_data =
+	(
+		should_create = false
+
+		if this.isMacroItemData item_data then
+		(
+			item_title = this.getMenuDataValue item_data #title ""
+			macro_category = this.getMenuDataValue item_data #category ""
+			macro_name = this.getMenuDataValue item_data #macro ""
+
+			if item_title != "" then
+			(
+				if macro_category != "" then
+				(
+					if macro_name != "" then
+					(
+						should_create = true
+					)
+				)
+			)
+		)
+
+		should_create -- return
+	),
+
+
+	function createTitleAliasMacro item_data =
+	(
+		alias_created = false
+
+		if this.shouldCreateTitleAliasMacro item_data then
+		(
+			item_title = this.getMenuDataValue item_data #title ""
+			macro_category = this.getMenuDataValue item_data #category ""
+			macro_name = this.getMenuDataValue item_data #macro ""
+			alias_macro_name = this.makeTitleAliasMacroName item_data
+			escaped_title = this.escapeMaxScriptString item_title
+			escaped_source_category = this.escapeMaxScriptString macro_category
+			escaped_source_macro = this.escapeMaxScriptString macro_name
+			escaped_alias_category = this.escapeMaxScriptString this.title_alias_category
+
+			quote_text = "\""
+			macro_text = ""
+			macro_text += "macroScript " + alias_macro_name + "\n"
+			macro_text += "category:" + quote_text + escaped_alias_category + quote_text + "\n"
+			macro_text += "toolTip:" + quote_text + escaped_title + quote_text + "\n"
+			macro_text += "buttonText:" + quote_text + escaped_title + quote_text + "\n"
+			macro_text += "(\n"
+			macro_text += "\ton execute do\n"
+			macro_text += "\t(\n"
+			macro_text += "\t\tmacros.run " + quote_text + escaped_source_category + quote_text + " " + quote_text + escaped_source_macro + quote_text + "\n"
+			macro_text += "\t)\n"
+			macro_text += ")\n"
+
+			try
+			(
+				execute macro_text
+				item_data[#source_category] = macro_category
+				item_data[#source_macro] = macro_name
+				item_data[#category] = this.title_alias_category
+				item_data[#macro] = alias_macro_name
+				item_data[#title_alias_applied] = true
+				alias_created = true
+			)
+			catch
+			(
+				format "MenuBuildManager_v.createTitleAliasMacro failed for title: %\n" item_title
+			)
+		)
+
+		alias_created -- return
+	),
+
+
+	function applyTitleAliasesToItems ordered_items =
+	(
+		if this.isArrayValue ordered_items then
+		(
+			for item_data in ordered_items do
+			(
+				if this.isDictionaryValue item_data then
+				(
+					if this.isSubMenuData item_data then
+					(
+						if this.hasDictValueSafe item_data #items then
+						(
+							this.applyTitleAliasesToItems item_data[#items]
+						)
+					)
+					else
+					(
+						this.createTitleAliasMacro item_data
+					)
+				)
+			)
+		)
+
+		ordered_items -- return
+	),
+
+
+	function applyTitleAliasesToMenuData menu_data =
+	(
+		if this.hasDictValueSafe menu_data #items then
+		(
+			this.applyTitleAliasesToItems menu_data[#items]
+		)
+
+		if this.hasDictValueSafe menu_data #quad_menus then
+		(
+			if this.isArrayValue menu_data[#quad_menus] then
+			(
+				for quad_data in menu_data[#quad_menus] do
+				(
+					if this.hasDictValueSafe quad_data #items then
+					(
+						this.applyTitleAliasesToItems quad_data[#items]
+					)
+				)
+			)
+		)
+
+		menu_data -- return
+	),
+
 	function createLegacyItemDictionaryForRebuilder ordered_items =
 	(
 		legacy_items = Dictionary #string
@@ -1646,6 +1975,7 @@ struct MenuBuildManager_v
 	function createRebuilderCompatibleMenuData menu_data =
 	(
 		rebuilder_menu_data = this.cloneValue menu_data
+		rebuilder_menu_data = this.applyTitleAliasesToMenuData rebuilder_menu_data
 
 		if this.hasDictValueSafe rebuilder_menu_data #items then
 		(
