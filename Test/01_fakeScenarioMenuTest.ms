@@ -189,7 +189,10 @@ function runMenuBuilderWorkflowScenarioTest =
 	
 	resetMenuDefinitionItems menu_2_submenu
 	addItemToMenuLike menu_2_submenu category_name macro_5 "Menu2 Submenu Item 1"
+
 	
+	menu_3 = MenuBuildManager.menu "_WORKFLOW_MENU_3" type:#menu
+
 	/*  3) Create new custom quad on CTRL+SHIFT.
 		Quad 1: flattened menu1.
 		Quad 2: custom item + menu2.
@@ -218,21 +221,26 @@ function runMenuBuilderWorkflowScenarioTest =
 	default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
 	default_quad.quad_modifier = #nonePressed
 	
+	/* ITEM IS ADDED OK */ 
 	default_quad_1 = default_quad.getQuad 1
-	default_quad_1.addItem category_name macro_7 title:"Default Quad Added Item"
+	default_quad_1.addItem category_name macro_1 title:"Default Quad Added Item"
 	
 	default_quad_2 = default_quad.getQuad 2
 	resetMenuDefinitionItems default_quad_2
-	default_quad_2.addMenu "_WORKFLOW_MENU_1"
+	default_quad_2.addItem category_name macro_2 title:"Default Quad Added Item"
+	/* MENU IS ADDED BUT NOT SHOWN IN MENU */ 
+	default_quad_2.addMenu "_WORKFLOW_MENU_2"
 	
 	default_quad_3 = default_quad.getQuad 3
 	resetMenuDefinitionItems default_quad_3
-	default_quad_3.addMenu "_WORKFLOW_MENU_2"
+	/* MENU IS ADDED BUT NOT SHOWN IN MENU */ 
+	default_quad_3.addMenu "_WORKFLOW_MENU_3"
 	
 	/*  Save all menus and quads.
 	*/
 	MenuBuildManager.waitForBuild menu_1
 	MenuBuildManager.waitForBuild menu_2
+	MenuBuildManager.waitForBuild menu_3
 	MenuBuildManager.waitForBuild custom_quad
 	MenuBuildManager.waitForBuild default_quad
 	

@@ -56,14 +56,14 @@ struct QuadDefaultQmnxClear_v
 
 		candidate_paths = #()
 
-		if source_directory != "" then
-		(
-			append candidate_paths (source_directory + "qmnx")
-			append candidate_paths (source_directory + "MenuRebuilder\\qmnx")
-		)
+		--if source_directory != "" then
+		--(
+		--	append candidate_paths (source_directory + "qmnx")
+		--	append candidate_paths (source_directory + "MenuRebuilder\\qmnx")
+		--)
 
-		append candidate_paths (getDir #userScripts + "\\MAXSCRIPT-MenuBuilder\\MenuRebuilder\\qmnx")
-		append candidate_paths (getDir #userScripts + "\\MenuRebuilder\\qmnx")
+		append candidate_paths (getDir #userScripts + "\\MAXSCRIPT-MenuBuilder\\Data\\qmnx")
+		--append candidate_paths (getDir #userScripts + "\\MenuRebuilder\\qmnx")
 
 		clear_directory = candidate_paths[candidate_paths.count]
 
@@ -152,7 +152,7 @@ struct QuadDefaultQmnxClear_v
 	(
 		user_data_directory = this.ensureUserDataDirectory()
 		merged_file_path = user_data_directory + "\\" + this.merged_clear_file_name
-
+		f
 		this.normalizePath merged_file_path -- return
 	),
 

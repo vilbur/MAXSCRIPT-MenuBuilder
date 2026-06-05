@@ -1,14 +1,14 @@
 /*
 	MenuDefinition_v
-	Version: 0.41
-	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, and title aliases.
+	Version: 0.42
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, and quad-safe addMenu flattening.
 */
 
 global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.41,
+	version = 0.42,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -516,19 +516,51 @@ struct MenuDefinition_v
 		(
 			try
 			(
-				saved_menu_data = menu_manager.findSavedMenuDataByTitle menu_title
+				menu_definition = menu_manager.findMenuDefinitionByTitle menu_title
 
-				if saved_menu_data != undefined then
+				if menu_definition != undefined then
 				(
-					if menu_manager.hasDictValueSafe saved_menu_data #items then
+					try
 					(
-						menu_items = this.cloneArrayValue saved_menu_data[#items]
+						definition_items = menu_definition.getActiveData()
+
+						if this.isArrayValue definition_items then
+						(
+							menu_items = this.cloneArrayValue definition_items
+						)
+					)
+					catch
+					(
+						menu_items = #()
 					)
 				)
 			)
 			catch
 			(
 				menu_items = #()
+			)
+		)
+
+		if menu_items.count == 0 then
+		(
+			if menu_manager != undefined then
+			(
+				try
+				(
+					saved_menu_data = menu_manager.findSavedMenuDataByTitle menu_title
+
+					if saved_menu_data != undefined then
+					(
+						if menu_manager.hasDictValueSafe saved_menu_data #items then
+						(
+							menu_items = this.cloneArrayValue saved_menu_data[#items]
+						)
+					)
+				)
+				catch
+				(
+					menu_items = #()
+				)
 			)
 		)
 
@@ -558,30 +590,49 @@ struct MenuDefinition_v
 	Add submenu or flattened existing menu.
 	Returns MenuDefinition_v for submenu when flat:false.
 	*/
+	function addSubMenu menu_title index:undefined =
+	(
+		submenu_items = this.loadExistingMenuItems menu_title
+		submenu_data = this.makeSubMenuItemData menu_title submenu_items
+		this.appendSavedItem submenu_data index:index
+
+		submenu_definition = MenuDefinition_v \
+			type:#menu \
+			title:menu_title \
+			data:submenu_items \
+			_data:submenu_items \
+			manager:(this.getManager()) \
+			parent_item_data:submenu_data \
+			qmnx_clear_directory:this.qmnx_clear_directory \
+			clear_default_menu:this.clear_default_menu
+
+		submenu_definition -- return
+	),
+
+
+	/*
+	Add existing menu.
+	Main menus use submenu by default.
+	Quad menus flatten by default because nested menu references can exist in the editor but do not show in the runtime quad popup.
+	*/
 	function addMenu menu_title flat:false index:undefined =
 	(
 		result_data = undefined
+		effective_flat = flat
 
-		if flat then
+		if this.type == #quad then
+		(
+			effective_flat = true
+		)
+
+		if effective_flat then
 		(
 			this.appendExistingMenuItems menu_title
 			result_data = this
 		)
 		else
 		(
-			submenu_items = this.loadExistingMenuItems menu_title
-			submenu_data = this.makeSubMenuItemData menu_title submenu_items
-			this.appendSavedItem submenu_data index:index
-
-			result_data = MenuDefinition_v \
-				type:#menu \
-				title:menu_title \
-				data:submenu_items \
-				_data:submenu_items \
-				manager:(this.getManager()) \
-				parent_item_data:submenu_data \
-				qmnx_clear_directory:this.qmnx_clear_directory \
-				clear_default_menu:this.clear_default_menu
+			result_data = this.addSubMenu menu_title index:index
 		)
 
 		result_data -- return
@@ -590,11 +641,11 @@ struct MenuDefinition_v
 
 	/*
 	OOP-friendly submenu getter/creator.
-	Alias for addMenu flat:false.
+	Creates a real submenu definition. In quad runtime, prefer addMenu() because addMenu() flattens menu items into the quad.
 	*/
 	function menu menu_title index:undefined =
 	(
-		submenu_definition = this.addMenu menu_title flat:false index:index
+		submenu_definition = this.addSubMenu menu_title index:index
 
 		submenu_definition -- return
 	),
