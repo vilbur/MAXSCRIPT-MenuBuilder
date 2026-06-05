@@ -1,7 +1,7 @@
 fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.45
+	MenuBuildManager_v 0.47
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -10,7 +10,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.45,
+	version = 0.47,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -1877,6 +1877,286 @@ struct MenuBuildManager_v
 		)
 
 		quad_menu_definition -- return
+	),
+
+
+	function getCurrentCuiMenuManager =
+	(
+		menu_manager = undefined
+
+		try
+		(
+			menu_manager = maxOps.GetICuiMenuMgr()
+		)
+		catch
+		(
+			menu_manager = undefined
+		)
+
+		menu_manager -- return
+	),
+
+	function getCurrentCuiQuadMenuManager =
+	(
+		quad_menu_manager = undefined
+
+		try
+		(
+			quad_menu_manager = maxOps.GetICuiQuadMenuMgr()
+		)
+		catch
+		(
+			quad_menu_manager = undefined
+		)
+
+		quad_menu_manager -- return
+	),
+
+
+	function rebuildVisibleMainMenusNow =
+	(
+		visible_update_ok = false
+		menu_manager = this.getCurrentCuiMenuManager()
+
+		if menu_manager == undefined then
+		(
+			format "MenuBuildManager_v.rebuildVisibleMainMenusNow failed. CUI menu manager is undefined.\n"
+		)
+		else
+		(
+			if this.saved_menus_data.count == 0 then
+			(
+				this.saved_menus_data = this.loadSavedMenusDataFromJson()
+			)
+
+			this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
+
+			for menu_data in this.saved_menus_data do
+			(
+				if this.isMenuCallbackData menu_data then
+				(
+					menu_rebuilder = MenuRebuilder_v menu_data:(this.createRebuilderCompatibleMenuData menu_data)
+					menu_rebuilder.rebuildAsMainMenu menu_manager
+				)
+			)
+
+			visible_update_ok = true
+		)
+
+		visible_update_ok -- return
+	),
+
+
+	function rebuildVisibleQuadMenusNow =
+	(
+		visible_update_ok = false
+		quad_menu_manager = this.getCurrentCuiQuadMenuManager()
+
+		if quad_menu_manager == undefined then
+		(
+			format "MenuBuildManager_v.rebuildVisibleQuadMenusNow failed. CUI quad menu manager is undefined.\n"
+		)
+		else
+		(
+			if this.saved_menus_data.count == 0 then
+			(
+				this.saved_menus_data = this.loadSavedMenusDataFromJson()
+			)
+
+			this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
+			this.clearDefaultQuadPositionsForAllData()
+
+			for menu_data in this.saved_menus_data do
+			(
+				if this.isQuadCallbackData menu_data then
+				(
+					menu_rebuilder = MenuRebuilder_v menu_data:(this.createRebuilderCompatibleMenuData menu_data) skip_default_qmnx_clear:true
+					menu_rebuilder.rebuildAsQuadMenu quad_menu_manager
+				)
+			)
+
+			visible_update_ok = true
+		)
+
+		visible_update_ok -- return
+	),
+
+
+	function updateVisibleMenuBarNow =
+	(
+		update_ok = false
+		menu_manager = this.getCurrentCuiMenuManager()
+
+		if menu_manager != undefined then
+		(
+			try
+			(
+				menu_manager.updateMenuBar()
+				update_ok = true
+			)
+			catch
+			(
+				ok
+			)
+		)
+
+		if not update_ok then
+		(
+			try
+			(
+				cui.updateMenuBar()
+				update_ok = true
+			)
+			catch
+			(
+				ok
+			)
+		)
+
+		try
+		(
+			windows.processPostedMessages()
+			update_ok = true
+		)
+		catch
+		(
+			ok
+		)
+
+		update_ok -- return
+	),
+
+	function saveCurrentCuiConfiguration =
+	(
+		save_ok = false
+		menu_manager = this.getCurrentCuiMenuManager()
+		quad_menu_manager = this.getCurrentCuiQuadMenuManager()
+
+		if menu_manager != undefined then
+		(
+			try
+			(
+				menu_manager.saveConfiguration()
+				save_ok = true
+			)
+			catch
+			(
+				ok
+			)
+
+			if not save_ok then
+			(
+				try
+				(
+					menu_manager.saveConfig()
+					save_ok = true
+				)
+				catch
+				(
+					ok
+				)
+			)
+
+			if not save_ok then
+			(
+				try
+				(
+					menu_manager.saveMenuFile()
+					save_ok = true
+				)
+				catch
+				(
+					ok
+				)
+			)
+		)
+
+		if quad_menu_manager != undefined then
+		(
+			try
+			(
+				quad_menu_manager.saveConfiguration()
+				save_ok = true
+			)
+			catch
+			(
+				ok
+			)
+
+			try
+			(
+				quad_menu_manager.saveConfig()
+				save_ok = true
+			)
+			catch
+			(
+				ok
+			)
+
+			try
+			(
+				quad_menu_manager.saveMenuFile()
+				save_ok = true
+			)
+			catch
+			(
+				ok
+			)
+		)
+
+		if not save_ok then
+		(
+			try
+			(
+				cui.saveConfig()
+				save_ok = true
+			)
+			catch
+			(
+				ok
+			)
+		)
+
+		if not save_ok then
+		(
+			format "MenuBuildManager_v.saveCurrentCuiConfiguration could not save CUI/menu configuration through maxOps CUI managers.\n"
+		)
+
+		save_ok -- return
+	),
+
+	function installMenusNow save_cui_configuration:true update_quads:true =
+	(
+		format "\n"
+		print "MenuBuildManager_v.installMenusNow()"
+
+		this.build()
+		this.registerCallback()
+
+		main_menu_updated = this.rebuildVisibleMainMenusNow()
+		quad_menu_updated = false
+
+		if update_quads then
+		(
+			quad_menu_updated = this.rebuildVisibleQuadMenusNow()
+		)
+
+		this.updateVisibleMenuBarNow()
+
+		if save_cui_configuration then
+		(
+			this.saveCurrentCuiConfiguration()
+		)
+
+		format "installMenusNow finished. Main menu updated: %, Quad menu updated: %\n" main_menu_updated quad_menu_updated
+
+		this.saved_menus_data -- return
+	),
+
+
+	function installAndShow save_cui_configuration:true update_quads:true =
+	(
+		this.installMenusNow save_cui_configuration:save_cui_configuration update_quads:update_quads -- return
 	),
 
 	function buildMenu menu_data =
