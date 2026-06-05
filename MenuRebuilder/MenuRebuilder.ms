@@ -1,7 +1,7 @@
 
 struct MenuRebuilder_v
 (
-	version = 0.18,
+	version = 0.20,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -117,7 +117,59 @@ struct MenuRebuilder_v
 		separator_item -- return
 	),
 
+	function createRealCuiSubMenu parent_menu item_id submenu_title =
+	(
+		submenu_menu = undefined
 
+		if parent_menu != undefined then
+		(
+			try
+			(
+				submenu_menu = parent_menu.CreateSubMenu item_id submenu_title
+			)
+			catch
+			(
+				submenu_menu = undefined
+			)
+		)
+
+		submenu_menu -- return
+	),
+
+	function createRealCuiAction parent_menu item_id macro_category macro_name item_title =
+	(
+		created_item = undefined
+		persistent_action_id = this.getMacroActionId macro_category macro_name
+
+		if parent_menu != undefined then
+		(
+			if item_title != undefined and item_title != "" then
+			(
+				try
+				(
+					created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id item_title
+				)
+				catch
+				(
+					created_item = undefined
+				)
+			)
+
+			if created_item == undefined then
+			(
+				try
+				(
+					created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id
+				)
+				catch
+				(
+					created_item = undefined
+				)
+			)
+		)
+
+		created_item -- return
+	),
 
 	function isDictionaryValue value =
 	(
@@ -420,7 +472,7 @@ struct MenuRebuilder_v
 			submenu_title = item_data[#title]
 			submenu_items = item_data[#items]
 
-			submenu_menu = parent_menu.CreateSubMenu saved_guid submenu_title
+			submenu_menu = this.createRealCuiSubMenu parent_menu saved_guid submenu_title
 			created_item = submenu_menu
 
 			if submenu_menu != undefined then
@@ -432,9 +484,14 @@ struct MenuRebuilder_v
 		(
 			macro_category = item_data[#category]
 			macro_name = item_data[#macro]
-			persistent_action_id = this.getMacroActionId macro_category macro_name
+			item_title = ""
 
-			created_item = parent_menu.CreateAction saved_guid this.macro_action_table_id persistent_action_id
+			if this.hasDictValueSafe item_data #title then
+			(
+				item_title = item_data[#title]
+			)
+
+			created_item = this.createRealCuiAction parent_menu saved_guid macro_category macro_name item_title
 		)
 		else
 		(
@@ -443,7 +500,6 @@ struct MenuRebuilder_v
 
 		created_item -- return
 	),
-
 
 	function rebuildMenuItems parent_menu saved_items =
 	(
@@ -454,7 +510,7 @@ struct MenuRebuilder_v
 			for item_index = 1 to saved_items.count do
 			(
 				item_data = saved_items[item_index]
-				fallback_id = this.createGuidString()
+				fallback_id = this.getMenuItemBuildId item_data (this.createGuidString())
 				this.rebuildSingleMenuItem parent_menu item_data fallback_id
 			)
 
@@ -479,7 +535,6 @@ struct MenuRebuilder_v
 
 		build_ok -- return
 	),
-
 
 	function deleteMainMenu main_menu_bar =
 	(

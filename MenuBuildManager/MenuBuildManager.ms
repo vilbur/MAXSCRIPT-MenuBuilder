@@ -10,7 +10,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.57,
+	version = 0.58,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -2801,23 +2801,51 @@ struct MenuBuildManager_v
 			load_default_cui_configuration = this.load_default_cui_configuration_before_install
 		)
 
-		if load_default_cui_configuration then
-		(
-			this.loadDefaultCuiConfiguration load_menus:true load_quads:update_quads
-		)
+		/*
+		Important order for 3ds Max 2026:
+		1) build and save data
+		2) register callbacks
+		3) load/reload CUI configuration
 
+		#cuiRegisterMenus and #cuiRegisterQuadMenus are fired during LoadConfiguration.
+		If LoadConfiguration is called before registerCallback(), menus are created only in the
+		manual fallback path and can stay invisible/stale until Menu Editor is opened.
+		*/
 		this.build()
 		this.registerCallback()
 
-		main_menu_updated = this.rebuildVisibleMainMenusNow()
+		main_menu_updated = false
 		quad_menu_updated = false
 
-		if update_quads then
+		if load_default_cui_configuration then
 		(
-			quad_menu_updated = this.rebuildVisibleQuadMenusNow()
+			main_menu_updated = this.loadDefaultCuiMenuConfiguration()
+
+			if update_quads then
+			(
+				quad_menu_updated = this.loadDefaultCuiQuadConfiguration()
+			)
+		)
+		else
+		(
+			main_menu_updated = this.rebuildVisibleMainMenusNow()
+
+			if update_quads then
+			(
+				quad_menu_updated = this.rebuildVisibleQuadMenusNow()
+			)
 		)
 
 		this.updateVisibleMenuBarNow()
+
+		try
+		(
+			windows.processPostedMessages()
+		)
+		catch
+		(
+			ok
+		)
 
 		if save_cui_configuration then
 		(
