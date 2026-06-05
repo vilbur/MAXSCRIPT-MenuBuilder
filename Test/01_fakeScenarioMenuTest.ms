@@ -166,21 +166,21 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 		quad_2 = default_quad.getQuad 2
 
 		quad_2.addSeparator()
-		quad_2.addItem this.category_name (this.makeMacroName (this.getQuadItemMacroIndex 2)) title:"Quad 2 Direct Item"
+		quad_2.addItem this.category_name "Test_macro_1" title:"Quad 2 Direct Item"
 		quad_2.addMenu (this.makeMenuTitle 2) flat:true
 
 		/* 3) Clear quad 3 and add item and menu. */
 		quad_3 = default_quad.getQuad 3
 		this.resetMenuDefinitionItems quad_3
 		
-		quad_3.addItem this.category_name (this.makeMacroName (this.getQuadItemMacroIndex 3)) title:"Quad 3 Direct Item After Clear"
+		quad_3.addItem this.category_name "Test_macro_1" title:"Quad 3 Direct Item After Clear"
 		quad_3.addMenu (this.makeMenuTitle 3)
 
 		/* 4) Replace whole quad 4 with flattened menu. */
 		quad_4 = default_quad.getQuad 4
 		this.resetMenuDefinitionItems quad_4
-		--quad_4.addMenu (this.makeMenuTitle 4) flat:true
-		quad_4.addMenu ((this.makeMenuTitle 4) + " XXX") flat:true
+		quad_4.addMenu (this.makeMenuTitle 4) --flat:true
+		--quad_4.addMenu ((this.makeMenuTitle 4) + " XXX") flat:true
 
 		default_quad -- return
 	),
