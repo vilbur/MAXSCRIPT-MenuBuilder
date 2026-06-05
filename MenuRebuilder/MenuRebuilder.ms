@@ -1,7 +1,7 @@
 
 struct MenuRebuilder_v
 (
-	version = 0.20,
+	version = 0.21,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -141,30 +141,23 @@ struct MenuRebuilder_v
 		created_item = undefined
 		persistent_action_id = this.getMacroActionId macro_category macro_name
 
+		/*
+		Do not pass item_title as the fourth CreateAction argument.
+		In the 3ds Max 2025+ CUI API that positional argument behaves as beforeId,
+		not display title. Passing title text there changes insertion order and
+		causes separators to collect at the end of the menu.
+
+		Visible custom titles are handled by MenuBuildManager_v title-alias macros.
+		*/
 		if parent_menu != undefined then
 		(
-			if item_title != undefined and item_title != "" then
+			try
 			(
-				try
-				(
-					created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id item_title
-				)
-				catch
-				(
-					created_item = undefined
-				)
+				created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id
 			)
-
-			if created_item == undefined then
+			catch
 			(
-				try
-				(
-					created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id
-				)
-				catch
-				(
-					created_item = undefined
-				)
+				created_item = undefined
 			)
 		)
 
