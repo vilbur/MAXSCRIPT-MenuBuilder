@@ -1,12 +1,14 @@
+
+
 /*
 	MenuDefinition_v 0.39
 	Ordered item model: data is Array, item id is inside item object.
 */
 struct MenuDefinition_v
 (
+	title = "",
 	version = 0.39,
 	type = #menu,
-	title = "",
 	data = undefined,
 	_data = undefined,
 	quad_modifier = undefined,
