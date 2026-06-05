@@ -220,9 +220,10 @@ function runMenuBuilderWorkflowScenarioTest =
 	--default_quad.quad_modifier = #nonePressed
 	--
 	--default_quad_1 = default_quad.getQuad 1
+	--default_quad_1.addSeparator()
 	--default_quad_1.addItem category_name macro_7 title:"CUSTOM Item"
 	
-	
+
 	
 	--default_quad_2 = default_quad.getQuad 2
 	----resetMenuDefinitionItems default_quad_2

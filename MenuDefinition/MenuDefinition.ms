@@ -1,14 +1,14 @@
 /*
 	MenuDefinition_v
-	Version: 0.43
-	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, and deferred menu reference resolving.
+	Version: 0.46
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.44,
+	version = 0.47,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -34,8 +34,6 @@ struct MenuDefinition_v
 
 		guid_value.ToString() -- return
 	),
-
-
 
 
 	/*
@@ -326,6 +324,29 @@ struct MenuDefinition_v
 		item_data -- return
 	),
 
+
+	/*
+	Create separator item data.
+	Stored as real ordered item, not macro and not submenu.
+	*/
+	function makeSeparatorItemData id:undefined =
+	(
+		separator_data = Dictionary #name
+		separator_id = id
+
+		if separator_id == undefined then
+		(
+			separator_id = this.createGuidString()
+		)
+
+		separator_data[#id] = separator_id
+		separator_data[#title] = #SEPARATOR
+		separator_data[#type] = #SEPARATOR
+		separator_data[#separator] = true
+
+		separator_data -- return
+	),
+
 	/*
 	Create submenu item data.
 	Submenu children are stored as ordered array.
@@ -528,6 +549,19 @@ struct MenuDefinition_v
 		this.appendSavedItem item_data index:index
 
 		item_data -- return
+	),
+
+
+	/*
+	Add separator item.
+	Returns created separator data dictionary.
+	*/
+	function addSeparator index:undefined =
+	(
+		separator_data = this.makeSeparatorItemData()
+		this.appendSavedItem separator_data index:index
+
+		separator_data -- return
 	),
 
 

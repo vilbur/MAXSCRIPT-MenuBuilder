@@ -2,6 +2,7 @@ global menu_rebuilder_file_version = 0.15
 global MenuBuildManager
 global MenuRebuilder_qmnx_clear_guard = false
 global QuadDefaultQmnxClear_v
+global MenuRebuilder_v
 
 
 /* HEPERS */ 
@@ -15,7 +16,6 @@ filein( getFilenamePath(getSourceFileName()) + "/MenuDefinition/MenuDefinition.m
 
 --filein( getFilenamePath(getSourceFileName()) + "/MenuLoader/MenuLoader.ms" )	--"./MenuLoader/MenuLoader.ms"
 filein( getFilenamePath(getSourceFileName()) + "/MenuRebuilder/MenuRebuilder.ms" )	--"./MenuRebuilder/MenuRebuilder.ms"
-
 
 /* UI */ 
 filein( getFilenamePath(getSourceFileName()) + "/JsonManagerRollout/JsonManagerRollout.ms" )	--"./JsonManagerRollout/JsonManagerRollout.ms"

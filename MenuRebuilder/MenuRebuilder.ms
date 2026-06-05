@@ -1,11 +1,122 @@
 
 struct MenuRebuilder_v
 (
-	version = 0.15,
+	version = 0.18,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
+
+	/*
+	Real separator support for 3ds Max 2026 persistent CUI menus/quads.
+	Separator must be created through ICuiMenu.CreateSeparator().
+	*/
+	function isSeparatorItemData item_data =
+	(
+		is_separator = false
+
+		if item_data == #SEPARATOR then
+		(
+			is_separator = true
+		)
+		else
+		(
+			if classOf item_data == Dictionary then
+			(
+				try
+				(
+					if HasDictValue item_data #separator then
+					(
+						if item_data[#separator] == true then
+						(
+							is_separator = true
+						)
+					)
+
+					if HasDictValue item_data #type then
+					(
+						if item_data[#type] == #SEPARATOR then
+						(
+							is_separator = true
+						)
+					)
+
+					if HasDictValue item_data #title then
+					(
+						if item_data[#title] == #SEPARATOR then
+						(
+							is_separator = true
+						)
+					)
+				)
+				catch
+				(
+					is_separator = false
+				)
+			)
+		)
+
+		is_separator -- return
+	),
+
+
+	function getSeparatorItemId item_data fallback_id =
+	(
+		item_id = fallback_id
+
+		if classOf item_data == Dictionary then
+		(
+			try
+			(
+				if HasDictValue item_data #id then
+				(
+					item_id = item_data[#id]
+				)
+			)
+			catch
+			(
+				item_id = fallback_id
+			)
+		)
+
+		if item_id == undefined then
+		(
+			item_id = this.createGuidString()
+		)
+
+		if item_id == "" then
+		(
+			item_id = this.createGuidString()
+		)
+
+		item_id -- return
+	),
+
+
+	function createRealCuiSeparator target_menu item_id =
+	(
+		separator_item = undefined
+
+		if target_menu != undefined then
+		(
+			try
+			(
+				separator_item = target_menu.CreateSeparator item_id
+			)
+			catch
+			(
+				separator_item = undefined
+			)
+		)
+
+		if separator_item == undefined then
+		(
+			format "MenuRebuilder_v.createRealCuiSeparator failed. item_id:%\n" item_id
+		)
+
+		separator_item -- return
+	),
+
 
 
 	function isDictionaryValue value =
@@ -143,11 +254,14 @@ struct MenuRebuilder_v
 
 	function getMenuItems =
 	(
-		menu_items = this.getMenuDataValue #items (Dictionary #string)
+		menu_items = this.getMenuDataValue #items #()
 
-		if not this.isDictionaryValue menu_items then
+		if not (this.isArrayValue menu_items) then
 		(
-			menu_items = Dictionary #string
+			if not (this.isDictionaryValue menu_items) then
+			(
+				menu_items = #()
+			)
 		)
 
 		menu_items -- return
@@ -230,17 +344,32 @@ struct MenuRebuilder_v
 
 		if this.isDictionaryValue item_data then
 		(
-			was_found = this.hasDictValueSafe item_data #category
-
-			if was_found then
+			if this.hasDictValueSafe item_data #category then
 			(
-				was_found = this.hasDictValueSafe item_data #macro
+				if this.hasDictValueSafe item_data #macro then
+				(
+					macro_category = item_data[#category]
+					macro_name = item_data[#macro]
+
+					if macro_category != undefined then
+					(
+						if macro_name != undefined then
+						(
+							if (macro_category as string) != "" then
+							(
+								if (macro_name as string) != "" then
+								(
+									was_found = true
+								)
+							)
+						)
+					)
+				)
 			)
 		)
 
 		was_found -- return
 	),
-
 
 	function getMacroActionId macro_category macro_name =
 	(
@@ -250,49 +379,105 @@ struct MenuRebuilder_v
 	),
 
 
-	function rebuildMenuItems parent_menu saved_items =
+	function getMenuItemBuildId item_data fallback_id =
 	(
-		if not this.isDictionaryValue saved_items then
+		item_id = fallback_id
+
+		if this.isDictionaryValue item_data then
 		(
-			format "MenuRebuilder_v.rebuildMenuItems skipped. saved_items is not Dictionary: %\n" saved_items
-			false -- return
+			if this.hasDictValueSafe item_data #id then
+			(
+				item_id = item_data[#id]
+			)
+		)
+
+		if item_id == undefined then
+		(
+			item_id = this.createGuidString()
+		)
+
+		if item_id == "" then
+		(
+			item_id = this.createGuidString()
+		)
+
+		item_id -- return
+	),
+
+
+	function rebuildSingleMenuItem parent_menu item_data fallback_id =
+	(
+		created_item = undefined
+		saved_guid = this.getMenuItemBuildId item_data fallback_id
+
+		if this.isSeparatorItemData item_data then
+		(
+			separator_id = this.getSeparatorItemId item_data saved_guid
+			created_item = this.createRealCuiSeparator parent_menu separator_id
+		)
+		else if this.isSubMenuData item_data then
+		(
+			submenu_title = item_data[#title]
+			submenu_items = item_data[#items]
+
+			submenu_menu = parent_menu.CreateSubMenu saved_guid submenu_title
+			created_item = submenu_menu
+
+			if submenu_menu != undefined then
+			(
+				this.rebuildMenuItems submenu_menu submenu_items
+			)
+		)
+		else if this.isMacroItemData item_data then
+		(
+			macro_category = item_data[#category]
+			macro_name = item_data[#macro]
+			persistent_action_id = this.getMacroActionId macro_category macro_name
+
+			created_item = parent_menu.CreateAction saved_guid this.macro_action_table_id persistent_action_id
 		)
 		else
+		(
+			format "MenuRebuilder_v skipped invalid item data. id:% value:%\n" saved_guid item_data
+		)
+
+		created_item -- return
+	),
+
+
+	function rebuildMenuItems parent_menu saved_items =
+	(
+		build_ok = false
+
+		if classOf saved_items == Array then
+		(
+			for item_index = 1 to saved_items.count do
+			(
+				item_data = saved_items[item_index]
+				fallback_id = this.createGuidString()
+				this.rebuildSingleMenuItem parent_menu item_data fallback_id
+			)
+
+			build_ok = true
+		)
+		else if this.isDictionaryValue saved_items then
 		(
 			saved_guid_array = GetDictKeys saved_items
 
 			for saved_guid in saved_guid_array do
 			(
 				item_data = saved_items[saved_guid]
-
-				if this.isSubMenuData item_data then
-				(
-					submenu_title = item_data[#title]
-					submenu_items = item_data[#items]
-
-					submenu_menu = parent_menu.CreateSubMenu saved_guid submenu_title
-
-					if submenu_menu != undefined then
-					(
-						this.rebuildMenuItems submenu_menu submenu_items
-					)
-				)
-				else if this.isMacroItemData item_data then
-				(
-					macro_category = item_data[#category]
-					macro_name = item_data[#macro]
-					persistent_action_id = this.getMacroActionId macro_category macro_name
-
-					parent_menu.CreateAction saved_guid this.macro_action_table_id persistent_action_id
-				)
-				else
-				(
-					format "MenuRebuilder_v skipped invalid item data at guid: % value: %\n" saved_guid item_data
-				)
+				this.rebuildSingleMenuItem parent_menu item_data saved_guid
 			)
 
-			true -- return
+			build_ok = true
 		)
+		else
+		(
+			format "MenuRebuilder_v.rebuildMenuItems skipped. saved_items is not Array or Dictionary: %\n" saved_items
+		)
+
+		build_ok -- return
 	),
 
 

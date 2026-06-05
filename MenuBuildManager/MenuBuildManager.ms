@@ -1,7 +1,7 @@
 fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.51
+	MenuBuildManager_v 0.57
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -10,7 +10,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.51,
+	version = 0.57,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -40,6 +40,7 @@ struct MenuBuildManager_v
 	rebuilder_file_path = "",
 	qmnx_clear_directory = "",
 	clear_default_menu = false,
+	load_default_cui_configuration_before_install = true,
 	auto_register_callback = true,
 	auto_queue_menu_on_create = true,
 	merge_existing_data = true,
@@ -345,6 +346,25 @@ struct MenuBuildManager_v
 	),
 
 
+	function createSavedSeparatorItemData id:undefined =
+	(
+		separator_data = Dictionary #name
+		separator_id = id
+
+		if separator_id == undefined then
+		(
+			separator_id = this.createGuidString()
+		)
+
+		separator_data[#id] = separator_id
+		separator_data[#title] = #SEPARATOR
+		separator_data[#type] = #SEPARATOR
+		separator_data[#separator] = true
+
+		separator_data -- return
+	),
+
+
 	function createSavedSubMenuData submenu_title submenu_items id:undefined =
 	(
 		submenu_data = Dictionary #name
@@ -354,6 +374,54 @@ struct MenuBuildManager_v
 		submenu_data[#title] = submenu_title
 		submenu_data[#items] = submenu_items
 		submenu_data -- return
+	),
+
+
+	function isSeparatorItemData item_data =
+	(
+		was_found = false
+
+		if item_data == #SEPARATOR then
+		(
+			was_found = true
+		)
+		else
+		(
+			if this.isDictionaryValue item_data then
+			(
+				if this.hasDictValueSafe item_data #type then
+				(
+					if item_data[#type] == #SEPARATOR then
+					(
+						was_found = true
+					)
+				)
+
+				if not was_found then
+				(
+					if this.hasDictValueSafe item_data #separator then
+					(
+						if item_data[#separator] == true then
+						(
+							was_found = true
+						)
+					)
+				)
+
+				if not was_found then
+				(
+					if this.hasDictValueSafe item_data #title then
+					(
+						if item_data[#title] == #SEPARATOR then
+						(
+							was_found = true
+						)
+					)
+				)
+			)
+		)
+
+		was_found -- return
 	),
 
 
@@ -380,50 +448,125 @@ struct MenuBuildManager_v
 	function isSavedItemData item_data =
 	(
 		was_found = false
-		if this.isDictionaryValue item_data then
+
+		if this.isSeparatorItemData item_data then
 		(
-			was_found = this.hasDictValueSafe item_data #title
-			if was_found then was_found = (this.isSubMenuData item_data) or (this.isMacroItemData item_data)
+			was_found = true
 		)
+		else
+		(
+			if this.isDictionaryValue item_data then
+			(
+				was_found = this.hasDictValueSafe item_data #title
+
+				if was_found then
+				(
+					was_found = (this.isSubMenuData item_data) or (this.isMacroItemData item_data)
+				)
+			)
+		)
+
 		was_found -- return
 	),
-
 
 	function normalizeMenuItems items_value =
 	(
 		normalized_items = #()
+
 		if this.isArrayValue items_value then
 		(
 			for item_value in items_value do
 			(
-				if this.isSavedItemData item_value then
+				if this.isSeparatorItemData item_value then
 				(
-					if not (this.hasDictValueSafe item_value #id) then item_value[#id] = this.createGuidString()
-					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
-					append normalized_items item_value
+					if this.isDictionaryValue item_value then
+					(
+						if not (this.hasDictValueSafe item_value #id) then
+						(
+							item_value[#id] = this.createGuidString()
+						)
+
+						item_value[#title] = #SEPARATOR
+						item_value[#type] = #SEPARATOR
+						item_value[#separator] = true
+						append normalized_items item_value
+					)
+					else
+					(
+						append normalized_items (this.createSavedSeparatorItemData())
+					)
+				)
+				else
+				(
+					if this.isSavedItemData item_value then
+					(
+						if not (this.hasDictValueSafe item_value #id) then
+						(
+							item_value[#id] = this.createGuidString()
+						)
+
+						if this.hasDictValueSafe item_value #items then
+						(
+							item_value[#items] = this.normalizeMenuItems item_value[#items]
+						)
+
+						append normalized_items item_value
+					)
 				)
 			)
 		)
-		else if this.isDictionaryValue items_value then
+		else
 		(
-			item_keys = GetDictKeys items_value
-			for item_key in item_keys do
+			if this.isDictionaryValue items_value then
 			(
-				item_value = items_value[item_key]
-				item_id = item_key as string
-				if this.isSavedItemData item_value then
+				item_keys = GetDictKeys items_value
+
+				for item_key in item_keys do
 				(
-					item_value[#id] = item_id
-					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
-					append normalized_items item_value
+					item_value = items_value[item_key]
+					item_id = item_key as string
+
+					if this.isSeparatorItemData item_value then
+					(
+						append normalized_items (this.createSavedSeparatorItemData id:item_id)
+					)
+					else
+					(
+						if this.isSavedItemData item_value then
+						(
+							item_value[#id] = item_id
+
+							if this.hasDictValueSafe item_value #items then
+							(
+								item_value[#items] = this.normalizeMenuItems item_value[#items]
+							)
+
+							append normalized_items item_value
+						)
+						else
+						(
+							if this.isDictionaryValue item_value then
+							(
+								append normalized_items (this.createSavedSubMenuData item_id (this.normalizeMenuItems item_value) id:item_id)
+							)
+							else
+							(
+								if classOf item_value == Array then
+								(
+									if item_value.count >= 2 then
+									(
+										append normalized_items (this.createSavedMacroItemData item_id item_value[1] item_value[2] id:item_id)
+									)
+								)
+							)
+						)
+					)
 				)
-				else if this.isDictionaryValue item_value then append normalized_items (this.createSavedSubMenuData item_id (this.normalizeMenuItems item_value) id:item_id)
-				else if classOf item_value == Array then if item_value.count >= 2 then append normalized_items (this.createSavedMacroItemData item_id item_value[1] item_value[2] id:item_id)
 			)
 		)
+
 		normalized_items -- return
 	),
-
 
 	function getMenuDataValue menu_data key_name default_value =
 	(
@@ -1081,13 +1224,30 @@ struct MenuBuildManager_v
 	(
 		found_index = 0
 
-		if this.isArrayValue saved_items then
+		if item_title == #SEPARATOR then
 		(
-			for item_index = 1 to saved_items.count while found_index == 0 do
+			found_index = 0
+		)
+		else
+		(
+			if (item_title as string) == "#SEPARATOR" then
 			(
-				if this.getSavedItemTitle saved_items[item_index] == item_title then
+				found_index = 0
+			)
+			else
+			(
+				if this.isArrayValue saved_items then
 				(
-					found_index = item_index
+					for item_index = 1 to saved_items.count while found_index == 0 do
+					(
+						if not (this.isSeparatorItemData saved_items[item_index]) then
+						(
+							if this.getSavedItemTitle saved_items[item_index] == item_title then
+							(
+								found_index = item_index
+							)
+						)
+					)
 				)
 			)
 		)
@@ -1890,7 +2050,11 @@ struct MenuBuildManager_v
 			(
 				if this.isDictionaryValue item_data then
 				(
-					if this.isSubMenuData item_data then
+					if this.isSeparatorItemData item_data then
+					(
+						ok
+					)
+					else if this.isSubMenuData item_data then
 					(
 						if this.hasDictValueSafe item_data #items then
 						(
@@ -1907,7 +2071,6 @@ struct MenuBuildManager_v
 
 		ordered_items -- return
 	),
-
 
 	function applyTitleAliasesToMenuData menu_data =
 	(
@@ -1933,6 +2096,23 @@ struct MenuBuildManager_v
 		menu_data -- return
 	),
 
+
+	/*
+	Create real separator marker for MenuRebuilder_v.
+	MenuRebuilder_v must translate this into ICuiMenu.CreateSeparator item_id.
+	No fake dashed macro is created here.
+	*/
+	function createLegacySeparatorItemForRebuilder item_data item_id =
+	(
+		legacy_item = Dictionary #name
+		legacy_item[#id] = item_id
+		legacy_item[#title] = #SEPARATOR
+		legacy_item[#type] = #SEPARATOR
+		legacy_item[#separator] = true
+
+		legacy_item -- return
+	),
+
 	function createLegacyItemDictionaryForRebuilder ordered_items =
 	(
 		legacy_items = Dictionary #string
@@ -1941,23 +2121,37 @@ struct MenuBuildManager_v
 		(
 			for item_data in ordered_items do
 			(
-				if this.isDictionaryValue item_data then
+				if this.isSeparatorItemData item_data then
 				(
-					item_id = this.getMenuDataValue item_data #id (this.createGuidString())
-					legacy_item = Dictionary #name
-					legacy_item[#title] = this.getMenuDataValue item_data #title ""
+					item_id = this.createGuidString()
 
-					if this.hasDictValueSafe item_data #items then
+					if this.isDictionaryValue item_data then
 					(
-						legacy_item[#items] = this.createLegacyItemDictionaryForRebuilder item_data[#items]
-					)
-					else
-					(
-						legacy_item[#category] = this.getMenuDataValue item_data #category ""
-						legacy_item[#macro] = this.getMenuDataValue item_data #macro ""
+						item_id = this.getMenuDataValue item_data #id item_id
 					)
 
-					legacy_items[item_id] = legacy_item
+					legacy_items[item_id] = this.createLegacySeparatorItemForRebuilder item_data item_id
+				)
+				else
+				(
+					if this.isDictionaryValue item_data then
+					(
+						item_id = this.getMenuDataValue item_data #id (this.createGuidString())
+						legacy_item = Dictionary #name
+						legacy_item[#title] = this.getMenuDataValue item_data #title ""
+
+						if this.hasDictValueSafe item_data #items then
+						(
+							legacy_item[#items] = this.createLegacyItemDictionaryForRebuilder item_data[#items]
+						)
+						else
+						(
+							legacy_item[#category] = this.getMenuDataValue item_data #category ""
+							legacy_item[#macro] = this.getMenuDataValue item_data #macro ""
+						)
+
+						legacy_items[item_id] = legacy_item
+					)
 				)
 			)
 		)
@@ -1977,24 +2171,12 @@ struct MenuBuildManager_v
 		rebuilder_menu_data = this.cloneValue menu_data
 		rebuilder_menu_data = this.applyTitleAliasesToMenuData rebuilder_menu_data
 
-		if this.hasDictValueSafe rebuilder_menu_data #items then
-		(
-			rebuilder_menu_data[#items] = this.createLegacyItemDictionaryForRebuilder rebuilder_menu_data[#items]
-		)
-
-		if this.hasDictValueSafe rebuilder_menu_data #quad_menus then
-		(
-			if this.isArrayValue rebuilder_menu_data[#quad_menus] then
-			(
-				for quad_data in rebuilder_menu_data[#quad_menus] do
-				(
-					if this.hasDictValueSafe quad_data #items then
-					(
-						quad_data[#items] = this.createLegacyItemDictionaryForRebuilder quad_data[#items]
-					)
-				)
-			)
-		)
+		/*
+		Important:
+		Do not convert ordered item arrays to Dictionary here.
+		Dictionary key order is not stable in MaxScript, so separators and items
+		can appear at random positions. MenuRebuilder_v 0.17+ accepts ordered arrays.
+		*/
 
 		rebuilder_menu_data -- return
 	),
@@ -2316,6 +2498,87 @@ struct MenuBuildManager_v
 	),
 
 
+	function loadDefaultCuiMenuConfiguration =
+	(
+		load_ok = false
+		menu_manager = this.getCurrentCuiMenuManager()
+
+		if menu_manager == undefined then
+		(
+			format "MenuBuildManager_v.loadDefaultCuiMenuConfiguration failed. CUI menu manager is undefined.\n"
+		)
+		else
+		(
+			try
+			(
+				menu_manager.LoadConfiguration (menu_manager.GetDefaultConfiguration())
+				load_ok = true
+			)
+			catch
+			(
+				format "MenuBuildManager_v.loadDefaultCuiMenuConfiguration failed.\n"
+				load_ok = false
+			)
+		)
+
+		load_ok -- return
+	),
+
+
+	function loadDefaultCuiQuadConfiguration =
+	(
+		load_ok = false
+		quad_menu_manager = this.getCurrentCuiQuadMenuManager()
+
+		if quad_menu_manager == undefined then
+		(
+			format "MenuBuildManager_v.loadDefaultCuiQuadConfiguration failed. CUI quad menu manager is undefined.\n"
+		)
+		else
+		(
+			try
+			(
+				quad_menu_manager.LoadConfiguration (quad_menu_manager.GetDefaultConfiguration())
+				load_ok = true
+			)
+			catch
+			(
+				format "MenuBuildManager_v.loadDefaultCuiQuadConfiguration failed.\n"
+				load_ok = false
+			)
+		)
+
+		load_ok -- return
+	),
+
+
+	function loadDefaultCuiConfiguration load_menus:true load_quads:true =
+	(
+		menu_load_ok = false
+		quad_load_ok = false
+
+		if load_menus then
+		(
+			menu_load_ok = this.loadDefaultCuiMenuConfiguration()
+		)
+
+		if load_quads then
+		(
+			quad_load_ok = this.loadDefaultCuiQuadConfiguration()
+		)
+
+		try
+		(
+			windows.processPostedMessages()
+		)
+		catch
+		(
+			ok
+		)
+
+		#(menu_load_ok, quad_load_ok) -- return
+	),
+
 	function rebuildVisibleMainMenusNow =
 	(
 		visible_update_ok = false
@@ -2528,10 +2791,20 @@ struct MenuBuildManager_v
 		save_ok -- return
 	),
 
-	function installMenusNow save_cui_configuration:true update_quads:true =
+	function installMenusNow save_cui_configuration:true update_quads:true load_default_cui_configuration:undefined =
 	(
 		format "\n"
 		print "MenuBuildManager_v.installMenusNow()"
+
+		if load_default_cui_configuration == undefined then
+		(
+			load_default_cui_configuration = this.load_default_cui_configuration_before_install
+		)
+
+		if load_default_cui_configuration then
+		(
+			this.loadDefaultCuiConfiguration load_menus:true load_quads:update_quads
+		)
 
 		this.build()
 		this.registerCallback()
@@ -2557,9 +2830,9 @@ struct MenuBuildManager_v
 	),
 
 
-	function installAndShow save_cui_configuration:true update_quads:true =
+	function installAndShow save_cui_configuration:true update_quads:true load_default_cui_configuration:undefined =
 	(
-		this.installMenusNow save_cui_configuration:save_cui_configuration update_quads:update_quads -- return
+		this.installMenusNow save_cui_configuration:save_cui_configuration update_quads:update_quads load_default_cui_configuration:load_default_cui_configuration -- return
 	),
 
 	function buildMenu menu_data =

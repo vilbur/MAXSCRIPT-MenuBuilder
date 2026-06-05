@@ -1,4 +1,6 @@
-﻿/*
+﻿filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+
+/*
 	MenuBuilder Default Viewport Quad Scenario Test
 	Version: 0.01
 	3ds Max 2026 / MenuBuildManager_v OOP workflow.
@@ -61,7 +63,7 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 	(
 		for macro_index = 1 to 16 do
 		(
-			macro_title = "Quad Scenario Macro " + (macro_index as string)
+			macro_title = "Macro " + (macro_index as string)
 			this.createTestMacro macro_index macro_title
 		)
 
@@ -102,10 +104,13 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 		main_macro_index = this.getMainMacroIndex menu_index
 		submenu_macro_index = this.getSubMenuMacroIndex menu_index
 
-		menu_definition.addItem this.category_name (this.makeMacroName main_macro_index) title:("Menu " + (menu_index as string) + " Item")
+		menu_definition.addItem this.category_name (this.makeMacroName main_macro_index) title:("Menu " + (menu_index as string) + " A Item")
+		menu_definition.addItem this.category_name (this.makeMacroName main_macro_index) title:("Menu " + (menu_index as string) + " B Item")
 
 		submenu_definition = menu_definition.menu ("Menu " + (menu_index as string) + " Submenu")
+		submenu_definition.addSeparator()
 		submenu_definition.clearItems()
+		submenu_definition.addSeparator()
 		submenu_definition.addItem this.category_name (this.makeMacroName submenu_macro_index) title:("Menu " + (menu_index as string) + " Submenu Item")
 
 		menu_definition -- return
@@ -152,24 +157,30 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 
 		/* 1) To quad 1 add item and menu. */
 		quad_1 = default_quad.getQuad 1
-		quad_1.addItem this.category_name (this.makeMacroName (this.getQuadItemMacroIndex 1)) title:"Quad 1 Direct Item"
-		quad_1.addMenu (this.makeMenuTitle 1)
+		quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 1"
+		quad_1.addSeparator()
+		quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 2"
+		--quad_1.addMenu (this.makeMenuTitle 1)
 
 		/* 2) To quad 2 add item and flat menu. */
 		quad_2 = default_quad.getQuad 2
+
+		quad_2.addSeparator()
 		quad_2.addItem this.category_name (this.makeMacroName (this.getQuadItemMacroIndex 2)) title:"Quad 2 Direct Item"
 		quad_2.addMenu (this.makeMenuTitle 2) flat:true
 
 		/* 3) Clear quad 3 and add item and menu. */
 		quad_3 = default_quad.getQuad 3
 		this.resetMenuDefinitionItems quad_3
+		
 		quad_3.addItem this.category_name (this.makeMacroName (this.getQuadItemMacroIndex 3)) title:"Quad 3 Direct Item After Clear"
 		quad_3.addMenu (this.makeMenuTitle 3)
 
 		/* 4) Replace whole quad 4 with flattened menu. */
 		quad_4 = default_quad.getQuad 4
 		this.resetMenuDefinitionItems quad_4
-		quad_4.addMenu (this.makeMenuTitle 4) flat:true
+		--quad_4.addMenu (this.makeMenuTitle 4) flat:true
+		quad_4.addMenu ((this.makeMenuTitle 4) + " XXX") flat:true
 
 		default_quad -- return
 	),
@@ -184,14 +195,14 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 		workflow_menus = this.createWorkflowMenus()
 		default_quad = this.setupDefaultViewportQuad()
 
-		if install_now then
-		(
+		--if install_now then
+		--(
 			MenuBuildManager.installMenusNow()
-		)
-		else
-		(
-			MenuBuildManager.build()
-		)
+		--)
+		--else
+		--(
+		--	MenuBuildManager.build()
+		--)
 
 		format "\nDefault Viewport Quad Scenario Test finished.\n"
 		format "Created menus: %\n" workflow_menus.count
