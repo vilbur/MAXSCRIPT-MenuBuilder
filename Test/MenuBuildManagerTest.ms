@@ -183,9 +183,9 @@ function testAddItemsToMenu index:undefined =
 
 /** Test build quee
  */
-function testBuildQuee =
+function testCompileAtOnce =
 (
-	--format "\n"; print ".testBuildQuee()"
+	--format "\n"; print ".testCompileAtOnce()"
 	
 	manager = MenuBuildManager_v()
 	
@@ -235,36 +235,46 @@ function testBuildQuee =
 
 
 	------- TEST BUILD QUEE
-	testBuildQuee()
-
-	====================================================================================================*/
-
-
-	testAddItemsToMenu()
 	
+	testCompileAtOnce()
 
-    -- Injects into existing Default Viewport Quad:
-    --saved_menus_data = testMenuBuildManagerDefaultQuadInject()
-    --
-    ---- Creates custom Ctrl+Shift+RMB quad:
-    --saved_menus_data = testMenuBuildManagerCustomModifierQuad()
-	
+====================================================================================================
+*/
 
-	
-    ---- Reload from JSON:
-    --saved_menus_data = testMenuBuildManagerFromJson()
-    --
-    ---- Open JSON manager:
-    --openMenuBuildManagerJsonRollout()
-    --
-    ---- Clear JSON:
-    --menu_manager = MenuBuildManager_v()
-    --menu_manager.clearJsonFile()
-    --
-    ---- Debug qmnx roots:
-    --qmnx_clear = QuadDefaultQmnxClear_v()
-    --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\topRight-clear.qmnx"
-    --qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
+	------ ADD ITEMS ONE BY ONE
+--	testAddItemsToMenu()
+	testAddItemsToMenu index:1
+--	testAddItemsToMenu index:2
+--	
+--
+--    ------ Injects into existing Default Viewport Quad:
+--    saved_menus_data = testMenuBuildManagerDefaultQuadInject()
+--
+--    ------ Creates custom Ctrl+Shift+RMB quad:
+--    saved_menus_data = testMenuBuildManagerCustomModifierQuad()
+--
+--    ------ Reload from JSON:
+--    saved_menus_data = testMenuBuildManagerFromJson()
+--
+--    ------ Open JSON manager:
+--    openMenuBuildManagerJsonRollout()
+--
+--    ------ Clear JSON:
+--    menu_manager = MenuBuildManager_v()
+--    menu_manager.clearJsonFile()
+--
+--    ------ Debug qmnx roots:
+--    qmnx_clear = QuadDefaultQmnxClear_v()
+--    qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\topRight-clear.qmnx"
+--    qmnx_clear.printQmnxRoot @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-MenuBuilder\MenuRebuilder\qmnx\bottomRight-clear.qmnx"
+--
+--
+--	------- TEST BUILD QUEE
+--	
+--	testCompileAtOnce()
+--
+
+
 
 
 /*------------------------------------------------------------------------------

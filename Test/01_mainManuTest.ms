@@ -1,6 +1,6 @@
 ﻿ clearListener(); print("Cleared in: "+getSourceFileName())
 
-global menu_rebuilder_file_version = 0.08
+global menu_rebuilder_file_version = 0.09
 global MenuRebuilder
 global MenuBuildManager
 
@@ -10,23 +10,81 @@ filein( getFilenamePath(getSourceFileName()) + "/Lib/createSavedTestMenuDataLeve
 
 
 /* PRODUCTION */
-
-filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+print "\n\n----- PRODUCTION TEST\n\n";filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
 /* DEVELOPEMNT */ 
---filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	--"./../MenuRebuilder_update.ms"
+--print "\n\n----- !!!!! TEST MenuRebuilder_update.ms\n\n";filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder_update.ms" )	--"./../MenuRebuilder_update.ms"
+
 
 
 /**
-Minimal workflow scenario test for MenuBuildManager_v.
+Create GUID string for ordered test items.
 */
-
-function workflowGuid =
+function createWorkflowGuidString =
 (
-	((dotNetClass "System.Guid").NewGuid()).ToString()
+	guid_class = dotNetClass "System.Guid"
+	guid_value = guid_class.NewGuid()
+
+	guid_value.ToString() -- return
 )
 
 
+/**
+Ensure Dictionary submenu uses ordered item array.
+*/
+function ensureOrderedItemsOnDictionary menu_item =
+(
+	if not HasDictValue menu_item #items then
+	(
+		menu_item[#items] = #()
+	)
+	else if classOf menu_item[#items] != Array then
+	(
+		menu_item[#items] = #()
+	)
+
+	menu_item[#items] -- return
+)
+
+
+/**
+Create ordered macro item.
+Item id is stored inside item object.
+*/
+function createOrderedMacroItem category_name macro_name item_title =
+(
+	item_data = Dictionary #name
+
+	item_data[#id] = createWorkflowGuidString()
+	item_data[#title] = item_title
+	item_data[#category] = category_name
+	item_data[#macro] = macro_name
+
+	item_data -- return
+)
+
+
+/**
+Add action item to MenuDefinition_v or ordered Dictionary submenu.
+*/
+function addItemToMenuLike menu category_name macro_name item_title =
+(
+	if classOf menu == Dictionary then
+	(
+		items_array = ensureOrderedItemsOnDictionary menu
+		append items_array (createOrderedMacroItem category_name macro_name item_title)
+	)
+	else
+	(
+		menu.addItem category_name macro_name title:item_title
+	)
+
+	menu -- return
+)
+/**
+Create mock macroScript.
+Used by workflow test.
+*/
 function createWorkflowTestMacro macro_index category_name:"_MENU_WORKFLOW_TEST" =
 (
 	macro_name = "_WORKFLOW_TEST_MACRO_" + (macro_index as string)
@@ -49,25 +107,28 @@ function createWorkflowTestMacro macro_index category_name:"_MENU_WORKFLOW_TEST"
 )
 
 
-function resetMenuLike menu_like =
+/**
+Clear MenuDefinition_v items or ordered Dictionary submenu items.
+*/
+function resetMenuDefinitionItems menu_definition =
 (
-	if classOf menu_like == Dictionary then
+	if classOf menu_definition == Dictionary then
 	(
-		menu_like[#items] = Dictionary #string
+		menu_definition[#items] = #()
 	)
 	else
 	(
 		try
 		(
-			menu_like.clearItems()
+			menu_definition.clearItems()
 		)
 		catch
 		(
-			menu_like.data = Dictionary #string
+			menu_definition.data = #()
 
 			try
 			(
-				menu_like._data = menu_like.data
+				menu_definition._data = menu_definition.data
 			)
 			catch
 			(
@@ -76,35 +137,14 @@ function resetMenuLike menu_like =
 		)
 	)
 
-	menu_like -- return
+	menu_definition -- return
 )
 
 
-function addItemToMenuLike menu_like category_name macro_name item_title =
-(
-	if classOf menu_like == Dictionary then
-	(
-		if not HasDictValue menu_like #items then
-		(
-			menu_like[#items] = Dictionary #string
-		)
-
-		item_data = Dictionary #name
-		item_data[#title] = item_title
-		item_data[#category] = category_name
-		item_data[#macro] = macro_name
-
-		menu_like[#items][workflowGuid()] = item_data
-	)
-	else
-	(
-		menu_like.addItem category_name macro_name title:item_title
-	)
-
-	menu_like -- return
-)
-
-
+/**
+Run minimal real workflow test.
+Creates 2 menus, 1 custom quad, and modifies Default Viewport Quad.
+*/
 function runMenuBuilderWorkflowScenarioTest =
 (
 	global MenuBuildManager
@@ -122,69 +162,75 @@ function runMenuBuilderWorkflowScenarioTest =
 
 	MenuBuildManager = MenuBuildManager_v()
 
-	/* 1) Create menu1 with 3 action items. */
+	/*  1) Create menu1 with 3 action items.
+	*/
 	menu_1 = MenuBuildManager.menu "_WORKFLOW_MENU_1" type:#menu
-	resetMenuLike menu_1
+	resetMenuDefinitionItems menu_1
 
-	addItemToMenuLike menu_1 category_name macro_1 "Menu1 Item 1"
-	addItemToMenuLike menu_1 category_name macro_2 "Menu1 Item 2"
-	addItemToMenuLike menu_1 category_name macro_3 "Menu1 Item 3"
+	menu_1.addItem category_name macro_1 title:"Menu1 Item 1"
+	menu_1.addItem category_name macro_2 title:"Menu1 Item 2"
+	menu_1.addItem category_name macro_3 title:"Menu1 Item 3"
 
-	/* 2) Create menu2 with 2 items. Second item is submenu with submenu item. */
+	/*  2) Create menu2 with 2 items. Second item is submenu with submenu item.
+	*/
 	menu_2 = MenuBuildManager.menu "_WORKFLOW_MENU_2" type:#menu
-	resetMenuLike menu_2
-
-	addItemToMenuLike menu_2 category_name macro_4 "Menu2 Item 1"
-
+	resetMenuDefinitionItems menu_2
+	
+	menu_2.addItem category_name macro_4 title:"Menu2 Item 1"
+	
 	menu_2_submenu = menu_2.addMenu "Menu2 Submenu"
-	resetMenuLike menu_2_submenu
+	resetMenuDefinitionItems menu_2_submenu
 	addItemToMenuLike menu_2_submenu category_name macro_5 "Menu2 Submenu Item 1"
-
-	/* 3) Create custom quad on CTRL+SHIFT. */
+	
+	/*  3) Create new custom quad on CTRL+SHIFT.
+		Quad 1: flattened menu1.
+		Quad 2: custom item + menu2.
+	*/
 	custom_quad = MenuBuildManager.getQuad "_WORKFLOW_CUSTOM_QUAD" clear_default_menu:false
 	custom_quad.quad_modifier = #shiftAndControlPressed
-
-	/* 3A) First quad is flattened menu1. */
+	
 	custom_quad_1 = custom_quad.getQuad 1
-	resetMenuLike custom_quad_1
+	resetMenuDefinitionItems custom_quad_1
 	custom_quad_1.addMenu "_WORKFLOW_MENU_1" flat:true
-
-	/* 3B) Second quad is custom item and menu2. */
+	
 	custom_quad_2 = custom_quad.getQuad 2
-	resetMenuLike custom_quad_2
-	addItemToMenuLike custom_quad_2 category_name macro_6 "Custom Quad Item"
+	resetMenuDefinitionItems custom_quad_2
+	custom_quad_2.addItem category_name macro_6 title:"Custom Quad Item"
 	custom_quad_2.addMenu "_WORKFLOW_MENU_2"
-
-	/* 4) Get Default Viewport Quad. */
+	
+	/*  4) Get Default Viewport Quad.
+		Quad 1: add custom item.
+		Quad 2: clear and add menu1.
+		Quad 3: replace with menu2.
+	*/
 	default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
 	default_quad.quad_modifier = #nonePressed
-
-	/* 4A) Add custom item to first quad. */
+	
 	default_quad_1 = default_quad.getQuad 1
-	addItemToMenuLike default_quad_1 category_name macro_7 "Default Quad Added Item"
-
-	/* 4B) Clear second quad and add menu1. */
+	default_quad_1.addItem category_name macro_7 title:"Default Quad Added Item"
+	
 	default_quad_2 = default_quad.getQuad 2
-	resetMenuLike default_quad_2
+	resetMenuDefinitionItems default_quad_2
 	default_quad_2.addMenu "_WORKFLOW_MENU_1"
-
-	/* 4C) Replace third quad with menu2. */
+	
 	default_quad_3 = default_quad.getQuad 3
-	resetMenuLike default_quad_3
+	resetMenuDefinitionItems default_quad_3
 	default_quad_3.addMenu "_WORKFLOW_MENU_2"
-
+	
+	/*  Save all menus and quads.
+	*/
 	MenuBuildManager.waitForBuild menu_1
 	MenuBuildManager.waitForBuild menu_2
 	MenuBuildManager.waitForBuild custom_quad
 	MenuBuildManager.waitForBuild default_quad
-
+	
 	saved_menus_data = MenuBuildManager.build()
-
+	
 	format "\nWORKFLOW TEST RESULT\n"
-	format "Menu 1: _WORKFLOW_MENU_1 / 3 action items.\n"
-	format "Menu 2: _WORKFLOW_MENU_2 / item + submenu item.\n"
-	format "Custom Quad: _WORKFLOW_CUSTOM_QUAD / #shiftAndControlPressed.\n"
-	format "Default Viewport Quad modified.\n"
+	format "1) Menu created: _WORKFLOW_MENU_1 with 3 items.\n"
+	format "2) Menu created: _WORKFLOW_MENU_2 with item + submenu.\n"
+	format "3) Custom quad created: _WORKFLOW_CUSTOM_QUAD on #shiftAndControlPressed.\n"
+	format "4) Default Viewport Quad modified.\n"
 	format "Saved menu data count: %\n" saved_menus_data.count
 
 	saved_menus_data -- return

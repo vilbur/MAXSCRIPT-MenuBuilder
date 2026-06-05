@@ -1,21 +1,12 @@
 filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.36
-
-	Restored features:
-	1) split JSON: 1 parent menu = 1 JSON file
-	2) runtime UI grouping: Main Menu Bar > _Custom-Menus > parent menus
-
-	Rules:
-	- correct property: clear_default_menu
-	- has version property
-	- waitForBuild API
+	MenuBuildManager_v 0.39
+	Ordered item model: #items is Array, each item has #id property.
 */
-
 struct MenuBuildManager_v
 (
-	version = 0.36,
+	version = 0.39,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -24,6 +15,10 @@ struct MenuBuildManager_v
 	menus_folder_name = "menus",
 	quads_folder_name = "quads",
 	split_json_enabled = true,
+	split_json_cache_enabled = true,
+	split_json_cache_valid = false,
+	split_json_cache_data = #(),
+	split_json_cache_load_ms = 0,
 	split_data_root_directory = "",
 	custom_menu_root_title = "_Custom-Menus",
 	custom_menu_root_id = "4a93a53d-8cf7-4d16-b217-8fe6c2b9d6f1",
@@ -39,7 +34,10 @@ struct MenuBuildManager_v
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
 
-
+	/*
+	Create guid string.
+	Used for ids of menu roots and items.
+	*/
 	function createGuidString =
 	(
 		guid_class = dotNetClass "System.Guid"
@@ -48,7 +46,10 @@ struct MenuBuildManager_v
 		guid_value.ToString() -- return
 	),
 
-
+	/*
+	Check Dictionary value.
+	Safe wrapper.
+	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -64,7 +65,10 @@ struct MenuBuildManager_v
 		was_dictionary -- return
 	),
 
-
+	/*
+	Check Array value.
+	Items are stored as arrays.
+	*/
 	function isArrayValue value =
 	(
 		was_array = false
@@ -80,7 +84,10 @@ struct MenuBuildManager_v
 		was_array -- return
 	),
 
-
+	/*
+	Safe dictionary key test.
+	Avoids HasDictValue type errors.
+	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
 	(
 		was_found = false
@@ -100,7 +107,72 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
+	/*
+	Clone dictionary recursively.
+	Used when merging / pasting menus.
+	*/
+	function cloneDictionaryValue source_dictionary =
+	(
+		source_keys = GetDictKeys source_dictionary
+		dictionary_type = #string
 
+		if source_keys.count > 0 then
+		(
+			if classOf source_keys[1] == Name then
+			(
+				dictionary_type = #name
+			)
+		)
+
+		cloned_dictionary = Dictionary dictionary_type
+
+		for source_key in source_keys do
+		(
+			cloned_dictionary[source_key] = this.cloneValue source_dictionary[source_key]
+		)
+
+		cloned_dictionary -- return
+	),
+
+	/*
+	Clone array recursively.
+	Keeps ordered item arrays separate by value.
+	*/
+	function cloneArrayValue source_array =
+	(
+		cloned_array = #()
+
+		for source_value in source_array do
+		(
+			append cloned_array (this.cloneValue source_value)
+		)
+
+		cloned_array -- return
+	),
+
+	/*
+	Clone supported value.
+	*/
+	function cloneValue source_value =
+	(
+		cloned_value = source_value
+
+		if this.isDictionaryValue source_value then
+		(
+			cloned_value = this.cloneDictionaryValue source_value
+		)
+		else if this.isArrayValue source_value then
+		(
+			cloned_value = this.cloneArrayValue source_value
+		)
+
+		cloned_value -- return
+	),
+
+	/*
+	Get default startup directory.
+	This is where JSON data and startup loader live.
+	*/
 	function getDefaultStartupDirectory =
 	(
 		startup_directory = ""
@@ -126,7 +198,10 @@ struct MenuBuildManager_v
 		startup_directory -- return
 	),
 
-
+	/*
+	Get current source file path.
+	Used by generated startup script.
+	*/
 	function getCurrentSourceFilePath =
 	(
 		source_file_path = ""
@@ -143,7 +218,10 @@ struct MenuBuildManager_v
 		source_file_path -- return
 	),
 
-
+	/*
+	Get optional definition id.
+	Does not require MenuDefinition_v.id property.
+	*/
 	function getDefinitionId menu_definition =
 	(
 		definition_id = ""
@@ -165,7 +243,10 @@ struct MenuBuildManager_v
 		definition_id -- return
 	),
 
-
+	/*
+	Get optional definition quad menu id.
+	Does not require MenuDefinition_v.quad_menu_id property.
+	*/
 	function getDefinitionQuadMenuId menu_definition =
 	(
 		definition_quad_menu_id = ""
@@ -187,7 +268,10 @@ struct MenuBuildManager_v
 		definition_quad_menu_id -- return
 	),
 
-
+	/*
+	Normalize menu type.
+	Accepts name or string.
+	*/
 	function normalizeMenuType type_value =
 	(
 		normalized_type = #menu
@@ -206,7 +290,10 @@ struct MenuBuildManager_v
 		normalized_type -- return
 	),
 
-
+	/*
+	Normalize quad modifier.
+	Falls back to simple mapping when MenuRebuilder_v is unavailable.
+	*/
 	function normalizeQuadModifier modifier_value =
 	(
 		normalized_modifier = modifier_value
@@ -239,7 +326,10 @@ struct MenuBuildManager_v
 		normalized_modifier -- return
 	),
 
-
+	/*
+	Get active definition data.
+	Supports old _data convention.
+	*/
 	function getDefinitionData menu_definition =
 	(
 		definition_data = menu_definition.data
@@ -252,11 +342,21 @@ struct MenuBuildManager_v
 		definition_data -- return
 	),
 
-
-	function createSavedMacroItemData item_title macro_category macro_name =
+	/*
+	Create saved macro item object.
+	id is stored as property.
+	*/
+	function createSavedMacroItemData item_title macro_category macro_name id:undefined =
 	(
 		item_data = Dictionary #name
+		item_id = id
 
+		if item_id == undefined then
+		(
+			item_id = this.createGuidString()
+		)
+
+		item_data[#id] = item_id
 		item_data[#title] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name
@@ -264,18 +364,30 @@ struct MenuBuildManager_v
 		item_data -- return
 	),
 
-
-	function createSavedSubMenuData submenu_title submenu_items =
+	/*
+	Create saved submenu item object.
+	Child items are ordered arrays.
+	*/
+	function createSavedSubMenuData submenu_title submenu_items id:undefined =
 	(
 		submenu_data = Dictionary #name
+		submenu_id = id
 
+		if submenu_id == undefined then
+		(
+			submenu_id = this.createGuidString()
+		)
+
+		submenu_data[#id] = submenu_id
 		submenu_data[#title] = submenu_title
 		submenu_data[#items] = submenu_items
 
 		submenu_data -- return
 	),
 
-
+	/*
+	Check saved submenu object.
+	*/
 	function isSubMenuData item_data =
 	(
 		was_found = false
@@ -288,7 +400,9 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Check saved macro item object.
+	*/
 	function isMacroItemData item_data =
 	(
 		was_found = false
@@ -306,7 +420,9 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Check saved ordered item object.
+	*/
 	function isSavedItemData item_data =
 	(
 		was_found = false
@@ -331,35 +447,64 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Normalize arbitrary item data to ordered array.
+	Also migrates old keyed item data.
+	*/
 	function normalizeMenuItems items_value =
 	(
-		normalized_items = Dictionary #string
+		normalized_items = #()
 
-		if this.isDictionaryValue items_value then
+		if this.isArrayValue items_value then
+		(
+			for item_value in items_value do
+			(
+				if this.isSavedItemData item_value then
+				(
+					if not this.hasDictValueSafe item_value #id then
+					(
+						item_value[#id] = this.createGuidString()
+					)
+
+					if this.hasDictValueSafe item_value #items then
+					(
+						item_value[#items] = this.normalizeMenuItems item_value[#items]
+					)
+
+					append normalized_items item_value
+				)
+			)
+		)
+		else if this.isDictionaryValue items_value then
 		(
 			item_keys = GetDictKeys items_value
 
 			for item_key in item_keys do
 			(
 				item_value = items_value[item_key]
+				item_id = item_key as string
 
 				if this.isSavedItemData item_value then
 				(
-					normalized_items[item_key] = item_value
+					item_value[#id] = item_id
+
+					if this.hasDictValueSafe item_value #items then
+					(
+						item_value[#items] = this.normalizeMenuItems item_value[#items]
+					)
+
+					append normalized_items item_value
 				)
 				else if this.isDictionaryValue item_value then
 				(
 					submenu_items = this.normalizeMenuItems item_value
-					saved_guid = this.createGuidString()
-					normalized_items[saved_guid] = this.createSavedSubMenuData item_key submenu_items
+					append normalized_items (this.createSavedSubMenuData item_id submenu_items id:item_id)
 				)
 				else if classOf item_value == Array then
 				(
 					if item_value.count >= 2 then
 					(
-						saved_guid = this.createGuidString()
-						normalized_items[saved_guid] = this.createSavedMacroItemData item_key item_value[1] item_value[2]
+						append normalized_items (this.createSavedMacroItemData item_id item_value[1] item_value[2] id:item_id)
 					)
 				)
 			)
@@ -368,7 +513,9 @@ struct MenuBuildManager_v
 		normalized_items -- return
 	),
 
-
+	/*
+	Get menu data dictionary value.
+	*/
 	function getMenuDataValue menu_data key_name default_value =
 	(
 		result_value = default_value
@@ -381,7 +528,9 @@ struct MenuBuildManager_v
 		result_value -- return
 	),
 
-
+	/*
+	Get saved menu type.
+	*/
 	function getSavedMenuType menu_data =
 	(
 		saved_type = #menu
@@ -397,7 +546,9 @@ struct MenuBuildManager_v
 		saved_type -- return
 	),
 
-
+	/*
+	Get saved menu title.
+	*/
 	function getSavedMenuTitle menu_data =
 	(
 		menu_title = ""
@@ -413,7 +564,9 @@ struct MenuBuildManager_v
 		menu_title -- return
 	),
 
-
+	/*
+	Get saved item title.
+	*/
 	function getSavedItemTitle item_data =
 	(
 		item_title = ""
@@ -429,7 +582,9 @@ struct MenuBuildManager_v
 		item_title -- return
 	),
 
-
+	/*
+	Get saved quad modifier.
+	*/
 	function getSavedQuadModifier menu_data =
 	(
 		quad_modifier = undefined
@@ -445,7 +600,9 @@ struct MenuBuildManager_v
 		quad_modifier -- return
 	),
 
-
+	/*
+	Get saved QMNX clear directory.
+	*/
 	function getSavedQmnxClearDirectory menu_data =
 	(
 		clear_directory = ""
@@ -461,7 +618,9 @@ struct MenuBuildManager_v
 		clear_directory -- return
 	),
 
-
+	/*
+	Get saved clear default menu flag.
+	*/
 	function getSavedClearDefaultMenu menu_data =
 	(
 		clear_flag = false
@@ -477,13 +636,17 @@ struct MenuBuildManager_v
 		clear_flag -- return
 	),
 
-
+	/*
+	Check valid saved menu data.
+	*/
 	function isValidSavedMenuData menu_data =
 	(
 		(this.getSavedMenuTitle menu_data != "") -- return
 	),
 
-
+	/*
+	Check if saved menu should be registered in main menu callback.
+	*/
 	function isMenuCallbackData menu_data =
 	(
 		saved_type = this.getSavedMenuType menu_data
@@ -506,7 +669,9 @@ struct MenuBuildManager_v
 		)
 	),
 
-
+	/*
+	Check if saved menu should be registered in quad callback.
+	*/
 	function isQuadCallbackData menu_data =
 	(
 		saved_type = this.getSavedMenuType menu_data
@@ -529,7 +694,9 @@ struct MenuBuildManager_v
 		)
 	),
 
-
+	/*
+	Check if quad modifies default viewport quad.
+	*/
 	function isDefaultQuadInjectionData menu_data =
 	(
 		was_found = false
@@ -545,7 +712,10 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Create saved menu root data.
+	Items are always ordered arrays.
+	*/
 	function createSavedRootData menu_definition definition_type =
 	(
 		root_data = undefined
@@ -604,7 +774,7 @@ struct MenuBuildManager_v
 
 			root_data[#title] = menu_definition.title
 			root_data[#type] = definition_type
-			root_data[#items] = Dictionary #string
+			root_data[#items] = #()
 			root_data[#quad_context_id] = menu_definition.quad_context_id
 			root_data[#quad_modifier] = this.normalizeQuadModifier menu_definition.quad_modifier
 
@@ -636,7 +806,9 @@ struct MenuBuildManager_v
 		root_data -- return
 	),
 
-
+	/*
+	Build saved data for one quad position definition.
+	*/
 	function buildSavedQuadDataFromDefinition quad_definition =
 	(
 		quad_source_data = this.getDefinitionData quad_definition
@@ -661,35 +833,69 @@ struct MenuBuildManager_v
 		quad_data -- return
 	),
 
+	/*
+	Detect if value is MenuDefinition-like struct.
+	Used to separate quad definitions from item dictionaries.
+	*/
+	function isMenuDefinitionLike value =
+	(
+		was_definition = false
 
+		try
+		(
+			if value.title != undefined then
+			(
+				if value.type != undefined then
+				(
+					was_definition = true
+				)
+			)
+		)
+		catch
+		(
+			was_definition = false
+		)
+
+		was_definition -- return
+	),
+
+	/*
+	Build saved root for quad menu definition.
+	Root data array can contain quad definitions or direct items.
+	*/
 	function buildSavedQuadRootDataFromDefinition menu_definition =
 	(
 		root_data = this.createSavedRootData menu_definition #quad
 
 		if root_data != undefined then
 		(
-			root_data[#items] = Dictionary #string
+			root_data[#items] = #()
 			root_data[#quad_menus] = #()
 
 			quad_definition_array = this.getDefinitionData menu_definition
 
 			if this.isArrayValue quad_definition_array then
 			(
-				for quad_definition in quad_definition_array do
+				if quad_definition_array.count > 0 and this.isMenuDefinitionLike quad_definition_array[1] then
 				(
-					append root_data[#quad_menus] (this.buildSavedQuadDataFromDefinition quad_definition)
+					for quad_definition in quad_definition_array do
+					(
+						append root_data[#quad_menus] (this.buildSavedQuadDataFromDefinition quad_definition)
+					)
 				)
-			)
-			else
-			(
-				root_data[#items] = this.normalizeMenuItems quad_definition_array
+				else
+				(
+					root_data[#items] = this.normalizeMenuItems quad_definition_array
+				)
 			)
 		)
 
 		root_data -- return
 	),
 
-
+	/*
+	Build saved root for regular menu.
+	*/
 	function buildSavedSingleRootDataFromDefinition menu_definition definition_type =
 	(
 		root_data = this.createSavedRootData menu_definition definition_type
@@ -705,7 +911,9 @@ struct MenuBuildManager_v
 		root_data -- return
 	),
 
-
+	/*
+	Build saved menu data from definition.
+	*/
 	function buildSavedMenuDataFromDefinition menu_definition =
 	(
 		menu_data = undefined
@@ -737,7 +945,9 @@ struct MenuBuildManager_v
 		menu_data -- return
 	),
 
-
+	/*
+	Build all saved menu data from queued definitions.
+	*/
 	function buildSavedMenusData =
 	(
 		this.saved_menus_data = #()
@@ -757,7 +967,9 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 
-
+	/*
+	Get split JSON root directory.
+	*/
 	function getSplitDataRootDirectory =
 	(
 		root_directory = this.split_data_root_directory
@@ -777,19 +989,25 @@ struct MenuBuildManager_v
 		root_directory -- return
 	),
 
-
+	/*
+	Get split menu folder.
+	*/
 	function getSplitMenusDirectory =
 	(
 		((this.getSplitDataRootDirectory()) + "\\" + this.menus_folder_name) -- return
 	),
 
-
+	/*
+	Get split quad folder.
+	*/
 	function getSplitQuadsDirectory =
 	(
 		((this.getSplitDataRootDirectory()) + "\\" + this.quads_folder_name) -- return
 	),
 
-
+	/*
+	Ensure split JSON folders exist.
+	*/
 	function ensureSplitJsonDirectories =
 	(
 		try
@@ -806,7 +1024,9 @@ struct MenuBuildManager_v
 		ok -- return
 	),
 
-
+	/*
+	Sanitize title into safe JSON filename.
+	*/
 	function sanitizeJsonFileName source_text =
 	(
 		file_name = source_text as string
@@ -829,7 +1049,9 @@ struct MenuBuildManager_v
 		file_name -- return
 	),
 
-
+	/*
+	Get split JSON file path for menu data.
+	*/
 	function getSplitJsonFilePath menu_data =
 	(
 		menu_title = this.getSavedMenuTitle menu_data
@@ -849,7 +1071,59 @@ struct MenuBuildManager_v
 		file_path -- return
 	),
 
+	/*
+	Get split JSON file path from title/type.
+	Used for direct file lookup.
+	*/
+	function getSplitJsonFilePathByTitle menu_title menu_type:#menu =
+	(
+		file_name = this.sanitizeJsonFileName menu_title
+		file_path = ""
 
+		if this.normalizeMenuType menu_type == #quad then
+		(
+			file_path = (this.getSplitQuadsDirectory()) + "\\" + file_name + ".json"
+		)
+		else
+		(
+			file_path = (this.getSplitMenusDirectory()) + "\\" + file_name + ".json"
+		)
+
+		file_path -- return
+	),
+
+	/*
+	Invalidate split JSON cache.
+	Call after external file edits.
+	*/
+	function invalidateSplitJsonCache =
+	(
+		this.split_json_cache_valid = false
+		this.split_json_cache_data = #()
+		this.split_json_cache_load_ms = 0
+
+		ok -- return
+	),
+
+	/*
+	Set split JSON cache.
+	*/
+	function setSplitJsonCache menus_data_array load_ms:0 =
+	(
+		if this.split_json_cache_enabled then
+		(
+			this.split_json_cache_data = menus_data_array
+			this.split_json_cache_valid = true
+			this.split_json_cache_load_ms = load_ms
+		)
+
+		menus_data_array -- return
+	),
+
+	/*
+	Delete json files from folder.
+	Used before split save.
+	*/
 	function deleteJsonFilesInDirectory directory_path =
 	(
 		json_files = getFiles (directory_path + "\\*.json")
@@ -869,48 +1143,66 @@ struct MenuBuildManager_v
 		json_files.count -- return
 	),
 
-
+	/*
+	Clear split JSON files and cache.
+	*/
 	function clearSplitJsonFiles =
 	(
 		this.ensureSplitJsonDirectories()
 		deleted_count = 0
 		deleted_count += this.deleteJsonFilesInDirectory (this.getSplitMenusDirectory())
 		deleted_count += this.deleteJsonFilesInDirectory (this.getSplitQuadsDirectory())
+		this.invalidateSplitJsonCache()
 
 		deleted_count -- return
 	),
 
-
-	function loadMenusDataFromSplitJson =
+	/*
+	Load split JSON files once and cache result.
+	*/
+	function loadMenusDataFromSplitJson force_reload:false =
 	(
-		timer_load_split = timeStamp()
-		json_io = MenuJsonIO_v()
-		menus_data_array = #()
-
-		this.ensureSplitJsonDirectories()
-
-		json_files = #()
-		join json_files (getFiles ((this.getSplitMenusDirectory()) + "\\*.json"))
-		join json_files (getFiles ((this.getSplitQuadsDirectory()) + "\\*.json"))
-
-		for json_file in json_files do
+		if this.split_json_cache_enabled and this.split_json_cache_valid and not force_reload then
 		(
-			file_menus_data = json_io.loadMenusDataFromJsonFile json_file
-
-			for menu_data in file_menus_data do
-			(
-				append menus_data_array menu_data
-			)
+			format "SPLIT JSON LOAD: cached % menus in 0 ms. Original load was % ms.\n" this.split_json_cache_data.count this.split_json_cache_load_ms
+			this.split_json_cache_data -- return
 		)
+		else
+		(
+			timer_load_split = timeStamp()
+			json_io = MenuJsonIO_v()
+			menus_data_array = #()
 
-		menus_data_array = this.groupMenusUnderCustomMenuRoot menus_data_array
+			this.ensureSplitJsonDirectories()
 
-		format "SPLIT JSON LOAD: % files, % menus in % ms\n" json_files.count menus_data_array.count ((timeStamp()) - timer_load_split)
+			json_files = #()
+			join json_files (getFiles ((this.getSplitMenusDirectory()) + "\\*.json"))
+			join json_files (getFiles ((this.getSplitQuadsDirectory()) + "\\*.json"))
 
-		menus_data_array -- return
+			for json_file in json_files do
+			(
+				file_menus_data = json_io.loadMenusDataFromJsonFile json_file
+
+				for menu_data in file_menus_data do
+				(
+					append menus_data_array menu_data
+				)
+			)
+
+			menus_data_array = this.groupMenusUnderCustomMenuRoot menus_data_array
+			load_ms = ((timeStamp()) - timer_load_split)
+
+			this.setSplitJsonCache menus_data_array load_ms:load_ms
+
+			format "SPLIT JSON LOAD: % files, % menus in % ms\n" json_files.count menus_data_array.count load_ms
+
+			menus_data_array -- return
+		)
 	),
 
-
+	/*
+	Load saved data from split JSON or old single JSON fallback.
+	*/
 	function loadSavedMenusDataFromJson =
 	(
 		menus_data_array = #()
@@ -936,7 +1228,9 @@ struct MenuBuildManager_v
 		menus_data_array -- return
 	),
 
-
+	/*
+	Write saved menu data to split or single JSON.
+	*/
 	function writeSavedMenusDataToJson menus_data_array =
 	(
 		saved_path = this.data_file_path
@@ -962,24 +1256,31 @@ struct MenuBuildManager_v
 		(
 			json_io = MenuJsonIO_v()
 			json_io.saveMenusDataToJsonFile menus_data_array this.data_file_path
+			this.invalidateSplitJsonCache()
 		)
 
 		saved_path -- return
 	),
 
-
+	/*
+	Check custom root menu title.
+	*/
 	function isCustomMenuRootTitle menu_title =
 	(
 		(menu_title == this.custom_menu_root_title) -- return
 	),
 
-
+	/*
+	Check main menu bar title.
+	*/
 	function isMainMenuBarTitle menu_title =
 	(
 		(menu_title == this.main_menu_bar_title) -- return
 	),
 
-
+	/*
+	Should menu be nested under _Custom-Menus at runtime.
+	*/
 	function shouldNestMenuUnderCustomRoot menu_data =
 	(
 		should_nest = false
@@ -1003,7 +1304,9 @@ struct MenuBuildManager_v
 		should_nest -- return
 	),
 
-
+	/*
+	Create runtime _Custom-Menus root data.
+	*/
 	function createCustomMenuRootData =
 	(
 		root_data = Dictionary #name
@@ -1012,7 +1315,7 @@ struct MenuBuildManager_v
 		root_data[#id] = this.custom_menu_root_id
 		root_data[#title] = this.custom_menu_root_title
 		root_data[#type] = #menu
-		root_data[#items] = Dictionary #string
+		root_data[#items] = #()
 		root_data[#quad_context_id] = ""
 		root_data[#quad_modifier] = undefined
 		root_data[#quad_position] = undefined
@@ -1024,7 +1327,9 @@ struct MenuBuildManager_v
 		root_data -- return
 	),
 
-
+	/*
+	Check custom root data.
+	*/
 	function isCustomMenuRootData menu_data =
 	(
 		was_found = false
@@ -1043,45 +1348,60 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Create submenu item from root menu data.
+	Used for runtime _Custom-Menus grouping.
+	*/
 	function createSubMenuItemDataFromRootMenuData menu_data =
 	(
 		submenu_data = Dictionary #name
 
+		submenu_data[#id] = menu_data[#id]
 		submenu_data[#title] = menu_data[#title]
 		submenu_data[#items] = menu_data[#items]
 
 		submenu_data -- return
 	),
 
+	/*
+	Find item index by title in ordered item array.
+	*/
+	function findSavedItemIndexByTitle saved_items item_title =
+	(
+		found_index = 0
 
+		if this.isArrayValue saved_items then
+		(
+			for item_index = 1 to saved_items.count while found_index == 0 do
+			(
+				if this.getSavedItemTitle saved_items[item_index] == item_title then
+				(
+					found_index = item_index
+				)
+			)
+		)
+
+		found_index -- return
+	),
+
+	/*
+	Add root menu data as child of _Custom-Menus.
+	*/
 	function addMenuDataToCustomMenuRoot custom_root_data menu_data =
 	(
 		custom_items = custom_root_data[#items]
 		menu_title = this.getSavedMenuTitle menu_data
-		menu_id = ""
-
-		if this.hasDictValueSafe menu_data #id then
-		(
-			menu_id = menu_data[#id]
-		)
-
-		if menu_id == undefined or menu_id == "" then
-		(
-			menu_id = this.createGuidString()
-		)
-
 		new_submenu_data = this.createSubMenuItemDataFromRootMenuData menu_data
-		existing_key = this.findSavedItemKeyByTitle custom_items menu_title
+		existing_index = this.findSavedItemIndexByTitle custom_items menu_title
 
-		if existing_key != undefined then
+		if existing_index > 0 then
 		(
-			existing_submenu_data = custom_items[existing_key]
-			custom_items[existing_key] = this.mergeSavedItemData existing_submenu_data new_submenu_data
+			existing_submenu_data = custom_items[existing_index]
+			custom_items[existing_index] = this.mergeSavedItemData existing_submenu_data new_submenu_data
 		)
 		else
 		(
-			custom_items[menu_id] = new_submenu_data
+			append custom_items new_submenu_data
 		)
 
 		custom_root_data[#items] = custom_items
@@ -1089,7 +1409,9 @@ struct MenuBuildManager_v
 		custom_root_data -- return
 	),
 
-
+	/*
+	Group menu roots under runtime _Custom-Menus root.
+	*/
 	function groupMenusUnderCustomMenuRoot menus_data_array =
 	(
 		grouped_menus_data = #()
@@ -1138,25 +1460,18 @@ struct MenuBuildManager_v
 		grouped_menus_data -- return
 	),
 
-
-	function createMenuRootDataFromCustomRootChild child_key child_data =
+	/*
+	Convert _Custom-Menus child back into parent menu root for split JSON.
+	*/
+	function createMenuRootDataFromCustomRootChild child_data =
 	(
 		child_menu_data = Dictionary #name
-		child_title = ""
-		child_items = Dictionary #string
-
-		if this.hasDictValueSafe child_data #title then
-		(
-			child_title = child_data[#title]
-		)
-
-		if this.hasDictValueSafe child_data #items then
-		(
-			child_items = child_data[#items]
-		)
+		child_id = this.getMenuDataValue child_data #id (this.createGuidString())
+		child_title = this.getMenuDataValue child_data #title ""
+		child_items = this.getMenuDataValue child_data #items #()
 
 		child_menu_data[#version] = this.version
-		child_menu_data[#id] = child_key
+		child_menu_data[#id] = child_id
 		child_menu_data[#title] = child_title
 		child_menu_data[#type] = #menu
 		child_menu_data[#items] = child_items
@@ -1171,7 +1486,9 @@ struct MenuBuildManager_v
 		child_menu_data -- return
 	),
 
-
+	/*
+	Explode runtime _Custom-Menus into one parent-menu file per child.
+	*/
 	function explodeCustomMenuRootForSplitJson menus_data_array =
 	(
 		split_menus_data = #()
@@ -1183,13 +1500,9 @@ struct MenuBuildManager_v
 			(
 				if this.hasDictValueSafe menu_data #items then
 				(
-					custom_items = menu_data[#items]
-					custom_item_keys = GetDictKeys custom_items
-
-					for custom_item_key in custom_item_keys do
+					for child_data in menu_data[#items] do
 					(
-						child_data = custom_items[custom_item_key]
-						append split_menus_data (this.createMenuRootDataFromCustomRootChild custom_item_key child_data)
+						append split_menus_data (this.createMenuRootDataFromCustomRootChild child_data)
 					)
 				)
 			)
@@ -1202,7 +1515,10 @@ struct MenuBuildManager_v
 		split_menus_data -- return
 	),
 
-
+	/*
+	Save split JSON files.
+	Each parent menu is one JSON file.
+	*/
 	function saveMenusDataToSplitJson menus_data_array =
 	(
 		timer_save_split = timeStamp()
@@ -1221,12 +1537,17 @@ struct MenuBuildManager_v
 			)
 		)
 
-		format "SPLIT JSON SAVE: % files in % ms\n" split_menus_data_array.count ((timeStamp()) - timer_save_split)
+		save_ms = ((timeStamp()) - timer_save_split)
+		this.setSplitJsonCache (this.groupMenusUnderCustomMenuRoot split_menus_data_array) load_ms:0
+
+		format "SPLIT JSON SAVE: % files in % ms\n" split_menus_data_array.count save_ms
 
 		this.getSplitDataRootDirectory() -- return
 	),
 
-
+	/*
+	Find existing definition by title in current manager.
+	*/
 	function findMenuDefinitionByTitle menu_title =
 	(
 		found_definition = undefined
@@ -1242,60 +1563,15 @@ struct MenuBuildManager_v
 		found_definition -- return
 	),
 
-
-	function findSavedItemKeyByTitle saved_items item_title =
-	(
-		found_key = undefined
-
-		if this.isDictionaryValue saved_items then
-		(
-			saved_item_keys = GetDictKeys saved_items
-
-			for saved_item_key in saved_item_keys while found_key == undefined do
-			(
-				saved_item_data = saved_items[saved_item_key]
-
-				if this.getSavedItemTitle saved_item_data == item_title then
-				(
-					found_key = saved_item_key
-				)
-			)
-		)
-
-		found_key -- return
-	),
-
-
-	function findSavedChildMenuDataInCustomRoot menu_title custom_root_data =
-	(
-		found_menu_data = undefined
-
-		if custom_root_data != undefined then
-		(
-			if this.hasDictValueSafe custom_root_data #items then
-			(
-				custom_items = custom_root_data[#items]
-				child_key = this.findSavedItemKeyByTitle custom_items menu_title
-
-				if child_key != undefined then
-				(
-					child_data = custom_items[child_key]
-					found_menu_data = this.createMenuRootDataFromCustomRootChild child_key child_data
-				)
-			)
-		)
-
-		found_menu_data -- return
-	),
-
-
-	function findSavedMenuDataByTitle menu_title =
+	/*
+	Find menu by title in array, including runtime _Custom-Menus children.
+	*/
+	function findSavedMenuDataByTitleInArray menu_title menus_data_array =
 	(
 		found_menu_data = undefined
 		custom_root_data = undefined
-		json_menus_data = this.loadSavedMenusDataFromJson()
 
-		for menu_data in json_menus_data while found_menu_data == undefined do
+		for menu_data in menus_data_array while found_menu_data == undefined do
 		(
 			if this.isCustomMenuRootData menu_data then
 			(
@@ -1316,7 +1592,101 @@ struct MenuBuildManager_v
 		found_menu_data -- return
 	),
 
+	/*
+	Find child menu data under _Custom-Menus root.
+	*/
+	function findSavedChildMenuDataInCustomRoot menu_title custom_root_data =
+	(
+		found_menu_data = undefined
 
+		if custom_root_data != undefined then
+		(
+			if this.hasDictValueSafe custom_root_data #items then
+			(
+				child_index = this.findSavedItemIndexByTitle custom_root_data[#items] menu_title
+
+				if child_index > 0 then
+				(
+					found_menu_data = this.createMenuRootDataFromCustomRootChild custom_root_data[#items][child_index]
+				)
+			)
+		)
+
+		found_menu_data -- return
+	),
+
+	/*
+	Load one split menu file by path.
+	*/
+	function loadSplitMenuDataFile file_path menu_title =
+	(
+		found_menu_data = undefined
+
+		if doesFileExist file_path then
+		(
+			json_io = MenuJsonIO_v()
+			file_menus_data = json_io.loadMenusDataFromJsonFile file_path
+			found_menu_data = this.findSavedMenuDataByTitleInArray menu_title file_menus_data
+		)
+
+		found_menu_data -- return
+	),
+
+	/*
+	Load one split menu by title without reading all files.
+	*/
+	function loadSplitMenuDataByTitle menu_title =
+	(
+		found_menu_data = undefined
+
+		if this.split_json_enabled then
+		(
+			menu_file_path = this.getSplitJsonFilePathByTitle menu_title menu_type:#menu
+			found_menu_data = this.loadSplitMenuDataFile menu_file_path menu_title
+
+			if found_menu_data == undefined then
+			(
+				quad_file_path = this.getSplitJsonFilePathByTitle menu_title menu_type:#quad
+				found_menu_data = this.loadSplitMenuDataFile quad_file_path menu_title
+			)
+		)
+
+		found_menu_data -- return
+	),
+
+	/*
+	Find saved menu by title.
+	Uses current data, direct file lookup, then cached full load.
+	*/
+	function findSavedMenuDataByTitle menu_title =
+	(
+		found_menu_data = undefined
+
+		if this.saved_menus_data.count > 0 then
+		(
+			found_menu_data = this.findSavedMenuDataByTitleInArray menu_title this.saved_menus_data
+		)
+
+		if found_menu_data == undefined then
+		(
+			if this.split_json_enabled then
+			(
+				found_menu_data = this.loadSplitMenuDataByTitle menu_title
+			)
+		)
+
+		if found_menu_data == undefined then
+		(
+			json_menus_data = this.loadSavedMenusDataFromJson()
+			found_menu_data = this.findSavedMenuDataByTitleInArray menu_title json_menus_data
+		)
+
+		found_menu_data -- return
+	),
+
+	/*
+	Create quad definition from saved quad data.
+	*/
 	function createQuadDefinitionFromSavedQuadData quad_data root_menu_data =
 	(
 		quad_definition = MenuDefinition_v \
@@ -1333,7 +1703,9 @@ struct MenuBuildManager_v
 		quad_definition -- return
 	),
 
-
+	/*
+	Create MenuDefinition_v from saved root data.
+	*/
 	function createMenuDefinitionFromSavedMenuData menu_data =
 	(
 		definition_type = this.getSavedMenuType menu_data
@@ -1385,7 +1757,10 @@ struct MenuBuildManager_v
 		menu_definition -- return
 	),
 
-
+	/*
+	Get or create menu definition.
+	Existing split JSON menu is loaded by title if found.
+	*/
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
 		if clear_default_menu == undefined then
@@ -1444,7 +1819,9 @@ struct MenuBuildManager_v
 		menu_definition -- return
 	),
 
-
+	/*
+	Get or create quad menu definition.
+	*/
 	function getQuad title clear_default_menu:false =
 	(
 		quad_menu_definition = this.menu title type:#quad clear_default_menu:clear_default_menu
@@ -1453,7 +1830,9 @@ struct MenuBuildManager_v
 		quad_menu_definition -- return
 	),
 
-
+	/*
+	Paste existing menu as one whole quad position.
+	*/
 	function pasteMenuAsSingleQuad menu_title quad_title:"Default Viewport Quad" quad_position:1 quad_modifier:#nonePressed clear_default_menu:false =
 	(
 		global MenuBuildManager
@@ -1473,61 +1852,9 @@ struct MenuBuildManager_v
 		quad_menu_definition -- return
 	),
 
-
-	function cloneDictionaryValue source_dictionary =
-	(
-		source_keys = GetDictKeys source_dictionary
-		dictionary_type = #string
-
-		if source_keys.count > 0 then
-		(
-			if classOf source_keys[1] == Name then
-			(
-				dictionary_type = #name
-			)
-		)
-
-		cloned_dictionary = Dictionary dictionary_type
-
-		for source_key in source_keys do
-		(
-			cloned_dictionary[source_key] = this.cloneValue source_dictionary[source_key]
-		)
-
-		cloned_dictionary -- return
-	),
-
-
-	function cloneArrayValue source_array =
-	(
-		cloned_array = #()
-
-		for source_value in source_array do
-		(
-			append cloned_array (this.cloneValue source_value)
-		)
-
-		cloned_array -- return
-	),
-
-
-	function cloneValue source_value =
-	(
-		cloned_value = source_value
-
-		if this.isDictionaryValue source_value then
-		(
-			cloned_value = this.cloneDictionaryValue source_value
-		)
-		else if classOf source_value == Array then
-		(
-			cloned_value = this.cloneArrayValue source_value
-		)
-
-		cloned_value -- return
-	),
-
-
+	/*
+	Paste existing menu items into quad definition.
+	*/
 	function pasteMenuToQuad menu_title quad_title:"Default Viewport Quad" quad_modifier:#nonePressed quad_position:#TopRight clear_default_menu:false =
 	(
 		quad_definition = undefined
@@ -1547,7 +1874,7 @@ struct MenuBuildManager_v
 				manager:this \
 				clear_default_menu:clear_default_menu
 
-			quad_definition.data = this.cloneDictionaryValue saved_menu_data[#items]
+			quad_definition.data = this.cloneArrayValue saved_menu_data[#items]
 			quad_definition._data = quad_definition.data
 
 			this.waitForBuild quad_definition
@@ -1556,7 +1883,10 @@ struct MenuBuildManager_v
 		quad_definition -- return
 	),
 
-
+	/*
+	Get data signature.
+	Used for root merge.
+	*/
 	function getMenuDataSignature menu_data =
 	(
 		signature = ""
@@ -1572,7 +1902,10 @@ struct MenuBuildManager_v
 		signature -- return
 	),
 
-
+	/*
+	Merge saved item data.
+	If both are submenus, child arrays are merged.
+	*/
 	function mergeSavedItemData old_item_data new_item_data =
 	(
 		merged_item_data = new_item_data
@@ -1587,39 +1920,37 @@ struct MenuBuildManager_v
 		merged_item_data -- return
 	),
 
-
+	/*
+	Merge ordered item arrays.
+	Existing order is preserved; new unmatched items append.
+	*/
 	function mergeSavedItems old_items new_items =
 	(
-		merged_items = Dictionary #string
+		merged_items = #()
 
-		if this.isDictionaryValue old_items then
+		if this.isArrayValue old_items then
 		(
-			old_item_keys = GetDictKeys old_items
-
-			for old_item_key in old_item_keys do
+			for old_item in old_items do
 			(
-				merged_items[old_item_key] = old_items[old_item_key]
+				append merged_items old_item
 			)
 		)
 
-		if this.isDictionaryValue new_items then
+		if this.isArrayValue new_items then
 		(
-			new_item_keys = GetDictKeys new_items
-
-			for new_item_key in new_item_keys do
+			for new_item in new_items do
 			(
-				new_item_data = new_items[new_item_key]
-				new_item_title = this.getSavedItemTitle new_item_data
-				old_item_key = this.findSavedItemKeyByTitle merged_items new_item_title
+				new_item_title = this.getSavedItemTitle new_item
+				old_item_index = this.findSavedItemIndexByTitle merged_items new_item_title
 
-				if old_item_key != undefined and new_item_title != "" then
+				if old_item_index > 0 and new_item_title != "" then
 				(
-					old_item_data = merged_items[old_item_key]
-					merged_items[old_item_key] = this.mergeSavedItemData old_item_data new_item_data
+					old_item_data = merged_items[old_item_index]
+					merged_items[old_item_index] = this.mergeSavedItemData old_item_data new_item
 				)
 				else
 				(
-					merged_items[new_item_key] = new_item_data
+					append merged_items new_item
 				)
 			)
 		)
@@ -1627,7 +1958,9 @@ struct MenuBuildManager_v
 		merged_items -- return
 	),
 
-
+	/*
+	Get quad position as text.
+	*/
 	function getSavedQuadPositionText quad_data =
 	(
 		position_text = ""
@@ -1643,7 +1976,9 @@ struct MenuBuildManager_v
 		position_text -- return
 	),
 
-
+	/*
+	Find quad data by position.
+	*/
 	function findSavedQuadDataIndexByPosition quad_menus position_text =
 	(
 		found_index = 0
@@ -1662,7 +1997,9 @@ struct MenuBuildManager_v
 		found_index -- return
 	),
 
-
+	/*
+	Merge one quad data object.
+	*/
 	function mergeSavedQuadData old_quad_data new_quad_data =
 	(
 		merged_quad_data = old_quad_data
@@ -1677,8 +2014,8 @@ struct MenuBuildManager_v
 			merged_quad_data[#quad_position] = new_quad_data[#quad_position]
 		)
 
-		old_items = Dictionary #string
-		new_items = Dictionary #string
+		old_items = #()
+		new_items = #()
 
 		if this.hasDictValueSafe old_quad_data #items then
 		(
@@ -1695,7 +2032,9 @@ struct MenuBuildManager_v
 		merged_quad_data -- return
 	),
 
-
+	/*
+	Merge quad arrays by position.
+	*/
 	function mergeSavedQuadMenus old_quad_menus new_quad_menus =
 	(
 		merged_quad_menus = #()
@@ -1729,37 +2068,20 @@ struct MenuBuildManager_v
 		merged_quad_menus -- return
 	),
 
-
+	/*
+	Merge menu root data.
+	*/
 	function mergeSavedMenuData old_menu_data new_menu_data =
 	(
 		merged_menu_data = old_menu_data
 
 		merged_menu_data[#version] = this.version
 
-		if this.hasDictValueSafe new_menu_data #title then
-		(
-			merged_menu_data[#title] = new_menu_data[#title]
-		)
-
-		if this.hasDictValueSafe new_menu_data #type then
-		(
-			merged_menu_data[#type] = new_menu_data[#type]
-		)
-
-		if this.hasDictValueSafe new_menu_data #quad_context_id then
-		(
-			merged_menu_data[#quad_context_id] = new_menu_data[#quad_context_id]
-		)
-
-		if this.hasDictValueSafe new_menu_data #quad_modifier then
-		(
-			merged_menu_data[#quad_modifier] = new_menu_data[#quad_modifier]
-		)
-
-		if this.hasDictValueSafe new_menu_data #quad_position then
-		(
-			merged_menu_data[#quad_position] = new_menu_data[#quad_position]
-		)
+		if this.hasDictValueSafe new_menu_data #title then merged_menu_data[#title] = new_menu_data[#title]
+		if this.hasDictValueSafe new_menu_data #type then merged_menu_data[#type] = new_menu_data[#type]
+		if this.hasDictValueSafe new_menu_data #quad_context_id then merged_menu_data[#quad_context_id] = new_menu_data[#quad_context_id]
+		if this.hasDictValueSafe new_menu_data #quad_modifier then merged_menu_data[#quad_modifier] = new_menu_data[#quad_modifier]
+		if this.hasDictValueSafe new_menu_data #quad_position then merged_menu_data[#quad_position] = new_menu_data[#quad_position]
 
 		if this.hasDictValueSafe new_menu_data #qmnx_clear_directory then
 		(
@@ -1777,40 +2099,28 @@ struct MenuBuildManager_v
 			)
 		)
 
-		old_items = Dictionary #string
-		new_items = Dictionary #string
+		old_items = #()
+		new_items = #()
 
-		if this.hasDictValueSafe old_menu_data #items then
-		(
-			old_items = old_menu_data[#items]
-		)
-
-		if this.hasDictValueSafe new_menu_data #items then
-		(
-			new_items = new_menu_data[#items]
-		)
+		if this.hasDictValueSafe old_menu_data #items then old_items = old_menu_data[#items]
+		if this.hasDictValueSafe new_menu_data #items then new_items = new_menu_data[#items]
 
 		merged_menu_data[#items] = this.mergeSavedItems old_items new_items
 
 		old_quad_menus = #()
 		new_quad_menus = #()
 
-		if this.hasDictValueSafe old_menu_data #quad_menus then
-		(
-			old_quad_menus = old_menu_data[#quad_menus]
-		)
-
-		if this.hasDictValueSafe new_menu_data #quad_menus then
-		(
-			new_quad_menus = new_menu_data[#quad_menus]
-		)
+		if this.hasDictValueSafe old_menu_data #quad_menus then old_quad_menus = old_menu_data[#quad_menus]
+		if this.hasDictValueSafe new_menu_data #quad_menus then new_quad_menus = new_menu_data[#quad_menus]
 
 		merged_menu_data[#quad_menus] = this.mergeSavedQuadMenus old_quad_menus new_quad_menus
 
 		merged_menu_data -- return
 	),
 
-
+	/*
+	Merge menu root arrays by type+title.
+	*/
 	function mergeSavedMenusData old_menus_data new_menus_data =
 	(
 		merged_menus_data = #()
@@ -1819,10 +2129,7 @@ struct MenuBuildManager_v
 		(
 			old_signature = this.getMenuDataSignature old_menu_data
 
-			if old_signature != "" then
-			(
-				append merged_menus_data old_menu_data
-			)
+			if old_signature != "" then append merged_menus_data old_menu_data
 		)
 
 		for new_menu_data in new_menus_data do
@@ -1857,7 +2164,9 @@ struct MenuBuildManager_v
 		merged_menus_data -- return
 	),
 
-
+	/*
+	Clear all JSON menu data.
+	*/
 	function clearJsonFile =
 	(
 		this.saved_menus_data = #()
@@ -1876,7 +2185,9 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 
-
+	/*
+	Build saved menu data if needed.
+	*/
 	function buildMenus =
 	(
 		if this.saved_menus_data.count == 0 then
@@ -1887,7 +2198,10 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 
-
+	/*
+	Save JSON data.
+	Split mode writes one parent menu per file.
+	*/
 	function saveJsonData =
 	(
 		if this.saved_menus_data.count == 0 then
@@ -1918,6 +2232,84 @@ struct MenuBuildManager_v
 	),
 
 
+	/*
+	Convert ordered item array to legacy keyed dictionary for old MenuRebuilder_v.
+	This is rebuild-time adapter only. JSON stays ordered array.
+	*/
+	function createLegacyItemDictionaryForRebuilder ordered_items =
+	(
+		legacy_items = Dictionary #string
+
+		if this.isArrayValue ordered_items then
+		(
+			for item_data in ordered_items do
+			(
+				if this.isDictionaryValue item_data then
+				(
+					item_id = this.getMenuDataValue item_data #id (this.createGuidString())
+					legacy_item = Dictionary #name
+
+					legacy_item[#title] = this.getMenuDataValue item_data #title ""
+
+					if this.hasDictValueSafe item_data #items then
+					(
+						legacy_item[#items] = this.createLegacyItemDictionaryForRebuilder item_data[#items]
+					)
+					else
+					(
+						legacy_item[#category] = this.getMenuDataValue item_data #category ""
+						legacy_item[#macro] = this.getMenuDataValue item_data #macro ""
+					)
+
+					legacy_items[item_id] = legacy_item
+				)
+			)
+		)
+		else if this.isDictionaryValue ordered_items then
+		(
+			legacy_items = ordered_items
+		)
+
+		legacy_items -- return
+	),
+
+
+	/*
+	Clone menu root and convert all #items arrays to legacy dictionaries for old MenuRebuilder_v.
+	*/
+	function createRebuilderCompatibleMenuData menu_data =
+	(
+		rebuilder_menu_data = this.cloneValue menu_data
+
+		if this.hasDictValueSafe rebuilder_menu_data #items then
+		(
+			rebuilder_menu_data[#items] = this.createLegacyItemDictionaryForRebuilder rebuilder_menu_data[#items]
+		)
+
+		if this.hasDictValueSafe rebuilder_menu_data #quad_menus then
+		(
+			quad_menus = rebuilder_menu_data[#quad_menus]
+
+			if this.isArrayValue quad_menus then
+			(
+				for quad_index = 1 to quad_menus.count do
+				(
+					quad_data = quad_menus[quad_index]
+
+					if this.hasDictValueSafe quad_data #items then
+					(
+						quad_data[#items] = this.createLegacyItemDictionaryForRebuilder quad_data[#items]
+					)
+				)
+			)
+		)
+
+		rebuilder_menu_data -- return
+	),
+
+	/*
+	Collect default quad positions to clear.
+	*/
 	function collectDefaultQuadClearPositionsFromMenuData menu_data =
 	(
 		clear_positions = #()
@@ -1930,32 +2322,25 @@ struct MenuBuildManager_v
 			(
 				for quad_data in quad_menus do
 				(
-					if this.hasDictValueSafe quad_data #quad_position then
-					(
-						append clear_positions quad_data[#quad_position]
-					)
+					if this.hasDictValueSafe quad_data #quad_position then append clear_positions quad_data[#quad_position]
 				)
 			)
 			else
 			(
-				if this.hasDictValueSafe menu_data #quad_position then
-				(
-					append clear_positions menu_data[#quad_position]
-				)
+				if this.hasDictValueSafe menu_data #quad_position then append clear_positions menu_data[#quad_position]
 			)
 		)
 		else
 		(
-			if this.hasDictValueSafe menu_data #quad_position then
-			(
-				append clear_positions menu_data[#quad_position]
-			)
+			if this.hasDictValueSafe menu_data #quad_position then append clear_positions menu_data[#quad_position]
 		)
 
 		clear_positions -- return
 	),
 
-
+	/*
+	Clear default quad positions using QMNX helper if available.
+	*/
 	function clearDefaultQuadPositionsForAllData =
 	(
 		clear_positions = #()
@@ -1965,37 +2350,41 @@ struct MenuBuildManager_v
 		(
 			if (this.isDefaultQuadInjectionData menu_data) and (this.getSavedClearDefaultMenu menu_data) then
 			(
-				if clear_directory == "" then
-				(
-					clear_directory = this.getSavedQmnxClearDirectory menu_data
-				)
+				if clear_directory == "" then clear_directory = this.getSavedQmnxClearDirectory menu_data
 
 				menu_clear_positions = this.collectDefaultQuadClearPositionsFromMenuData menu_data
 
-				for position_value in menu_clear_positions do
-				(
-					append clear_positions position_value
-				)
+				for position_value in menu_clear_positions do append clear_positions position_value
 			)
 		)
 
 		if clear_positions.count > 0 then
 		(
-			qmnx_clear = QuadDefaultQmnxClear_v qmnx_clear_directory:clear_directory
-			qmnx_clear.clearPositions clear_positions
+			try
+			(
+				qmnx_clear = QuadDefaultQmnxClear_v qmnx_clear_directory:clear_directory
+				qmnx_clear.clearPositions clear_positions
+			)
+			catch
+			(
+				format "QuadDefaultQmnxClear_v is unavailable. Default quad was not cleared.\n"
+			)
 		)
 
 		clear_positions -- return
 	),
 
-
+	/*
+	Create startup script text.
+	Loads split JSON then registers callbacks.
+	*/
 	function createStartupScriptText =
 	(
 		startup_text = ""
 
 		startup_text += "/*\n"
-		startup_text += "    Auto generated menu startup loader.\n"
-		startup_text += "    Split root: " + (this.getSplitDataRootDirectory()) + "\n"
+		startup_text += "\tAuto generated menu startup loader.\n"
+		startup_text += "\tSplit root: " + (this.getSplitDataRootDirectory()) + "\n"
 		startup_text += "*/\n\n"
 
 		startup_text += "global MenuBuildManager\n"
@@ -2033,12 +2422,14 @@ struct MenuBuildManager_v
 		startup_text -- return
 	),
 
-
+	/*
+	Save startup script.
+	*/
 	function saveStartupScript =
 	(
 		startup_text = this.createStartupScriptText()
-
 		startup_file = createFile this.startup_file_path
+
 		format "%" startup_text to:startup_file
 		close startup_file
 
@@ -2047,7 +2438,9 @@ struct MenuBuildManager_v
 		this.startup_file_path -- return
 	),
 
-
+	/*
+	Load menu callback data into main menu bar.
+	*/
 	function loadAllMenus =
 	(
 		menu_manager = callbacks.notificationParam()
@@ -2058,10 +2451,7 @@ struct MenuBuildManager_v
 		)
 		else
 		(
-			if this.saved_menus_data.count == 0 then
-			(
-				this.saved_menus_data = this.loadSavedMenusDataFromJson()
-			)
+			if this.saved_menus_data.count == 0 then this.saved_menus_data = this.loadSavedMenusDataFromJson()
 
 			this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
 			format "MenuBuildManager_v.loadAllMenus: % saved menus loaded.\n" this.saved_menus_data.count
@@ -2070,7 +2460,7 @@ struct MenuBuildManager_v
 			(
 				if this.isMenuCallbackData menu_data then
 				(
-					menu_rebuilder = MenuRebuilder_v menu_data:menu_data
+					menu_rebuilder = MenuRebuilder_v menu_data:(this.createRebuilderCompatibleMenuData menu_data)
 					menu_rebuilder.rebuildAsMainMenu menu_manager
 				)
 			)
@@ -2079,7 +2469,9 @@ struct MenuBuildManager_v
 		ok -- return
 	),
 
-
+	/*
+	Load quad callback data.
+	*/
 	function loadAllQuadMenus =
 	(
 		global MenuRebuilder_qmnx_clear_guard
@@ -2099,10 +2491,7 @@ struct MenuBuildManager_v
 			)
 			else
 			(
-				if this.saved_menus_data.count == 0 then
-				(
-					this.saved_menus_data = this.loadSavedMenusDataFromJson()
-				)
+				if this.saved_menus_data.count == 0 then this.saved_menus_data = this.loadSavedMenusDataFromJson()
 
 				this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
 				format "MenuBuildManager_v.loadAllQuadMenus: % saved menus loaded.\n" this.saved_menus_data.count
@@ -2113,7 +2502,7 @@ struct MenuBuildManager_v
 				(
 					if this.isQuadCallbackData menu_data then
 					(
-						menu_rebuilder = MenuRebuilder_v menu_data:menu_data skip_default_qmnx_clear:true
+						menu_rebuilder = MenuRebuilder_v menu_data:(this.createRebuilderCompatibleMenuData menu_data) skip_default_qmnx_clear:true
 						menu_rebuilder.rebuildAsQuadMenu quad_menu_manager
 					)
 				)
@@ -2123,7 +2512,9 @@ struct MenuBuildManager_v
 		)
 	),
 
-
+	/*
+	Check if menu callback data exists.
+	*/
 	function hasMenuCallbackData =
 	(
 		was_found = false
@@ -2136,7 +2527,9 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Check if quad callback data exists.
+	*/
 	function hasQuadCallbackData =
 	(
 		was_found = false
@@ -2149,20 +2542,15 @@ struct MenuBuildManager_v
 		was_found -- return
 	),
 
-
+	/*
+	Register callbacks for menu and quad building.
+	*/
 	function registerCallback =
 	(
 		global MenuBuildManager
 
-		if this.saved_menus_data.count == 0 then
-		(
-			this.saved_menus_data = this.loadSavedMenusDataFromJson()
-		)
-
-		if this.saved_menus_data.count == 0 then
-		(
-			this.buildSavedMenusData()
-		)
+		if this.saved_menus_data.count == 0 then this.saved_menus_data = this.loadSavedMenusDataFromJson()
+		if this.saved_menus_data.count == 0 then this.buildSavedMenusData()
 
 		this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
 		format "MenuBuildManager_v.registerCallback: % saved menus loaded.\n" this.saved_menus_data.count
@@ -2172,20 +2560,15 @@ struct MenuBuildManager_v
 		callbacks.removeScripts id:this.callback_id
 		callbacks.removeScripts id:this.quad_callback_id
 
-		if this.hasMenuCallbackData() then
-		(
-			callbacks.addScript #cuiRegisterMenus "MenuBuildManager.loadAllMenus()" id:this.callback_id
-		)
-
-		if this.hasQuadCallbackData() then
-		(
-			callbacks.addScript #cuiRegisterQuadMenus "MenuBuildManager.loadAllQuadMenus()" id:this.quad_callback_id
-		)
+		if this.hasMenuCallbackData() then callbacks.addScript #cuiRegisterMenus "MenuBuildManager.loadAllMenus()" id:this.callback_id
+		if this.hasQuadCallbackData() then callbacks.addScript #cuiRegisterQuadMenus "MenuBuildManager.loadAllQuadMenus()" id:this.quad_callback_id
 
 		ok -- return
 	),
 
-
+	/*
+	Unregister menu callbacks.
+	*/
 	function unregisterCallback =
 	(
 		callbacks.removeScripts id:this.callback_id
@@ -2194,7 +2577,9 @@ struct MenuBuildManager_v
 		ok -- return
 	),
 
-
+	/*
+	Queue menu definition for one final build.
+	*/
 	function waitForBuild menu_data =
 	(
 		if menu_data == undefined then
@@ -2203,21 +2588,16 @@ struct MenuBuildManager_v
 		)
 		else
 		(
-			if (findItem this.wait_for_build menu_data) == 0 then
-			(
-				append this.wait_for_build menu_data
-			)
-
-			if (findItem this.menus_data menu_data) == 0 then
-			(
-				append this.menus_data menu_data
-			)
+			if (findItem this.wait_for_build menu_data) == 0 then append this.wait_for_build menu_data
+			if (findItem this.menus_data menu_data) == 0 then append this.menus_data menu_data
 		)
 
 		menu_data -- return
 	),
 
-
+	/*
+	Clear wait list.
+	*/
 	function clearWaitForBuild =
 	(
 		this.wait_for_build = #()
@@ -2225,17 +2605,16 @@ struct MenuBuildManager_v
 		ok -- return
 	),
 
-
+	/*
+	Apply wait list into menus_data.
+	*/
 	function applyWaitForBuildToMenusData =
 	(
 		for menu_data in this.wait_for_build do
 		(
 			if menu_data != undefined then
 			(
-				if (findItem this.menus_data menu_data) == 0 then
-				(
-					append this.menus_data menu_data
-				)
+				if (findItem this.menus_data menu_data) == 0 then append this.menus_data menu_data
 			)
 		)
 
@@ -2244,7 +2623,9 @@ struct MenuBuildManager_v
 		this.menus_data -- return
 	),
 
-
+	/*
+	Queue composed quad.
+	*/
 	function waitForQuadBuild quad_menu_definition =
 	(
 		if quad_menu_definition != undefined then
@@ -2256,14 +2637,18 @@ struct MenuBuildManager_v
 		quad_menu_definition -- return
 	),
 
-
+	/*
+	Backward-compatible one-menu build helper.
+	*/
 	function buildMenu menu_data =
 	(
 		this.waitForBuild menu_data
 		this.build() -- return
 	),
 
-
+	/*
+	Build queued definitions, save split JSON, save startup.
+	*/
 	function build =
 	(
 		format "\n"
@@ -2277,7 +2662,9 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 
-
+	/*
+	Full run with callback registration.
+	*/
 	function run =
 	(
 		this.build()
@@ -2289,7 +2676,6 @@ struct MenuBuildManager_v
 
 		this.saved_menus_data -- return
 	),
-
 
 	on create do
 	(

@@ -1,20 +1,17 @@
 /*
-	MenuJsonIO_v 0.36
-
-	JSON read/write for MenuBuildManager_v.
-
-	Rules:
-	- has version property
-	- writes clear_default_menu only
+	MenuJsonIO_v 0.38
+	Ordered item JSON model: items are arrays, each item has id property.
 */
-
 struct MenuJsonIO_v
 (
-	version = 0.36,
+	version = 0.38,
 	source_text = "",
 	current_index = 1,
 
-
+	/*
+	Check Dictionary value.
+	Safe wrapper for class test.
+	*/
 	function isDictionaryValue value =
 	(
 		was_dictionary = false
@@ -30,7 +27,10 @@ struct MenuJsonIO_v
 		was_dictionary -- return
 	),
 
-
+	/*
+	Check Array value.
+	Used for ordered items.
+	*/
 	function isArrayValue value =
 	(
 		was_array = false
@@ -46,7 +46,10 @@ struct MenuJsonIO_v
 		was_array -- return
 	),
 
-
+	/*
+	Safe dictionary key test.
+	Prevents HasDictValue type errors.
+	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
 	(
 		was_found = false
@@ -66,7 +69,10 @@ struct MenuJsonIO_v
 		was_found -- return
 	),
 
-
+	/*
+	Create guid string.
+	Used to migrate old keyed item dictionaries.
+	*/
 	function createGuidString =
 	(
 		guid_class = dotNetClass "System.Guid"
@@ -75,7 +81,10 @@ struct MenuJsonIO_v
 		guid_value.ToString() -- return
 	),
 
-
+	/*
+	Read whole text file.
+	Returns empty string if file is missing.
+	*/
 	function readTextFile file_path =
 	(
 		file_text = ""
@@ -99,7 +108,10 @@ struct MenuJsonIO_v
 		file_text -- return
 	),
 
-
+	/*
+	Write whole text file.
+	Creates parent folder.
+	*/
 	function writeTextFile file_path file_text =
 	(
 		output_directory = getFilenamePath file_path
@@ -120,7 +132,10 @@ struct MenuJsonIO_v
 		file_path -- return
 	),
 
-
+	/*
+	Escape string for JSON.
+	Minimal JSON escape set.
+	*/
 	function escapeJsonString source_value =
 	(
 		source_string = source_value as string
@@ -134,7 +149,10 @@ struct MenuJsonIO_v
 		source_string -- return
 	),
 
-
+	/*
+	Make indentation text.
+	Uses tabs.
+	*/
 	function indent level =
 	(
 		indent_text = ""
@@ -147,7 +165,10 @@ struct MenuJsonIO_v
 		indent_text -- return
 	),
 
-
+	/*
+	Convert bool to JSON.
+	Avoids MaxScript True/False capitalization.
+	*/
 	function boolToJson bool_value =
 	(
 		json_text = "false"
@@ -160,7 +181,10 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
+	/*
+	Convert name to JSON string without #.
+	Used for enum-like values.
+	*/
 	function nameToJson name_value =
 	(
 		name_text = ""
@@ -181,13 +205,18 @@ struct MenuJsonIO_v
 		"\"" + this.escapeJsonString name_text + "\"" -- return
 	),
 
-
+	/*
+	Convert string to JSON string.
+	*/
 	function stringToJson string_value =
 	(
 		"\"" + this.escapeJsonString string_value + "\"" -- return
 	),
 
-
+	/*
+	Convert primitive value to JSON.
+	Names are stored as strings.
+	*/
 	function valueToJson value =
 	(
 		json_text = "null"
@@ -216,7 +245,10 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
+	/*
+	Get dictionary value by key.
+	Returns default if missing.
+	*/
 	function getDictValue dictionary_value dictionary_key default_value =
 	(
 		result_value = default_value
@@ -229,22 +261,27 @@ struct MenuJsonIO_v
 		result_value -- return
 	),
 
-
+	/*
+	Convert ordered item object to JSON.
+	Object contains id + title + either macro fields or items.
+	*/
 	function itemDataToJson item_data level =
 	(
 		json_text = ""
 		line_indent = this.indent level
 		child_indent = this.indent (level + 1)
 
+		item_id = this.getDictValue item_data #id (this.createGuidString())
 		item_title = this.getDictValue item_data #title ""
 
 		json_text += "{\n"
+		json_text += child_indent + "\"id\": " + this.stringToJson item_id + ",\n"
 		json_text += child_indent + "\"title\": " + this.stringToJson item_title
 
 		if this.hasDictValueSafe item_data #items then
 		(
 			json_text += ",\n"
-			json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson item_data[#items] (level + 1) + "\n"
+			json_text += child_indent + "\"items\": " + this.itemsArrayToJson item_data[#items] (level + 1) + "\n"
 		)
 		else
 		(
@@ -261,28 +298,25 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
-	function itemsDictionaryToJson items_dictionary level =
+	/*
+	Convert ordered item array to JSON.
+	Array order is saved directly.
+	*/
+	function itemsArrayToJson items_array level =
 	(
 		json_text = ""
 		line_indent = this.indent level
 		child_indent = this.indent (level + 1)
 
-		json_text += "{\n"
+		json_text += "[\n"
 
-		if this.isDictionaryValue items_dictionary then
+		if this.isArrayValue items_array then
 		(
-			item_keys = GetDictKeys items_dictionary
-
-			for item_index = 1 to item_keys.count do
+			for item_index = 1 to items_array.count do
 			(
-				item_key = item_keys[item_index]
-				item_data = items_dictionary[item_key]
+				json_text += child_indent + this.itemDataToJson items_array[item_index] (level + 1)
 
-				json_text += child_indent + this.stringToJson (item_key as string) + ": "
-				json_text += this.itemDataToJson item_data (level + 1)
-
-				if item_index < item_keys.count then
+				if item_index < items_array.count then
 				(
 					json_text += ","
 				)
@@ -291,12 +325,15 @@ struct MenuJsonIO_v
 			)
 		)
 
-		json_text += line_indent + "}"
+		json_text += line_indent + "]"
 
 		json_text -- return
 	),
 
-
+	/*
+	Convert quad position object to JSON.
+	Each quad has ordered items array.
+	*/
 	function quadDataToJson quad_data level =
 	(
 		json_text = ""
@@ -306,19 +343,22 @@ struct MenuJsonIO_v
 		quad_title = this.getDictValue quad_data #title ""
 		quad_position = this.getDictValue quad_data #quad_position undefined
 		quad_menu_id = this.getDictValue quad_data #quad_menu_id ""
-		quad_items = this.getDictValue quad_data #items (Dictionary #string)
+		quad_items = this.getDictValue quad_data #items #()
 
 		json_text += "{\n"
 		json_text += child_indent + "\"title\": " + this.stringToJson quad_title + ",\n"
 		json_text += child_indent + "\"quad_position\": " + this.valueToJson quad_position + ",\n"
 		json_text += child_indent + "\"quad_menu_id\": " + this.stringToJson quad_menu_id + ",\n"
-		json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson quad_items (level + 1) + "\n"
+		json_text += child_indent + "\"items\": " + this.itemsArrayToJson quad_items (level + 1) + "\n"
 		json_text += line_indent + "}"
 
 		json_text -- return
 	),
 
-
+	/*
+	Convert quad array to JSON.
+	Order is preserved.
+	*/
 	function quadArrayToJson quad_array level =
 	(
 		json_text = ""
@@ -347,7 +387,10 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
+	/*
+	Convert menu root to JSON.
+	Menu items are ordered arrays.
+	*/
 	function menuDataToJson menu_data level =
 	(
 		json_text = ""
@@ -358,7 +401,7 @@ struct MenuJsonIO_v
 		menu_id = this.getDictValue menu_data #id ""
 		menu_title = this.getDictValue menu_data #title ""
 		menu_type = this.getDictValue menu_data #type #menu
-		menu_items = this.getDictValue menu_data #items (Dictionary #string)
+		menu_items = this.getDictValue menu_data #items #()
 		quad_context_id = this.getDictValue menu_data #quad_context_id ""
 		quad_modifier = this.getDictValue menu_data #quad_modifier undefined
 		quad_position = this.getDictValue menu_data #quad_position undefined
@@ -378,14 +421,17 @@ struct MenuJsonIO_v
 		json_text += child_indent + "\"quad_menu_id\": " + this.stringToJson quad_menu_id + ",\n"
 		json_text += child_indent + "\"qmnx_clear_directory\": " + this.stringToJson qmnx_clear_directory + ",\n"
 		json_text += child_indent + "\"clear_default_menu\": " + this.boolToJson clear_default_menu + ",\n"
-		json_text += child_indent + "\"items\": " + this.itemsDictionaryToJson menu_items (level + 1) + ",\n"
+		json_text += child_indent + "\"items\": " + this.itemsArrayToJson menu_items (level + 1) + ",\n"
 		json_text += child_indent + "\"quad_menus\": " + this.quadArrayToJson quad_menus (level + 1) + "\n"
 		json_text += line_indent + "}"
 
 		json_text -- return
 	),
 
-
+	/*
+	Convert menu array to JSON.
+	Usually one root per split file.
+	*/
 	function menusArrayToJson menus_data_array level =
 	(
 		json_text = ""
@@ -414,7 +460,9 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
+	/*
+	Convert menus to root JSON text.
+	*/
 	function menusDataToJson menus_data_array =
 	(
 		json_text = ""
@@ -427,7 +475,9 @@ struct MenuJsonIO_v
 		json_text -- return
 	),
 
-
+	/*
+	Save menus data to JSON file.
+	*/
 	function saveMenusDataToJsonFile menus_data_array file_path =
 	(
 		json_text = this.menusDataToJson menus_data_array
@@ -436,7 +486,10 @@ struct MenuJsonIO_v
 		file_path -- return
 	),
 
-
+	/*
+	Get current parser character.
+	Returns empty string past end.
+	*/
 	function getCurrentChar =
 	(
 		current_char = ""
@@ -449,7 +502,9 @@ struct MenuJsonIO_v
 		current_char -- return
 	),
 
-
+	/*
+	Advance parser index.
+	*/
 	function advance count_value =
 	(
 		this.current_index += count_value
@@ -457,7 +512,10 @@ struct MenuJsonIO_v
 		this.current_index -- return
 	),
 
-
+	/*
+	Whitespace test.
+	Uses required findString pattern.
+	*/
 	function isWhiteSpace character_value =
 	(
 		was_white_space = false
@@ -470,7 +528,9 @@ struct MenuJsonIO_v
 		was_white_space -- return
 	),
 
-
+	/*
+	Skip JSON whitespace.
+	*/
 	function skipWhiteSpace =
 	(
 		while this.current_index <= this.source_text.count and this.isWhiteSpace (this.getCurrentChar()) do
@@ -481,7 +541,10 @@ struct MenuJsonIO_v
 		this.current_index -- return
 	),
 
-
+	/*
+	Parse JSON string.
+	Handles simple escapes.
+	*/
 	function parseJsonString =
 	(
 		result_text = ""
@@ -530,7 +593,9 @@ struct MenuJsonIO_v
 		result_text -- return
 	),
 
-
+	/*
+	Parse JSON number or literal.
+	*/
 	function parseJsonNumberOrLiteral =
 	(
 		token_text = ""
@@ -582,7 +647,9 @@ struct MenuJsonIO_v
 		result_value -- return
 	),
 
-
+	/*
+	Parse JSON array.
+	*/
 	function parseJsonArray =
 	(
 		result_array = #()
@@ -617,7 +684,9 @@ struct MenuJsonIO_v
 		result_array -- return
 	),
 
-
+	/*
+	Parse JSON object.
+	*/
 	function parseJsonObject =
 	(
 		result_object = Dictionary #string
@@ -662,7 +731,9 @@ struct MenuJsonIO_v
 		result_object -- return
 	),
 
-
+	/*
+	Parse JSON value.
+	*/
 	function parseJsonValue =
 	(
 		result_value = undefined
@@ -690,7 +761,9 @@ struct MenuJsonIO_v
 		result_value -- return
 	),
 
-
+	/*
+	Parse JSON text.
+	*/
 	function parseJsonText json_text =
 	(
 		this.source_text = json_text
@@ -699,7 +772,9 @@ struct MenuJsonIO_v
 		this.parseJsonValue() -- return
 	),
 
-
+	/*
+	Get parsed JSON dictionary value.
+	*/
 	function getJsonValue json_object json_key default_value =
 	(
 		result_value = default_value
@@ -715,7 +790,9 @@ struct MenuJsonIO_v
 		result_value -- return
 	),
 
-
+	/*
+	Convert string to Name value.
+	*/
 	function stringToName value default_name =
 	(
 		result_name = default_name
@@ -745,16 +822,25 @@ struct MenuJsonIO_v
 		result_name -- return
 	),
 
-
-	function jsonItemToSavedItem json_item =
+	/*
+	Convert JSON item object to saved item.
+	*/
+	function jsonItemToSavedItem json_item fallback_id:undefined =
 	(
 		item_data = Dictionary #name
+		item_id = this.getJsonValue json_item "id" fallback_id
 
+		if item_id == undefined then
+		(
+			item_id = this.createGuidString()
+		)
+
+		item_data[#id] = item_id
 		item_data[#title] = this.getJsonValue json_item "title" ""
 
 		if this.hasDictValueSafe json_item "items" then
 		(
-			item_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_item "items" (Dictionary #string))
+			item_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_item "items" #())
 		)
 		else
 		(
@@ -765,25 +851,37 @@ struct MenuJsonIO_v
 		item_data -- return
 	),
 
-
+	/*
+	Convert parsed JSON items to ordered saved array.
+	Accepts new array and old keyed dictionary for migration.
+	*/
 	function jsonItemsToSavedItems json_items =
 	(
-		saved_items = Dictionary #string
+		saved_items = #()
 
-		if this.isDictionaryValue json_items then
+		if this.isArrayValue json_items then
+		(
+			for json_item in json_items do
+			(
+				append saved_items (this.jsonItemToSavedItem json_item)
+			)
+		)
+		else if this.isDictionaryValue json_items then
 		(
 			item_keys = GetDictKeys json_items
 
 			for item_key in item_keys do
 			(
-				saved_items[item_key as string] = this.jsonItemToSavedItem json_items[item_key]
+				append saved_items (this.jsonItemToSavedItem json_items[item_key] fallback_id:(item_key as string))
 			)
 		)
 
 		saved_items -- return
 	),
 
-
+	/*
+	Convert parsed JSON quad object to saved quad.
+	*/
 	function jsonQuadToSavedQuad json_quad =
 	(
 		quad_data = Dictionary #name
@@ -791,12 +889,14 @@ struct MenuJsonIO_v
 		quad_data[#title] = this.getJsonValue json_quad "title" ""
 		quad_data[#quad_position] = this.stringToName (this.getJsonValue json_quad "quad_position" undefined) undefined
 		quad_data[#quad_menu_id] = this.getJsonValue json_quad "quad_menu_id" ""
-		quad_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_quad "items" (Dictionary #string))
+		quad_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_quad "items" #())
 
 		quad_data -- return
 	),
 
-
+	/*
+	Convert parsed JSON quad array to saved quad array.
+	*/
 	function jsonQuadArrayToSavedQuadArray json_quad_array =
 	(
 		quad_array = #()
@@ -812,7 +912,9 @@ struct MenuJsonIO_v
 		quad_array -- return
 	),
 
-
+	/*
+	Convert parsed JSON menu object to saved menu.
+	*/
 	function jsonMenuToSavedMenu json_menu =
 	(
 		menu_data = Dictionary #name
@@ -826,15 +928,16 @@ struct MenuJsonIO_v
 		menu_data[#quad_position] = this.stringToName (this.getJsonValue json_menu "quad_position" undefined) undefined
 		menu_data[#quad_menu_id] = this.getJsonValue json_menu "quad_menu_id" ""
 		menu_data[#qmnx_clear_directory] = this.getJsonValue json_menu "qmnx_clear_directory" ""
-
 		menu_data[#clear_default_menu] = this.getJsonValue json_menu "clear_default_menu" false
-		menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_menu "items" (Dictionary #string))
+		menu_data[#items] = this.jsonItemsToSavedItems (this.getJsonValue json_menu "items" #())
 		menu_data[#quad_menus] = this.jsonQuadArrayToSavedQuadArray (this.getJsonValue json_menu "quad_menus" #())
 
 		menu_data -- return
 	),
 
-
+	/*
+	Convert parsed root object to menu data array.
+	*/
 	function jsonRootToMenuData json_root =
 	(
 		menus_data = #()
@@ -862,7 +965,10 @@ struct MenuJsonIO_v
 		menus_data -- return
 	),
 
-
+	/*
+	Load menu data from JSON file.
+	Returns array of saved menu dictionaries.
+	*/
 	function loadMenusDataFromJsonFile file_path =
 	(
 		menus_data = #()

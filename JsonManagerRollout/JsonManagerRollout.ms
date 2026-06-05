@@ -1,5 +1,19 @@
+/*
+	MenuBuildManagerJsonRollout 0.40
+
+	Updated for ordered item array schema:
+	items = #(
+		Dictionary #name #( #id, #title, #items / #category / #macro )
+	)
+
+	Rules:
+	- no Dictionary key order dependency for menu items
+	- _Custom-Menus children are read/written as ordered item arrays
+*/
+
 rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 (
+	local version = 0.40
 	local json_manager = undefined
 	local menu_title_array = #()
 	local menu_signature_array = #()
@@ -53,6 +67,25 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 		)
 
 		was_dictionary -- return
+	)
+
+
+	/* Check value for Array class.
+	   New ordered item schema uses arrays.
+	*/
+	function isArrayValue value =
+	(
+		was_array = false
+
+		if value != undefined then
+		(
+			if classOf value == Array then
+			(
+				was_array = true
+			)
+		)
+
+		was_array -- return
 	)
 
 
@@ -256,14 +289,77 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 	)
 
 
+	/* Get ordered items array from menu data.
+	   New schema: items is Array.
+	   Legacy dictionary fallback is read-only compatibility.
+	*/
+	function getItemsArraySafe menu_data =
+	(
+		items_array = #()
+
+		if hasDictValueSafe menu_data #items then
+		(
+			items_value = menu_data[#items]
+
+			if isArrayValue items_value then
+			(
+				items_array = items_value
+			)
+			else if isDictionaryValue items_value then
+			(
+				legacy_keys = GetDictKeys items_value
+
+				for legacy_key in legacy_keys do
+				(
+					legacy_item = items_value[legacy_key]
+
+					if isDictionaryValue legacy_item then
+					(
+						if not hasDictValueSafe legacy_item #id then
+						(
+							legacy_item[#id] = legacy_key as string
+						)
+
+						append items_array legacy_item
+					)
+				)
+			)
+		)
+
+		items_array -- return
+	)
+
+
+	/* Get ordered item id.
+	   New schema stores id on the item object.
+	*/
+	function getItemIdSafe item_data fallback_index =
+	(
+		item_id = ""
+
+		if hasDictValueSafe item_data #id then
+		(
+			item_id = item_data[#id]
+		)
+
+		if item_id == undefined or item_id == "" then
+		(
+			item_id = "item_" + (fallback_index as string)
+		)
+
+		item_id -- return
+	)
+
+
 	/* Create pseudo menu data from child under _Custom-Menus.
 	   Used only for display and signature matching.
 	*/
-	function createChildMenuData child_key child_data =
+	function createChildMenuData child_data fallback_index =
 	(
 		child_menu_data = Dictionary #name
+		child_id = getItemIdSafe child_data fallback_index
 		child_title = ""
-		child_items = Dictionary #string
+		child_items = #()
 
 		if hasDictValueSafe child_data #title then
 		(
@@ -272,10 +368,10 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 
 		if hasDictValueSafe child_data #items then
 		(
-			child_items = child_data[#items]
+			child_items = getItemsArraySafe child_data
 		)
 
-		child_menu_data[#id] = child_key
+		child_menu_data[#id] = child_id
 		child_menu_data[#title] = child_title
 		child_menu_data[#type] = #menu
 		child_menu_data[#items] = child_items
@@ -321,21 +417,17 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 
 
 	/* Append custom root children as normal menu entries.
-	   Current split system saves each child as separate file.
+	   New ordered schema iterates item array directly.
 	*/
 	function appendCustomRootChildren manager_value custom_root_data =
 	(
-		if hasDictValueSafe custom_root_data #items then
-		(
-			custom_items = custom_root_data[#items]
-			custom_item_keys = GetDictKeys custom_items
+		custom_items = getItemsArraySafe custom_root_data
 
-			for custom_item_key in custom_item_keys do
-			(
-				child_data = custom_items[custom_item_key]
-				child_menu_data = createChildMenuData custom_item_key child_data
-				appendMenuEntry manager_value child_menu_data
-			)
+		for item_index = 1 to custom_items.count do
+		(
+			child_data = custom_items[item_index]
+			child_menu_data = createChildMenuData child_data item_index
+			appendMenuEntry manager_value child_menu_data
 		)
 
 		ok -- return
@@ -443,27 +535,22 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 	function filterCustomRootChildren manager_value custom_root_data selected_signatures =
 	(
 		filtered_root = custom_root_data
+		filtered_items = #()
+		custom_items = getItemsArraySafe custom_root_data
 
-		if hasDictValueSafe filtered_root #items then
+		for item_index = 1 to custom_items.count do
 		(
-			filtered_items = Dictionary #string
-			custom_items = filtered_root[#items]
-			custom_item_keys = GetDictKeys custom_items
+			child_data = custom_items[item_index]
+			child_menu_data = createChildMenuData child_data item_index
+			child_signature = getMenuDataSignatureSafe manager_value child_menu_data
 
-			for custom_item_key in custom_item_keys do
+			if not isStringInArray selected_signatures child_signature then
 			(
-				child_data = custom_items[custom_item_key]
-				child_menu_data = createChildMenuData custom_item_key child_data
-				child_signature = getMenuDataSignatureSafe manager_value child_menu_data
-
-				if not isStringInArray selected_signatures child_signature then
-				(
-					filtered_items[custom_item_key] = child_data
-				)
+				append filtered_items child_data
 			)
-
-			filtered_root[#items] = filtered_items
 		)
+
+		filtered_root[#items] = filtered_items
 
 		filtered_root -- return
 	)
@@ -475,15 +562,11 @@ rollout MenuBuildManagerJsonRollout "Menu JSON Manager" width:560 height:430
 	function customRootHasChildren custom_root_data =
 	(
 		has_children = false
+		items_array = getItemsArraySafe custom_root_data
 
-		if hasDictValueSafe custom_root_data #items then
+		if items_array.count > 0 then
 		(
-			item_keys = GetDictKeys custom_root_data[#items]
-
-			if item_keys.count > 0 then
-			(
-				has_children = true
-			)
+			has_children = true
 		)
 
 		has_children -- return
