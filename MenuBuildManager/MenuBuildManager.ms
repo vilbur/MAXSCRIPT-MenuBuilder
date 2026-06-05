@@ -954,12 +954,16 @@ struct MenuBuildManager_v
 
 		for menu_definition in this.menus_data do
 		(
+			timer_buildSavedMenusData = timeStamp()
+			
 			menu_data = this.buildSavedMenuDataFromDefinition menu_definition
 
 			if menu_data != undefined then
 			(
 				append this.saved_menus_data menu_data
 			)
+			format "buildSavedMenusData %: % ms\n" menu_definition.title (( timeStamp()) - timer_buildSavedMenusData) 
+			
 		)
 
 		this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
@@ -1414,6 +1418,7 @@ struct MenuBuildManager_v
 	*/
 	function groupMenusUnderCustomMenuRoot menus_data_array =
 	(
+		timer_groupMenusUnderCustomMenuRoot = timeStamp()
 		grouped_menus_data = #()
 		custom_root_data = undefined
 
@@ -1456,6 +1461,9 @@ struct MenuBuildManager_v
 		(
 			append grouped_menus_data custom_root_data
 		)
+
+		
+		format "groupMenusUnderCustomMenuRoot: % ms\n" (( timeStamp()) - timer_groupMenusUnderCustomMenuRoot)
 
 		grouped_menus_data -- return
 	),
@@ -1523,11 +1531,15 @@ struct MenuBuildManager_v
 	(
 		timer_save_split = timeStamp()
 		json_io = MenuJsonIO_v()
+		
+		timer_split_menus_data_array = timeStamp()
 		split_menus_data_array = this.explodeCustomMenuRootForSplitJson menus_data_array
+		format "\nSPLIT_MENUS_DATA_ARRAY: % ms\n" (( timeStamp()) - timer_split_menus_data_array)
 
 		this.ensureSplitJsonDirectories()
 		this.clearSplitJsonFiles()
 
+		timer_SAVE_FILES = timeStamp()
 		for menu_data in split_menus_data_array do
 		(
 			if this.isValidSavedMenuData menu_data then
@@ -1536,6 +1548,7 @@ struct MenuBuildManager_v
 				json_io.saveMenusDataToJsonFile #(menu_data) split_file_path
 			)
 		)
+		format "SAVE_FILES: % ms\n" (( timeStamp()) - timer_SAVE_FILES)
 
 		save_ms = ((timeStamp()) - timer_save_split)
 		this.setSplitJsonCache (this.groupMenusUnderCustomMenuRoot split_menus_data_array) load_ms:0
@@ -2654,10 +2667,22 @@ struct MenuBuildManager_v
 		format "\n"
 		print "MenuBuildManager_v.build()"
 
+		timer_build = timeStamp()
 		this.applyWaitForBuildToMenusData()
+		format "\napplyWaitForBuildToMenusData: % ms\n" (( timeStamp()) - timer_build)
+		
+		timer_build = timeStamp()
 		this.buildMenus()
+		format "\nbuildMenus: % ms\n" (( timeStamp()) - timer_build)
+
+		timer_build = timeStamp()
 		this.saveJsonData()
+		format "\nsaveJsonData: % ms\n" (( timeStamp()) - timer_build)
+		
+		
+		timer_build = timeStamp()
 		this.saveStartupScript()
+		format "\nsaveStartupScript: % ms\n" (( timeStamp()) - timer_build)
 
 		this.saved_menus_data -- return
 	),
