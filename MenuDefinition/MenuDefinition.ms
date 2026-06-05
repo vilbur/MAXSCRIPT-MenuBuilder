@@ -1,26 +1,31 @@
-
-
 /*
-	MenuDefinition_v 0.39
-	Ordered item model: data is Array, item id is inside item object.
+	MenuDefinition_v
+	Version: 0.41
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, and title aliases.
 */
+
+global MenuDefinition_v
+
 struct MenuDefinition_v
 (
-	title = "",
-	version = 0.39,
+	version = 0.41,
 	type = #menu,
+	title = "",
 	data = undefined,
 	_data = undefined,
 	quad_modifier = undefined,
 	quad_position = undefined,
 	quad_context_id = "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e",
 	manager = undefined,
+	parent_item_data = undefined,
 	qmnx_clear_directory = "",
 	clear_default_menu = false,
+	quad_order = #(#BottomRight, #TopRight, #TopLeft, #BottomLeft),
+
 
 	/*
 	Create guid string.
-	Used for ordered item ids.
+	Used for stable menu item ids.
 	*/
 	function createGuidString =
 	(
@@ -30,9 +35,10 @@ struct MenuDefinition_v
 		guid_value.ToString() -- return
 	),
 
+
 	/*
 	Check Dictionary value.
-	Safe wrapper for class test.
+	Used before HasDictValue access.
 	*/
 	function isDictionaryValue value =
 	(
@@ -49,9 +55,10 @@ struct MenuDefinition_v
 		was_dictionary -- return
 	),
 
+
 	/*
 	Check Array value.
-	Used for ordered items.
+	Menu items are stored as ordered arrays.
 	*/
 	function isArrayValue value =
 	(
@@ -68,8 +75,9 @@ struct MenuDefinition_v
 		was_array -- return
 	),
 
+
 	/*
-	Safe dictionary key test.
+	Check dictionary key safely.
 	Prevents HasDictValue type errors.
 	*/
 	function hasDictValueSafe dictionary_value dictionary_key =
@@ -91,9 +99,10 @@ struct MenuDefinition_v
 		was_found -- return
 	),
 
+
 	/*
-	Get active data storage.
-	_data is kept for backward compatibility.
+	Get active ordered data array.
+	_data is kept for old caller compatibility.
 	*/
 	function getActiveData =
 	(
@@ -107,27 +116,37 @@ struct MenuDefinition_v
 		active_data -- return
 	),
 
+
 	/*
-	Set active data storage.
-	Keeps data and _data synced.
+	Set active data array.
+	If this is submenu definition, sync parent item #items too.
 	*/
 	function setActiveData value =
 	(
 		this.data = value
 		this._data = value
 
+		if this.parent_item_data != undefined then
+		(
+			if this.isDictionaryValue this.parent_item_data then
+			(
+				this.parent_item_data[#items] = value
+			)
+		)
+
 		value -- return
 	),
 
+
 	/*
-	Ensure ordered array storage.
-	Menu items are stored in order.
+	Ensure active item array exists.
+	This is the ordered menu item storage.
 	*/
 	function ensureItemsArray =
 	(
 		active_data = this.getActiveData()
 
-		if not this.isArrayValue active_data then
+		if not (this.isArrayValue active_data) then
 		(
 			active_data = #()
 			this.setActiveData active_data
@@ -136,23 +155,24 @@ struct MenuDefinition_v
 		active_data -- return
 	),
 
+
 	/*
 	Normalize quad position.
-	Accepts 1-4 or common names.
+	Accepts 1-4 or common position names.
 	*/
 	function normalizeQuadPosition quad_position_value =
 	(
-		normalized_position = #TopRight
+		normalized_position = #BottomRight
 
 		if classOf quad_position_value == Integer then
 		(
 			case quad_position_value of
 			(
-				1: normalized_position = #TopRight
-				2: normalized_position = #TopLeft
-				3: normalized_position = #BottomLeft
-				4: normalized_position = #BottomRight
-				default: normalized_position = #TopRight
+				1: normalized_position = #BottomRight
+				2: normalized_position = #TopRight
+				3: normalized_position = #TopLeft
+				4: normalized_position = #BottomLeft
+				default: normalized_position = #BottomRight
 			)
 		)
 		else
@@ -161,31 +181,40 @@ struct MenuDefinition_v
 
 			case position_text of
 			(
+				"#BottomRight": normalized_position = #BottomRight
+				"#bottomRight": normalized_position = #BottomRight
+				"BottomRight": normalized_position = #BottomRight
+				"bottomRight": normalized_position = #BottomRight
+				"bottom_right": normalized_position = #BottomRight
+				"Bottom Right": normalized_position = #BottomRight
+
 				"#TopRight": normalized_position = #TopRight
+				"#topRight": normalized_position = #TopRight
 				"TopRight": normalized_position = #TopRight
 				"topRight": normalized_position = #TopRight
 				"top_right": normalized_position = #TopRight
 				"Top Right": normalized_position = #TopRight
 
 				"#TopLeft": normalized_position = #TopLeft
+				"#topLeft": normalized_position = #TopLeft
+				"#TopeLeft": normalized_position = #TopLeft
+				"#topeLeft": normalized_position = #TopLeft
 				"TopLeft": normalized_position = #TopLeft
 				"topLeft": normalized_position = #TopLeft
+				"TopeLeft": normalized_position = #TopLeft
+				"topeLeft": normalized_position = #TopLeft
 				"top_left": normalized_position = #TopLeft
+				"tope_left": normalized_position = #TopLeft
 				"Top Left": normalized_position = #TopLeft
 
 				"#BottomLeft": normalized_position = #BottomLeft
+				"#bottomLeft": normalized_position = #BottomLeft
 				"BottomLeft": normalized_position = #BottomLeft
 				"bottomLeft": normalized_position = #BottomLeft
 				"bottom_left": normalized_position = #BottomLeft
 				"Bottom Left": normalized_position = #BottomLeft
 
-				"#BottomRight": normalized_position = #BottomRight
-				"BottomRight": normalized_position = #BottomRight
-				"bottomRight": normalized_position = #BottomRight
-				"bottom_right": normalized_position = #BottomRight
-				"Bottom Right": normalized_position = #BottomRight
-
-				default: normalized_position = #TopRight
+				default: normalized_position = #BottomRight
 			)
 		)
 
@@ -193,29 +222,84 @@ struct MenuDefinition_v
 	),
 
 	/*
-	Get visible quad title from position.
-	Used when quad is auto-created.
+	Get quad title from position.
+	Used when quad position is auto-created.
 	*/
 	function getQuadTitleFromPosition quad_position_value =
 	(
 		normalized_position = this.normalizeQuadPosition quad_position_value
-		quad_title = "Top Right"
+		quad_title = "Bottom Right"
 
 		case normalized_position of
 		(
+			#BottomRight: quad_title = "Bottom Right"
 			#TopRight: quad_title = "Top Right"
 			#TopLeft: quad_title = "Top Left"
 			#BottomLeft: quad_title = "Bottom Left"
-			#BottomRight: quad_title = "Bottom Right"
-			default: quad_title = "Top Right"
+			default: quad_title = "Bottom Right"
 		)
 
 		quad_title -- return
 	),
 
 	/*
-	Create ordered macro item object.
-	Item id is stored as property, not as dictionary key.
+	Get canonical quad order index.
+	Order: 1=#BottomRight, 2=#TopRight, 3=#TopLeft, 4=#BottomLeft.
+	*/
+	function getQuadOrderIndex quad_position_value =
+	(
+		normalized_position = this.normalizeQuadPosition quad_position_value
+		order_index = findItem this.quad_order normalized_position
+
+		if order_index == 0 then
+		(
+			order_index = 9999
+		)
+
+		order_index -- return
+	),
+
+
+	/*
+	Reorder quad definitions to canonical quad order.
+	*/
+	function reorderQuadArray quad_array =
+	(
+		ordered_array = #()
+
+		for ordered_position in this.quad_order do
+		(
+			for quad_definition in quad_array do
+			(
+				try
+				(
+					if quad_definition.quad_position == ordered_position then
+					(
+						append ordered_array quad_definition
+					)
+				)
+				catch
+				(
+					ok
+				)
+			)
+		)
+
+		for quad_definition in quad_array do
+		(
+			if (findItem ordered_array quad_definition) == 0 then
+			(
+				append ordered_array quad_definition
+			)
+		)
+
+		ordered_array -- return
+	),
+
+
+	/*
+	Create macro item data.
+	Item id is stored inside item object.
 	*/
 	function makeMacroItemData item_title macro_category macro_name id:undefined =
 	(
@@ -229,6 +313,11 @@ struct MenuDefinition_v
 
 		item_data[#id] = item_id
 		item_data[#title] = item_title
+		item_data[#display_title] = item_title
+		item_data[#menu_title] = item_title
+		item_data[#buttonText] = item_title
+		item_data[#button_text] = item_title
+		item_data[#label] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name
 
@@ -236,8 +325,8 @@ struct MenuDefinition_v
 	),
 
 	/*
-	Create ordered submenu item object.
-	Child items are also ordered arrays.
+	Create submenu item data.
+	Submenu children are stored as ordered array.
 	*/
 	function makeSubMenuItemData submenu_title submenu_items id:undefined =
 	(
@@ -256,8 +345,9 @@ struct MenuDefinition_v
 		submenu_data -- return
 	),
 
+
 	/*
-	Resolve owning MenuBuildManager.
+	Get manager instance.
 	Falls back to global MenuBuildManager.
 	*/
 	function getManager =
@@ -280,9 +370,10 @@ struct MenuDefinition_v
 		found_manager -- return
 	),
 
+
 	/*
-	Clone dictionary object.
-	Used for safe copy of saved items.
+	Clone dictionary recursively.
+	Used when copying existing menu data.
 	*/
 	function cloneDictionaryValue source_dictionary =
 	(
@@ -307,9 +398,10 @@ struct MenuDefinition_v
 		cloned_dictionary -- return
 	),
 
+
 	/*
 	Clone array recursively.
-	Preserves ordered item list.
+	Preserves ordered item arrays.
 	*/
 	function cloneArrayValue source_array =
 	(
@@ -323,9 +415,10 @@ struct MenuDefinition_v
 		cloned_array -- return
 	),
 
+
 	/*
 	Clone supported value.
-	Handles dictionaries and arrays.
+	Handles arrays and dictionaries.
 	*/
 	function cloneValue source_value =
 	(
@@ -335,17 +428,21 @@ struct MenuDefinition_v
 		(
 			cloned_value = this.cloneDictionaryValue source_value
 		)
-		else if classOf source_value == Array then
+		else
 		(
-			cloned_value = this.cloneArrayValue source_value
+			if this.isArrayValue source_value then
+			(
+				cloned_value = this.cloneArrayValue source_value
+			)
 		)
 
 		cloned_value -- return
 	),
 
+
 	/*
 	Append item to ordered array.
-	Optional index rebuilds array to insert item.
+	Optional index inserts item at requested position.
 	*/
 	function appendSavedItem item_data index:undefined =
 	(
@@ -373,9 +470,10 @@ struct MenuDefinition_v
 		item_data -- return
 	),
 
+
 	/*
-	Clear ordered item array.
-	Used before pasting whole menu into quad.
+	Clear ordered items.
+	Keeps submenu parent item synchronized.
 	*/
 	function clearItems =
 	(
@@ -384,9 +482,10 @@ struct MenuDefinition_v
 		this -- return
 	),
 
+
 	/*
 	Add macro item.
-	Stored as ordered object in data array.
+	Returns created item data dictionary.
 	*/
 	function addItem macro_category macro_name title:"" index:undefined =
 	(
@@ -403,9 +502,10 @@ struct MenuDefinition_v
 		item_data -- return
 	),
 
+
 	/*
-	Load ordered items from existing saved menu.
-	Used for addMenu flat:true and flat:false.
+	Load existing menu items by title.
+	Uses manager saved data when available.
 	*/
 	function loadExistingMenuItems menu_title =
 	(
@@ -435,9 +535,10 @@ struct MenuDefinition_v
 		menu_items -- return
 	),
 
+
 	/*
-	Append existing menu items into current ordered list.
-	Keeps source order.
+	Append existing menu items into this menu.
+	Used by addMenu flat:true.
 	*/
 	function appendExistingMenuItems menu_title =
 	(
@@ -452,9 +553,10 @@ struct MenuDefinition_v
 		target_items -- return
 	),
 
+
 	/*
-	Add existing menu as submenu or flatten it.
-	flat:true pastes items directly into current menu/quad.
+	Add submenu or flattened existing menu.
+	Returns MenuDefinition_v for submenu when flat:false.
 	*/
 	function addMenu menu_title flat:false index:undefined =
 	(
@@ -469,7 +571,6 @@ struct MenuDefinition_v
 		(
 			submenu_items = this.loadExistingMenuItems menu_title
 			submenu_data = this.makeSubMenuItemData menu_title submenu_items
-
 			this.appendSavedItem submenu_data index:index
 
 			result_data = MenuDefinition_v \
@@ -478,6 +579,7 @@ struct MenuDefinition_v
 				data:submenu_items \
 				_data:submenu_items \
 				manager:(this.getManager()) \
+				parent_item_data:submenu_data \
 				qmnx_clear_directory:this.qmnx_clear_directory \
 				clear_default_menu:this.clear_default_menu
 		)
@@ -485,11 +587,24 @@ struct MenuDefinition_v
 		result_data -- return
 	),
 
+
+	/*
+	OOP-friendly submenu getter/creator.
+	Alias for addMenu flat:false.
+	*/
+	function menu menu_title index:undefined =
+	(
+		submenu_definition = this.addMenu menu_title flat:false index:index
+
+		submenu_definition -- return
+	),
+
+
 	/*
 	Add or get quad position definition.
-	Quad menu definition data is array of quad definitions.
+	Quad menu data is array of MenuDefinition_v quad positions.
 	*/
-	function addQuad quad_title position:#TopRight =
+	function addQuad quad_title position:#BottomRight =
 	(
 		quad_array = this.ensureItemsArray()
 		normalized_position = this.normalizeQuadPosition position
@@ -524,6 +639,7 @@ struct MenuDefinition_v
 				clear_default_menu:this.clear_default_menu
 
 			append quad_array found_quad
+			quad_array = this.reorderQuadArray quad_array
 			this.setActiveData quad_array
 		)
 
@@ -531,8 +647,8 @@ struct MenuDefinition_v
 	),
 
 	/*
-	Get quad by position index or name.
-	1=TopRight, 2=TopLeft, 3=BottomLeft, 4=BottomRight.
+	Get quad by position.
+	1=BottomRight, 2=TopRight, 3=TopLeft, 4=BottomLeft.
 	*/
 	function getQuad quad_position_value =
 	(
@@ -541,6 +657,7 @@ struct MenuDefinition_v
 
 		this.addQuad quad_title position:normalized_position -- return
 	),
+
 
 	/*
 	Set QMNX clear directory.
@@ -553,8 +670,9 @@ struct MenuDefinition_v
 		this -- return
 	),
 
+
 	/*
-	Set clear default menu state.
+	Set default clear state.
 	Fluent setter.
 	*/
 	function setClearDefaultMenu state =
@@ -563,6 +681,7 @@ struct MenuDefinition_v
 
 		this -- return
 	),
+
 
 	on create do
 	(
@@ -574,6 +693,14 @@ struct MenuDefinition_v
 		if this._data == undefined then
 		(
 			this._data = this.data
+		)
+
+		if this.parent_item_data != undefined then
+		(
+			if this.isDictionaryValue this.parent_item_data then
+			(
+				this.parent_item_data[#items] = this.data
+			)
 		)
 	)
 )

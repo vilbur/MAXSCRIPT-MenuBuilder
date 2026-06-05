@@ -211,20 +211,27 @@ function runMenuBuilderWorkflowScenarioTest =
 	--	Quad 3: replace with menu2.
 	--*/
 	
-	
-	----default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
-	--default_quad = MenuBuildManager.getQuad "Modeling" clear_default_menu:false
-	----default_quad.quad_modifier = #nonePressed
-	----
+	/*------------------------------------------------------------------------------
+		INJECT TO DEFAULT MENU
+	--------------------------------------------------------------------------------*/
+	default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
+	--default_quad = MenuBuildManager.getQuad "Modeling" clear_default_menu:true
+	--default_quad = MenuBuildManager.getQuad "Lock" clear_default_menu:true
+	--default_quad.quad_modifier = #nonePressed
+	--
 	--default_quad_1 = default_quad.getQuad 1
 	--default_quad_1.addItem category_name macro_7 title:"CUSTOM Item"
-	--
+	
 	
 	
 	--default_quad_2 = default_quad.getQuad 2
-	--resetMenuDefinitionItems default_quad_2
+	----resetMenuDefinitionItems default_quad_2
 	--default_quad_2.addMenu "_WORKFLOW_MENU_1"
 	--
+	default_quad_1 = default_quad.getQuad 1
+	--resetMenuDefinitionItems default_quad_1
+	default_quad_1.addMenu "_WORKFLOW_MENU_1"
+	
 	--default_quad_3 = default_quad.getQuad 3
 	--resetMenuDefinitionItems default_quad_3
 	--default_quad_3.addMenu "_WORKFLOW_MENU_2"
@@ -232,9 +239,9 @@ function runMenuBuilderWorkflowScenarioTest =
 	--/*  Save all menus and quads.
 	--*/
 	MenuBuildManager.waitForBuild menu_1
-	MenuBuildManager.waitForBuild menu_2
+	--MenuBuildManager.waitForBuild menu_2
 	--MenuBuildManager.waitForBuild custom_quad
-	--MenuBuildManager.waitForBuild default_quad
+	MenuBuildManager.waitForBuild default_quad
 	--
 	saved_menus_data = MenuBuildManager.run()
 	--saved_menus_data = MenuBuildManager.installAndShow()

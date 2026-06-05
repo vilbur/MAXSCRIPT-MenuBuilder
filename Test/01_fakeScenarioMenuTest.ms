@@ -172,6 +172,10 @@ function runMenuBuilderWorkflowScenarioTest =
 	menu_1.addItem category_name macro_1 title:"Menu1 Item 1"
 	menu_1.addItem category_name macro_2 title:"Menu1 Item 2"
 	menu_1.addItem category_name macro_3 title:"Menu1 Item 3"
+		
+--menu_1 = MenuBuildManager.menu "_OOP_MENU_1"
+--menu_1.addItem category macro title:"Item"
+--
 
 	/*  2) Create menu2 with 2 items. Second item is submenu with submenu item.
 	*/
@@ -180,7 +184,9 @@ function runMenuBuilderWorkflowScenarioTest =
 	
 	menu_2.addItem category_name macro_4 title:"Menu2 Item 1"
 	
-	menu_2_submenu = menu_2.addMenu "Menu2 Submenu"
+	menu_2_submenu = menu_2.menu "Submenu"
+	menu_2_submenu.addItem category macro title:"Submenu Item"
+	
 	resetMenuDefinitionItems menu_2_submenu
 	addItemToMenuLike menu_2_submenu category_name macro_5 "Menu2 Submenu Item 1"
 	
@@ -199,6 +205,10 @@ function runMenuBuilderWorkflowScenarioTest =
 	resetMenuDefinitionItems custom_quad_2
 	custom_quad_2.addItem category_name macro_6 title:"Custom Quad Item"
 	custom_quad_2.addMenu "_WORKFLOW_MENU_2"
+	
+	
+
+
 	
 	/*  4) Get Default Viewport Quad.
 		Quad 1: add custom item.

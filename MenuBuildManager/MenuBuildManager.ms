@@ -1,7 +1,7 @@
 fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.47
+	MenuBuildManager_v 0.48
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -10,7 +10,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.47,
+	version = 0.48,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -40,6 +40,7 @@ struct MenuBuildManager_v
 	qmnx_clear_directory = "",
 	clear_default_menu = false,
 	auto_register_callback = true,
+	auto_queue_menu_on_create = true,
 	merge_existing_data = true,
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
@@ -1203,41 +1204,84 @@ struct MenuBuildManager_v
 	),
 
 
+	/*
+	Get or create top-level menu definition.
+	Returned menu is automatically queued for build.
+	*/
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
-		if clear_default_menu == undefined then clear_default_menu = this.clear_default_menu
-		if qmnx_clear_directory == undefined then qmnx_clear_directory = this.qmnx_clear_directory
+		if clear_default_menu == undefined then
+		(
+			clear_default_menu = this.clear_default_menu
+		)
+
+		if qmnx_clear_directory == undefined then
+		(
+			qmnx_clear_directory = this.qmnx_clear_directory
+		)
+
 		menu_definition = this.findMenuDefinitionByTitle title
+
 		if menu_definition == undefined then
 		(
 			saved_menu_data = this.findSavedMenuDataByTitle title
+
 			if saved_menu_data != undefined then
 			(
 				menu_definition = this.createMenuDefinitionFromSavedMenuData saved_menu_data
-				if clear_default_menu then menu_definition.clear_default_menu = true
+
+				if clear_default_menu then
+				(
+					menu_definition.clear_default_menu = true
+				)
 			)
 			else
 			(
 				definition_type = this.normalizeMenuType type
 				definition_quad_modifier = undefined
 				definition_quad_position = undefined
-				if title == "Default Viewport Quad" then (definition_type = #quad; definition_quad_modifier = #nonePressed; definition_quad_position = #TopRight)
-				menu_definition = MenuDefinition_v type:definition_type title:title quad_modifier:definition_quad_modifier quad_position:definition_quad_position manager:this qmnx_clear_directory:qmnx_clear_directory clear_default_menu:clear_default_menu
+
+				if title == "Default Viewport Quad" then
+				(
+					definition_type = #quad
+					definition_quad_modifier = #nonePressed
+					definition_quad_position = #BottomRight
+				)
+
+				menu_definition = MenuDefinition_v \
+					type:definition_type \
+					title:title \
+					quad_modifier:definition_quad_modifier \
+					quad_position:definition_quad_position \
+					manager:this \
+					qmnx_clear_directory:qmnx_clear_directory \
+					clear_default_menu:clear_default_menu
 			)
-			append this.menus_data menu_definition
 		)
-		menu_definition.manager = this
+
+		if this.auto_queue_menu_on_create then
+		(
+			this.queueMenuDefinition menu_definition
+		)
+		else
+		(
+			menu_definition.manager = this
+		)
+
 		menu_definition -- return
 	),
 
-
+	/*
+	Get or create top-level quad menu definition.
+	Returned quad menu is automatically queued through menu().
+	*/
 	function getQuad title clear_default_menu:false =
 	(
 		quad_menu_definition = this.menu title type:#quad clear_default_menu:clear_default_menu
 		quad_menu_definition.manager = this
+
 		quad_menu_definition -- return
 	),
-
 
 	function pasteMenuAsSingleQuad menu_title quad_title:"Default Viewport Quad" quad_position:1 quad_modifier:#nonePressed clear_default_menu:false =
 	(
@@ -1831,17 +1875,46 @@ struct MenuBuildManager_v
 	),
 
 
-	function waitForBuild menu_data =
+	/*
+	Queue menu definition once.
+	Called automatically by menu() and getQuad().
+	*/
+	function queueMenuDefinition menu_definition =
 	(
-		if menu_data == undefined then format "MenuBuildManager_v.waitForBuild ignored undefined menu_data.\n"
-		else
+		if menu_definition != undefined then
 		(
-			if (findItem this.wait_for_build menu_data) == 0 then append this.wait_for_build menu_data
-			if (findItem this.menus_data menu_data) == 0 then append this.menus_data menu_data
+			try
+			(
+				menu_definition.manager = this
+			)
+			catch
+			(
+				ok
+			)
+
+			if (findItem this.wait_for_build menu_definition) == 0 then
+			(
+				append this.wait_for_build menu_definition
+			)
+
+			if (findItem this.menus_data menu_definition) == 0 then
+			(
+				append this.menus_data menu_definition
+			)
 		)
-		menu_data -- return
+
+		menu_definition -- return
 	),
 
+
+	/*
+	Backward-compatible manual queue method.
+	It now delegates to queueMenuDefinition().
+	*/
+	function waitForBuild menu_definition =
+	(
+		this.queueMenuDefinition menu_definition -- return
+	),
 
 	function clearWaitForBuild =
 	(
