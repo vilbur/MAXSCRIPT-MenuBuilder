@@ -1,4 +1,3 @@
-filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
 	MenuBuildManager_v 0.56
@@ -323,30 +322,18 @@ struct MenuBuildManager_v
 	*/
 	function normalizeQuadModifier modifier_value =
 	(
-		/*
-		Join array to string.
-		Used after modifier tokens are sorted.
-		*/
-		function arrayToString arr delimeter:"" =
-		(
-			_string = ""
-
-			for item in arr do
-			(
-				_string += item as string + delimeter
-			)
-
-			substring _string 1 (_string.count - delimeter.count) -- return
-		)
+		/** Join array to string
+		 */
+		function arrayToString arr delimeter:"" = ( _string = ""; for item in arr do _string += item as string  + delimeter; substring _string 1 (_string.count-delimeter.count))
+		
 
 		normalized_mod = undefined
 		valid_mods = #("shift", "alt", "control", "none")
 		modifier_string = toLower (modifier_value as string)
 
 		if (matchPattern modifier_string pattern:"*pressed") then
-		(
 			modifier_string = substring modifier_string 1 ((findString modifier_string "pressed") - 1)
-		)
+		
 
 		modifier_string = substituteString modifier_string "and" "-"
 		mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key > 0 collect mod_key

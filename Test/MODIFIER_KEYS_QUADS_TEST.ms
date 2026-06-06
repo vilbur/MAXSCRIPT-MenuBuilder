@@ -41,7 +41,6 @@ for modifier_spec in modifier_specs do
 	
 	quad_1 = quad_1.setTitle ("Title of " + modifier_spec[2] )
 	
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM OF:"+modifier_spec[2])
 )
 
 MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
