@@ -20,4 +20,4 @@ filein( getFilenamePath(getSourceFileName()) + "/MenuRebuilder/MenuRebuilder.ms"
 /* UI */ 
 filein( getFilenamePath(getSourceFileName()) + "/JsonManagerRollout/JsonManagerRollout.ms" )	--"./JsonManagerRollout/JsonManagerRollout.ms"
 
-
+filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager.ms" )	--"./QuadMenuManager/QuadMenuManager.ms"

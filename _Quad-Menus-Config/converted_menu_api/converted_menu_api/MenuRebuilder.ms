@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.26
+	Version: 0.22
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -14,12 +14,11 @@ global MenuRebuilder_v
 
 struct MenuRebuilder_v
 (
-	version = 0.26,
+	version = 0.22,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
-	title_alias_macro_category = "_MenuRebuilder_Title_Alias",
 
 
 	function isDictionaryValue value =
@@ -149,73 +148,49 @@ struct MenuRebuilder_v
 	),
 
 
-	/*
-	Normalize quad modifier.
-	Example: #shiftAndControlAndAltPressed -> #shiftAndAltAndControlPressed.
-	*/
 	function normalizeQuadModifier modifier_value =
 	(
-		/*
-		Join array to string.
-		Used after modifier tokens are sorted.
-		*/
-		function arrayToString arr delimeter:"" =
+		normalized_modifier = undefined
+		modifier_text = ""
+
+		if modifier_value != undefined then
 		(
-			_string = ""
-
-			for item in arr do
-			(
-				_string += item as string + delimeter
-			)
-
-			substring _string 1 (_string.count - delimeter.count) -- return
+			modifier_text = modifier_value as string
 		)
 
-		normalized_mod = undefined
-		valid_mods = #("shift", "alt", "control", "none")
-		modifier_string = toLower (modifier_value as string)
+		if modifier_text == "#nonePressed" then normalized_modifier = #nonePressed
+		if modifier_text == "nonePressed" then normalized_modifier = #nonePressed
+		if modifier_text == "#nonePresses" then normalized_modifier = #nonePressed
+		if modifier_text == "nonePresses" then normalized_modifier = #nonePressed
 
-		if (matchPattern modifier_string pattern:"*pressed") then
-		(
-			modifier_string = substring modifier_string 1 ((findString modifier_string "pressed") - 1)
-		)
+		if modifier_text == "#shiftPressed" then normalized_modifier = #shiftPressed
+		if modifier_text == "shiftPressed" then normalized_modifier = #shiftPressed
 
-		modifier_string = substituteString modifier_string "and" "-"
-		mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key > 0 collect mod_key
-		mod_keys_count = mod_keys_valid.count
+		if modifier_text == "#controlPressed" then normalized_modifier = #controlPressed
+		if modifier_text == "controlPressed" then normalized_modifier = #controlPressed
 
-		if mod_keys_count > 0 then
-		(
-			normalized_key = if mod_keys_count > 1 then arrayToString mod_keys_valid else mod_keys_valid[1]
+		if modifier_text == "#altPressed" then normalized_modifier = #altPressed
+		if modifier_text == "altPressed" then normalized_modifier = #altPressed
 
-			normalized_mod = case normalized_key of
-			(
-				"altshift": #shiftAndAltPressed
-				"altcontrol": #controlAndAltPressed
-				"controlshift": #shiftAndControlPressed
-				"altcontrolshift": #shiftAndAltAndControlPressed
-				default: (normalized_key + "Pressed") as name
-			)
-		)
+		if modifier_text == "#shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
+		if modifier_text == "shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
 
-		normalized_mod -- return
-	),
+		if modifier_text == "#shiftAndAltPressed" then normalized_modifier = #shiftAndAltPressed
+		if modifier_text == "shiftAndAltPressed" then normalized_modifier = #shiftAndAltPressed
 
+		if modifier_text == "#controlAndAltPressed" then normalized_modifier = #controlAndAltPressed
+		if modifier_text == "controlAndAltPressed" then normalized_modifier = #controlAndAltPressed
 
-	/*
-	Get CUI API quad modifier value.
-	3ds Max 2026 CUI callback accepts #shiftAndAltAndControlPressed for Shift+Alt+Ctrl RMB.
-	*/
-	function getQuadModifierApiValue modifier_value =
-	(
-		api_modifier = this.normalizeQuadModifier modifier_value
-		api_modifier -- return
+		if modifier_text == "#shiftAndControlAndAltPressed" then normalized_modifier = #shiftAndControlAndAltPressed
+		if modifier_text == "shiftAndControlAndAltPressed" then normalized_modifier = #shiftAndControlAndAltPressed
+
+		normalized_modifier -- return
 	),
 
 
 	function getQuadModifier =
 	(
-		this.getQuadModifierApiValue (this.getMenuDataValue #quad_modifier undefined) -- return
+		this.normalizeQuadModifier (this.getMenuDataValue #quad_modifier undefined) -- return
 	),
 
 
@@ -511,175 +486,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*
-	Escape string for generated MaxScript code.
-	Used by title alias MacroScripts.
-	*/
-	function escapeMaxScriptString source_value =
-	(
-		escaped_value = source_value as string
-		escaped_value = substituteString escaped_value "\\" "\\\\"
-		escaped_value = substituteString escaped_value "\"" "\\\""
-
-		escaped_value -- return
-	),
-
-
-	/*
-	Sanitize text to MacroScript identifier.
-	Keeps only alphanumeric characters and underscores.
-	*/
-	function sanitizeMacroIdentifier source_value prefix:"MenuRebuilderTitleAlias" =
-	(
-		valid_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-		source_text = source_value as string
-		identifier_text = prefix
-
-		for char_index = 1 to source_text.count do
-		(
-			char_value = substring source_text char_index 1
-
-			if (findString valid_chars char_value) != undefined then
-			(
-				identifier_text += char_value
-			)
-		)
-
-		identifier_text -- return
-	),
-
-
-	/*
-	Get dictionary string value.
-	Returns default when key is missing or empty.
-	*/
-	function getItemStringValue item_data key_name default_value =
-	(
-		result_value = default_value
-
-		if this.isDictionaryValue item_data then
-		(
-			if this.hasDictValueSafe item_data key_name then
-			(
-				try
-				(
-					if item_data[key_name] != undefined then
-					(
-						if (item_data[key_name] as string) != "" then
-						(
-							result_value = item_data[key_name] as string
-						)
-					)
-				)
-				catch
-				(
-					result_value = default_value
-				)
-			)
-		)
-
-		result_value -- return
-	),
-
-
-	/*
-	Get item display title by priority.
-	#title wins over buttonText and tooltip.
-	*/
-	function getActionItemDisplayTitle item_data macro_name =
-	(
-		item_title = ""
-
-		if this.isDictionaryValue item_data then
-		(
-			if item_title == "" then item_title = this.getItemStringValue item_data #title ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #display_title ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #menu_title ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #buttonText ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #button_text ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #tooltip ""
-			if item_title == "" then item_title = this.getItemStringValue item_data #toolTip ""
-		)
-
-		if item_title == "" then
-		(
-			item_title = macro_name as string
-		)
-
-		item_title -- return
-	),
-
-
-	/*
-	Check if CUI action needs generated title alias.
-	Alias is required because CreateAction uses MacroScript button text.
-	*/
-	function shouldUseTitleAlias item_data macro_name item_title =
-	(
-		use_alias = false
-		custom_title = false
-
-		if this.isDictionaryValue item_data then
-		(
-			if this.hasDictValueSafe item_data #custom_title then
-			(
-				try (custom_title = item_data[#custom_title]) catch (custom_title = false)
-			)
-		)
-
-		if custom_title == true then
-		(
-			use_alias = true
-		)
-		else if item_title != "" then
-		(
-			if item_title != (macro_name as string) then
-			(
-				use_alias = true
-			)
-		)
-
-		use_alias -- return
-	),
-
-
-	/*
-	Create title alias MacroScript and return action id.
-	Generated macro keeps visible CUI title independent from source macro button text.
-	*/
-	function createTitleAliasActionId item_id macro_category macro_name item_title =
-	(
-		alias_macro_name = this.sanitizeMacroIdentifier item_id prefix:"MenuRebuilderTitleAlias_"
-		alias_category = this.title_alias_macro_category
-		escaped_alias_category = this.escapeMaxScriptString alias_category
-		escaped_macro_category = this.escapeMaxScriptString macro_category
-		escaped_macro_name = this.escapeMaxScriptString macro_name
-		escaped_item_title = this.escapeMaxScriptString item_title
-
-		macro_code = "macroScript " + alias_macro_name + "\n"
-		macro_code += "category:\"" + escaped_alias_category + "\"\n"
-		macro_code += "buttonText:\"" + escaped_item_title + "\"\n"
-		macro_code += "toolTip:\"" + escaped_item_title + "\"\n"
-		macro_code += "(\n"
-		macro_code += "\ton execute do\n"
-		macro_code += "\t(\n"
-		macro_code += "\t\tmacros.run \"" + escaped_macro_category + "\" \"" + escaped_macro_name + "\"\n"
-		macro_code += "\t)\n"
-		macro_code += ")\n"
-
-		try
-		(
-			execute macro_code
-		)
-		catch
-		(
-			format "MenuRebuilder_v.createTitleAliasActionId failed. item:'%' title:'%'\n" item_id item_title
-		)
-
-		this.getMacroActionId alias_category alias_macro_name -- return
-	),
-
-
 	function createRealCuiSeparator target_menu item_id =
 	(
 		separator_item = undefined
@@ -700,21 +506,10 @@ struct MenuRebuilder_v
 	),
 
 
-	function createRealCuiAction parent_menu item_id macro_category macro_name item_data:undefined =
+	function createRealCuiAction parent_menu item_id macro_category macro_name =
 	(
 		created_item = undefined
 		persistent_action_id = this.getMacroActionId macro_category macro_name
-		item_title = macro_name as string
-
-		if item_data != undefined then
-		(
-			item_title = this.getActionItemDisplayTitle item_data macro_name
-
-			if this.shouldUseTitleAlias item_data macro_name item_title then
-			(
-				persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title
-			)
-		)
 
 		if parent_menu != undefined then
 		(
@@ -768,7 +563,7 @@ struct MenuRebuilder_v
 		(
 			macro_category = item_data[#category]
 			macro_name = item_data[#macro]
-			created_item = this.createRealCuiAction parent_menu saved_guid macro_category macro_name item_data:item_data
+			created_item = this.createRealCuiAction parent_menu saved_guid macro_category macro_name
 		)
 		else
 		(

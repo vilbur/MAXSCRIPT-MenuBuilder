@@ -1,28 +1,16 @@
-filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
+fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.56
+	MenuBuildManager_v 0.50
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
 	#PRODUCTION = native .msdata only. Fast startup/runtime cache.
 	#JSON       = split JSON only. Development/debug mode.
-	
-	
-	TODO AI: DESCRIBE THESE METHODS:
-		clearWaitForBuild()
-		build()
-		buildMenu()
-		installAndShow()
-		installMenusNow()
-		registerCallback()
-		getQuad()
-		
 */
-
 struct MenuBuildManager_v
 (
-	version = 0.56,
+	version = 0.50,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -317,67 +305,27 @@ struct MenuBuildManager_v
 	),
 
 
-	/*
-	Normalize quad modifier.
-	Example: #shiftAndControlAndAltPressed -> #shiftAndAltAndControlPressed.
-	*/
 	function normalizeQuadModifier modifier_value =
 	(
-		/*
-		Join array to string.
-		Used after modifier tokens are sorted.
-		*/
-		function arrayToString arr delimeter:"" =
+		normalized_modifier = modifier_value
+		try
 		(
-			_string = ""
-
-			for item in arr do
-			(
-				_string += item as string + delimeter
-			)
-
-			substring _string 1 (_string.count - delimeter.count) -- return
+			menu_rebuilder = MenuRebuilder_v()
+			normalized_modifier = menu_rebuilder.normalizeQuadModifier modifier_value
 		)
-
-		normalized_mod = undefined
-		valid_mods = #("shift", "alt", "control", "none")
-		modifier_string = toLower (modifier_value as string)
-
-		if (matchPattern modifier_string pattern:"*pressed") then
+		catch
 		(
-			modifier_string = substring modifier_string 1 ((findString modifier_string "pressed") - 1)
-		)
-
-		modifier_string = substituteString modifier_string "and" "-"
-		mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key > 0 collect mod_key
-		mod_keys_count = mod_keys_valid.count
-
-		if mod_keys_count > 0 then
-		(
-			normalized_key = if mod_keys_count > 1 then arrayToString mod_keys_valid else mod_keys_valid[1]
-
-			normalized_mod = case normalized_key of
+			modifier_text = modifier_value as string
+			case modifier_text of
 			(
-				"altshift": #shiftAndAltPressed
-				"altcontrol": #controlAndAltPressed
-				"controlshift": #shiftAndControlPressed
-				"altcontrolshift": #shiftAndAltAndControlPressed
-				default: (normalized_key + "Pressed") as name
+				"#nonePressed": normalized_modifier = #nonePressed
+				"nonePressed": normalized_modifier = #nonePressed
+				"#shiftAndControlPressed": normalized_modifier = #shiftAndControlPressed
+				"shiftAndControlPressed": normalized_modifier = #shiftAndControlPressed
+				default: normalized_modifier = modifier_value
 			)
 		)
-
-		normalized_mod -- return
-	),
-
-
-	/*
-	Get CUI API quad modifier value.
-	3ds Max 2026 CUI callback accepts #shiftAndAltAndControlPressed for Shift+Alt+Ctrl RMB.
-	*/
-	function getQuadModifierApiValue modifier_value =
-	(
-		api_modifier = this.normalizeQuadModifier modifier_value
-		api_modifier -- return
+		normalized_modifier -- return
 	),
 
 
@@ -414,30 +362,9 @@ struct MenuBuildManager_v
 		if item_id == undefined then item_id = this.createGuidString()
 		item_data[#id] = item_id
 		item_data[#title] = item_title
-		item_data[#display_title] = item_title
-		item_data[#menu_title] = item_title
-		item_data[#buttonText] = item_title
-		item_data[#button_text] = item_title
-		item_data[#tooltip] = item_title
-		item_data[#toolTip] = item_title
-		item_data[#label] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name
-		item_data[#custom_title] = ((item_title as string) != (macro_name as string))
 		item_data -- return
-	),
-
-
-	function createSavedSeparatorData id:undefined =
-	(
-		separator_data = Dictionary #name
-		separator_id = id
-		if separator_id == undefined then separator_id = this.createGuidString()
-		separator_data[#id] = separator_id
-		separator_data[#title] = #SEPARATOR
-		separator_data[#type] = #SEPARATOR
-		separator_data[#separator] = true
-		separator_data -- return
 	),
 
 
@@ -473,65 +400,14 @@ struct MenuBuildManager_v
 	),
 
 
-	function isSeparatorItemData item_data =
-	(
-		was_found = false
-
-		if item_data == #SEPARATOR then
-		(
-			was_found = true
-		)
-		else if this.isDictionaryValue item_data then
-		(
-			if this.hasDictValueSafe item_data #separator then
-			(
-				if item_data[#separator] == true then
-				(
-					was_found = true
-				)
-			)
-
-			if not was_found then
-			(
-				if this.hasDictValueSafe item_data #type then
-				(
-					if item_data[#type] == #SEPARATOR then
-					(
-						was_found = true
-					)
-				)
-			)
-
-			if not was_found then
-			(
-				if this.hasDictValueSafe item_data #title then
-				(
-					if item_data[#title] == #SEPARATOR then
-					(
-						was_found = true
-					)
-				)
-			)
-		)
-
-		was_found -- return
-	),
-
-
 	function isSavedItemData item_data =
 	(
 		was_found = false
-
-		if this.isSeparatorItemData item_data then
-		(
-			was_found = true
-		)
-		else if this.isDictionaryValue item_data then
+		if this.isDictionaryValue item_data then
 		(
 			was_found = this.hasDictValueSafe item_data #title
 			if was_found then was_found = (this.isSubMenuData item_data) or (this.isMacroItemData item_data)
 		)
-
 		was_found -- return
 	),
 
@@ -543,22 +419,7 @@ struct MenuBuildManager_v
 		(
 			for item_value in items_value do
 			(
-				if this.isSeparatorItemData item_value then
-				(
-					if this.isDictionaryValue item_value then
-					(
-						if not (this.hasDictValueSafe item_value #id) then item_value[#id] = this.createGuidString()
-						item_value[#title] = #SEPARATOR
-						item_value[#type] = #SEPARATOR
-						item_value[#separator] = true
-						append normalized_items item_value
-					)
-					else
-					(
-						append normalized_items (this.createSavedSeparatorData())
-					)
-				)
-				else if this.isSavedItemData item_value then
+				if this.isSavedItemData item_value then
 				(
 					if not (this.hasDictValueSafe item_value #id) then item_value[#id] = this.createGuidString()
 					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
@@ -573,22 +434,7 @@ struct MenuBuildManager_v
 			(
 				item_value = items_value[item_key]
 				item_id = item_key as string
-				if this.isSeparatorItemData item_value then
-				(
-					if this.isDictionaryValue item_value then
-					(
-						item_value[#id] = item_id
-						item_value[#title] = #SEPARATOR
-						item_value[#type] = #SEPARATOR
-						item_value[#separator] = true
-						append normalized_items item_value
-					)
-					else
-					(
-						append normalized_items (this.createSavedSeparatorData id:item_id)
-					)
-				)
-				else if this.isSavedItemData item_value then
+				if this.isSavedItemData item_value then
 				(
 					item_value[#id] = item_id
 					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
@@ -629,22 +475,7 @@ struct MenuBuildManager_v
 	function getSavedItemTitle item_data =
 	(
 		item_title = ""
-
-		if this.isSeparatorItemData item_data then
-		(
-			item_title = ""
-		)
-		else if this.isDictionaryValue item_data then
-		(
-			if item_title == "" then if this.hasDictValueSafe item_data #title then item_title = item_data[#title]
-			if item_title == "" then if this.hasDictValueSafe item_data #display_title then item_title = item_data[#display_title]
-			if item_title == "" then if this.hasDictValueSafe item_data #menu_title then item_title = item_data[#menu_title]
-			if item_title == "" then if this.hasDictValueSafe item_data #buttonText then item_title = item_data[#buttonText]
-			if item_title == "" then if this.hasDictValueSafe item_data #button_text then item_title = item_data[#button_text]
-			if item_title == "" then if this.hasDictValueSafe item_data #tooltip then item_title = item_data[#tooltip]
-			if item_title == "" then if this.hasDictValueSafe item_data #toolTip then item_title = item_data[#toolTip]
-		)
-
+		if this.isDictionaryValue item_data then if this.hasDictValueSafe item_data #title then item_title = item_data[#title]
 		item_title -- return
 	),
 
@@ -1473,7 +1304,7 @@ struct MenuBuildManager_v
 		)
 		else if findString modifier_source "Shift+Ctrl+Alt+RMB" != undefined then
 		(
-			modifier_value = #shiftAndAltAndControlPressed
+			modifier_value = #shiftAndControlAndAltPressed
 		)
 		else if findString modifier_source "Shift+Ctrl+RMB" != undefined then
 		(
@@ -1725,19 +1556,8 @@ struct MenuBuildManager_v
 		)
 
 		menu_definition.manager = this
-		this.waitForBuild menu_definition
 
 		menu_definition -- return
-	),
-
-
-	/*
-	Create quad menu definition.
-	Alias for menu title type:#quad.
-	*/
-	function quad title clear_default_menu:false qmnx_clear_directory:undefined =
-	(
-		this.menu title type:#quad clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory -- return
 	),
 
 
@@ -1788,65 +1608,32 @@ struct MenuBuildManager_v
 		merged_item_data -- return
 	),
 
-
-	function itemArrayHasSeparator item_array =
-	(
-		was_found = false
-
-		if this.isArrayValue item_array then
-		(
-			for item_data in item_array do
-			(
-				if was_found == false then
-				(
-					if this.isSeparatorItemData item_data then
-					(
-						was_found = true
-					)
-				)
-			)
-		)
-
-		was_found -- return
-	),
-
-
 	function mergeSavedItems old_items new_items =
 	(
 		merged_items = #()
 
-		if this.itemArrayHasSeparator new_items then
+		if this.isArrayValue old_items then
+		(
+			for old_item in old_items do
+			(
+				append merged_items old_item
+			)
+		)
+
+		if this.isArrayValue new_items then
 		(
 			for new_item in new_items do
 			(
-				append merged_items new_item
-			)
-		)
-		else
-		(
-			if this.isArrayValue old_items then
-			(
-				for old_item in old_items do
+				new_item_title = this.getSavedItemTitle new_item
+				old_item_index = this.findSavedItemIndexByTitle merged_items new_item_title
+
+				if old_item_index > 0 and new_item_title != "" then
 				(
-					append merged_items old_item
+					merged_items[old_item_index] = this.mergeSavedItemData merged_items[old_item_index] new_item
 				)
-			)
-
-			if this.isArrayValue new_items then
-			(
-				for new_item in new_items do
+				else
 				(
-					new_item_title = this.getSavedItemTitle new_item
-					old_item_index = this.findSavedItemIndexByTitle merged_items new_item_title
-
-					if old_item_index > 0 and new_item_title != "" then
-					(
-						merged_items[old_item_index] = this.mergeSavedItemData merged_items[old_item_index] new_item
-					)
-					else
-					(
-						append merged_items new_item
-					)
+					append merged_items new_item
 				)
 			)
 		)
@@ -2794,13 +2581,3 @@ struct MenuBuildManager_v
 		if this.native_data_io_file_path == "" then this.native_data_io_file_path = (getFilenamePath this.rebuilder_file_path) + this.native_data_io_file_name
 	)
 )
-
-
-/*
-	Create default global manager instance.
-	Allows MenuBuildManager.getQuad() after fileIn without manual construction.
-*/
-global MenuBuildManager
-
-MenuBuildManager = MenuBuildManager_v()
-

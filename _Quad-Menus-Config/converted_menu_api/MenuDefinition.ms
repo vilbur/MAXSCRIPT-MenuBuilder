@@ -1,6 +1,6 @@
 /*
 	MenuDefinition_v
-	Version: 0.48
+	Version: 0.46
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
@@ -8,7 +8,7 @@ global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.48,
+	version = 0.47,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -301,7 +301,7 @@ struct MenuDefinition_v
 	Create macro item data.
 	Item id is stored inside item object.
 	*/
-	function makeMacroItemData item_title macro_category macro_name custom_title:false id:undefined =
+	function makeMacroItemData item_title macro_category macro_name id:undefined =
 	(
 		item_data = Dictionary #name
 		item_id = id
@@ -320,7 +320,6 @@ struct MenuDefinition_v
 		item_data[#label] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name
-		item_data[#custom_title] = custom_title
 
 		item_data -- return
 	),
@@ -546,7 +545,7 @@ struct MenuDefinition_v
 			item_title = macro_name as string
 		)
 
-		item_data = this.makeMacroItemData item_title macro_category macro_name custom_title:(title != "")
+		item_data = this.makeMacroItemData item_title macro_category macro_name
 		this.appendSavedItem item_data index:index
 
 		item_data -- return
@@ -799,48 +798,6 @@ struct MenuDefinition_v
 		quad_title = this.getQuadTitleFromPosition normalized_position
 
 		this.addQuad quad_title position:normalized_position -- return
-	),
-
-
-	/*
-	Create or get quad position by title.
-	Useful when a quad position needs custom visible title.
-	*/
-	function quad quad_title position:undefined =
-	(
-		quad_position_value = position
-
-		if quad_position_value == undefined then
-		(
-			quad_position_value = (this.ensureItemsArray()).count + 1
-		)
-
-		this.addQuad quad_title position:quad_position_value -- return
-	),
-
-
-	/*
-	Set definition title.
-	Keeps submenu parent item title synchronized.
-	*/
-	function setTitle new_title =
-	(
-		this.title = new_title as string
-
-		if this.parent_item_data != undefined then
-		(
-			if this.isDictionaryValue this.parent_item_data then
-			(
-				this.parent_item_data[#title] = this.title
-
-				if this.hasDictValueSafe this.parent_item_data #source_menu_title then
-				(
-					this.parent_item_data[#source_menu_title] = this.title
-				)
-			)
-		)
-
-		this -- return
 	),
 
 
