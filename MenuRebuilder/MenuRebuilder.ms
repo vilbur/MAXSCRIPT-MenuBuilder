@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.23
+	Version: 0.24
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -14,7 +14,7 @@ global MenuRebuilder_v
 
 struct MenuRebuilder_v
 (
-	version = 0.23,
+	version = 0.24,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -148,49 +148,79 @@ struct MenuRebuilder_v
 	),
 
 
+	/*
+	Normalize quad modifier.
+	Example: #shiftAndControlAndAltPressed -> #shiftAndAltAndControlPressed.
+	*/
 	function normalizeQuadModifier modifier_value =
 	(
-		normalized_modifier = undefined
-		modifier_text = ""
-
-		if modifier_value != undefined then
+		/*
+		Join array to string.
+		Used after modifier tokens are sorted.
+		*/
+		function arrayToString arr delimeter:"" =
 		(
-			modifier_text = modifier_value as string
+			_string = ""
+
+			for item in arr do
+			(
+				_string += item as string + delimeter
+			)
+
+			substring _string 1 (_string.count - delimeter.count) -- return
 		)
 
-		if modifier_text == "#nonePressed" then normalized_modifier = #nonePressed
-		if modifier_text == "nonePressed" then normalized_modifier = #nonePressed
-		if modifier_text == "#nonePresses" then normalized_modifier = #nonePressed
-		if modifier_text == "nonePresses" then normalized_modifier = #nonePressed
+		normalized_mod = undefined
+		valid_mods = #("shift", "alt", "control", "none")
+		modifier_string = toLower (modifier_value as string)
 
-		if modifier_text == "#shiftPressed" then normalized_modifier = #shiftPressed
-		if modifier_text == "shiftPressed" then normalized_modifier = #shiftPressed
+		if (matchPattern modifier_string pattern:"*pressed") then
+		(
+			modifier_string = substring modifier_string 1 ((findString modifier_string "pressed") - 1)
+		)
 
-		if modifier_text == "#controlPressed" then normalized_modifier = #controlPressed
-		if modifier_text == "controlPressed" then normalized_modifier = #controlPressed
+		modifier_string = substituteString modifier_string "and" "-"
+		mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key > 0 collect mod_key
+		mod_keys_count = mod_keys_valid.count
 
-		if modifier_text == "#altPressed" then normalized_modifier = #altPressed
-		if modifier_text == "altPressed" then normalized_modifier = #altPressed
+		if mod_keys_count > 0 then
+		(
+			normalized_key = if mod_keys_count > 1 then arrayToString mod_keys_valid else mod_keys_valid[1]
 
-		if modifier_text == "#shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
-		if modifier_text == "shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
+			normalized_mod = case normalized_key of
+			(
+				"altshift": #shiftAndAltPressed
+				"altcontrol": #controlAndAltPressed
+				"controlshift": #shiftAndControlPressed
+				"altcontrolshift": #shiftAndAltAndControlPressed
+				default: (normalized_key + "Pressed") as name
+			)
+		)
 
-		if modifier_text == "#shiftAndAltPressed" then normalized_modifier = #shiftAndAltPressed
-		if modifier_text == "shiftAndAltPressed" then normalized_modifier = #shiftAndAltPressed
+		normalized_mod -- return
+	),
 
-		if modifier_text == "#controlAndAltPressed" then normalized_modifier = #controlAndAltPressed
-		if modifier_text == "controlAndAltPressed" then normalized_modifier = #controlAndAltPressed
 
-		if modifier_text == "#shiftAndControlAndAltPressed" then normalized_modifier = #shiftAndControlAndAltPressed
-		if modifier_text == "shiftAndControlAndAltPressed" then normalized_modifier = #shiftAndControlAndAltPressed
+	/*
+	Convert normalized quad modifier to MaxScript CUI API-safe enum.
+	3-key right click modifier works with #shiftAndControlAndAltPressed in SetRightClickModifiers.
+	*/
+	function getQuadModifierApiValue modifier_value =
+	(
+		api_modifier = this.normalizeQuadModifier modifier_value
 
-		normalized_modifier -- return
+		if api_modifier == #shiftAndAltAndControlPressed then
+		(
+			api_modifier = #shiftAndControlAndAltPressed
+		)
+
+		api_modifier -- return
 	),
 
 
 	function getQuadModifier =
 	(
-		this.normalizeQuadModifier (this.getMenuDataValue #quad_modifier undefined) -- return
+		this.getQuadModifierApiValue (this.getMenuDataValue #quad_modifier undefined) -- return
 	),
 
 
@@ -843,97 +873,6 @@ struct MenuRebuilder_v
 	),
 
 
-	/*
-	Get default quad positions.
-	Used when requested title is a position menu like Lock or Texture Tools.
-	*/
-	function getDefaultQuadPositionArray =
-	(
-		#(#BottomRight, #TopRight, #TopLeft, #BottomLeft) -- return
-	),
-
-
-	/*
-	Get quad position menu safely.
-	Returns undefined when position is not present in current CUI data.
-	*/
-	function getQuadPositionMenu quad_menu quad_position_value =
-	(
-		quad_position_menu = undefined
-
-		if quad_menu != undefined then
-		(
-			try
-			(
-				quad_position_menu = quad_menu.GetMenuByPos quad_position_value
-			)
-			catch
-			(
-				quad_position_menu = undefined
-			)
-		)
-
-		quad_position_menu -- return
-	),
-
-
-	/*
-	Find existing quad position menu by title.
-	Supports default position menus that are not RMB roots, for example Lock and Texture Tools.
-	*/
-	function findExistingDefaultQuadPositionByTitle quad_menu_manager requested_title =
-	(
-		found_position_data = undefined
-		search_title = this.normalizeTitleForCompare requested_title
-		search_short_title = this.getShortQuadTitle requested_title
-		context_array = this.getQuadManagerContexts quad_menu_manager
-		position_array = this.getDefaultQuadPositionArray()
-
-		for quad_context in context_array while found_position_data == undefined do
-		(
-			quad_menu_array = #()
-
-			try
-			(
-				for quad_menu in (quad_context.GetQuadMenus()) do
-				(
-					append quad_menu_array quad_menu
-				)
-			)
-			catch
-			(
-				quad_menu_array = #()
-			)
-
-			for quad_menu in quad_menu_array while found_position_data == undefined do
-			(
-				for quad_position_value in position_array while found_position_data == undefined do
-				(
-					quad_position_menu = this.getQuadPositionMenu quad_menu quad_position_value
-
-					if quad_position_menu != undefined then
-					(
-						quad_position_title = this.getQuadMenuTitle quad_position_menu
-						normal_position_title = this.normalizeTitleForCompare quad_position_title
-						short_position_title = this.getShortQuadTitle quad_position_title
-
-						if normal_position_title == search_title then
-						(
-							found_position_data = #(quad_menu, quad_position_menu, quad_position_value, this.getQuadMenuTitle quad_menu, quad_position_title)
-						)
-						else if short_position_title == search_short_title then
-						(
-							found_position_data = #(quad_menu, quad_position_menu, quad_position_value, this.getQuadMenuTitle quad_menu, quad_position_title)
-						)
-					)
-				)
-			)
-		)
-
-		found_position_data -- return
-	),
-
-
 	function getExistingDefaultQuadMenu quad_menu_manager =
 	(
 		quad_menu = undefined
@@ -1093,38 +1032,11 @@ struct MenuRebuilder_v
 		else
 		(
 			quad_menu = this.getExistingDefaultQuadMenu quad_menu_manager
-			found_position_data = undefined
 			quad_menus = this.getQuadMenus()
 
 			if quad_menu == undefined then
 			(
-				found_position_data = this.findExistingDefaultQuadPositionByTitle quad_menu_manager (this.getDefaultQuadTitle())
-			)
-
-			if quad_menu == undefined and found_position_data == undefined then
-			(
 				format "MenuRebuilder_v.injectAsExistingDefaultQuad failed. Existing quad not found. title:'%' default_title:'%' modifier:%\n" (this.getMenuTitle()) (this.getDefaultQuadTitle()) (this.getQuadModifier())
-			)
-			else if found_position_data != undefined then
-			(
-				quad_position_menu = found_position_data[2]
-				quad_parent_title = found_position_data[4]
-				quad_position_title = found_position_data[5]
-
-				if quad_menus.count > 0 then
-				(
-					for quad_data in quad_menus do
-					(
-						this.rebuildMenuItems quad_position_menu quad_data[#items]
-					)
-				)
-				else
-				(
-					this.rebuildMenuItems quad_position_menu (this.getMenuItems())
-				)
-
-				format "MenuRebuilder_v: injected menu '%' into existing default quad position '%' in '%'.\n" (this.getMenuTitle()) quad_position_title quad_parent_title
-				build_ok = true
 			)
 			else
 			(

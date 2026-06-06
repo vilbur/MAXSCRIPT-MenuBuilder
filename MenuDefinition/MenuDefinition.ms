@@ -16,11 +16,34 @@
 	
 */
 
+/*
+	MenuDefinition_v
+	Version: 0.48
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
+*/
+/*
+	MenuDefinition_v
+	Version: 0.49
+	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
+	
+	
+	METHODS TO DESCRIBE:
+		clearItems()
+		addItem()
+		addSeparator()
+		addSubMenu()
+		addMenu()
+		menu()
+		addQuad()
+		getQuad()
+	
+*/
+
 global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.48,
+	version = 0.49,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -361,13 +384,139 @@ struct MenuDefinition_v
 	),
 
 	/*
+	Normalize separator indexes.
+	Accepts integer or array of integers.
+	*/
+	function normalizeSeparatorIndexes separators_value item_count:undefined =
+	(
+		separator_indexes = #()
+		normalized_indexes = #()
+
+		if separators_value != undefined then
+		(
+			if classOf separators_value == Integer then
+			(
+				append separator_indexes separators_value
+			)
+			else if classOf separators_value == Array then
+			(
+				for separator_index in separators_value do
+				(
+					if classOf separator_index == Integer then
+					(
+						append separator_indexes separator_index
+					)
+				)
+			)
+		)
+
+		separator_indexes = sort separator_indexes
+
+		for separator_index in separator_indexes do
+		(
+			if separator_index > 0 then
+			(
+				index_is_valid = true
+
+				if item_count != undefined then
+				(
+					if separator_index > item_count then
+					(
+						index_is_valid = false
+					)
+				)
+
+				if index_is_valid then
+				(
+					if (findItem normalized_indexes separator_index) == 0 then
+					(
+						append normalized_indexes separator_index
+					)
+				)
+			)
+		)
+
+		normalized_indexes -- return
+	),
+
+
+	/*
+	Insert separators after original item indexes.
+	Indexes are processed backward so inserted separators do not shift later targets.
+	*/
+	function insertSeparatorsInItemArray item_array separators:undefined =
+	(
+		normalized_indexes = this.normalizeSeparatorIndexes separators item_count:item_array.count
+
+		if normalized_indexes.count > 0 then
+		(
+			for normalized_index = normalized_indexes.count to 1 by -1 do
+			(
+				separator_index = normalized_indexes[normalized_index]
+				insert_index = separator_index + 1
+
+				if insert_index < 1 then
+				(
+					insert_index = 1
+				)
+
+				if insert_index > item_array.count + 1 then
+				(
+					insert_index = item_array.count + 1
+				)
+
+				insertItem (this.makeSeparatorItemData()) item_array insert_index
+			)
+		)
+
+		item_array -- return
+	),
+
+
+	/*
+	Append item block to target ordered array.
+	Used by flat addMenu insertion.
+	*/
+	function appendItemArrayToTarget item_array target_items index:undefined =
+	(
+		insert_index = index
+
+		for item_data in item_array do
+		(
+			if insert_index == undefined then
+			(
+				append target_items item_data
+			)
+			else
+			(
+				if insert_index < 1 then
+				(
+					insert_index = 1
+				)
+
+				if insert_index > target_items.count + 1 then
+				(
+					insert_index = target_items.count + 1
+				)
+
+				insertItem item_data target_items insert_index
+				insert_index += 1
+			)
+		)
+
+		target_items -- return
+	),
+
+
+	/*
 	Create submenu item data.
 	Submenu children are stored as ordered array.
 	*/
-	function makeSubMenuItemData submenu_title submenu_items id:undefined =
+	function makeSubMenuItemData submenu_title submenu_items id:undefined separators:undefined =
 	(
 		submenu_data = Dictionary #name
 		submenu_id = id
+		separator_indexes = this.normalizeSeparatorIndexes separators item_count:submenu_items.count
 
 		if submenu_id == undefined then
 		(
@@ -379,6 +528,11 @@ struct MenuDefinition_v
 		submenu_data[#source_menu_title] = submenu_title
 		submenu_data[#items] = submenu_items
 
+		if separator_indexes.count > 0 then
+		(
+			submenu_data[#separators] = separator_indexes
+		)
+
 		submenu_data -- return
 	),
 
@@ -388,10 +542,11 @@ struct MenuDefinition_v
 	Used when addMenu flat:true is called before target menu items are available.
 	MenuBuildManager resolves this into real copied items during build.
 	*/
-	function makeFlatMenuReferenceData menu_title id:undefined =
+	function makeFlatMenuReferenceData menu_title id:undefined separators:undefined =
 	(
 		flat_menu_data = Dictionary #name
 		flat_menu_id = id
+		separator_indexes = this.normalizeSeparatorIndexes separators
 
 		if flat_menu_id == undefined then
 		(
@@ -403,6 +558,11 @@ struct MenuDefinition_v
 		flat_menu_data[#source_menu_title] = menu_title
 		flat_menu_data[#items] = #()
 		flat_menu_data[#flat_menu_reference] = true
+
+		if separator_indexes.count > 0 then
+		(
+			flat_menu_data[#separators] = separator_indexes
+		)
 
 		flat_menu_data -- return
 	),
@@ -647,43 +807,26 @@ struct MenuDefinition_v
 	Append existing menu items into this menu.
 	Used by addMenu flat:true.
 	*/
-	function appendExistingMenuItems menu_title index:undefined =
+	function appendExistingMenuItems menu_title index:undefined separators:undefined =
 	(
 		target_items = this.ensureItemsArray()
 		source_items = this.loadExistingMenuItems menu_title
 
 		if source_items.count > 0 then
 		(
-			insert_index = index
+			copied_items = #()
 
 			for source_item in source_items do
 			(
-				copied_item = this.cloneValue source_item
-
-				if insert_index == undefined then
-				(
-					append target_items copied_item
-				)
-				else
-				(
-					if insert_index < 1 then
-					(
-						insert_index = 1
-					)
-
-					if insert_index > target_items.count + 1 then
-					(
-						insert_index = target_items.count + 1
-					)
-
-					insertItem copied_item target_items insert_index
-					insert_index += 1
-				)
+				append copied_items (this.cloneValue source_item)
 			)
+
+			this.insertSeparatorsInItemArray copied_items separators:separators
+			this.appendItemArrayToTarget copied_items target_items index:index
 		)
 		else
 		(
-			this.appendSavedItem (this.makeFlatMenuReferenceData menu_title) index:index
+			this.appendSavedItem (this.makeFlatMenuReferenceData menu_title separators:separators) index:index
 		)
 
 		target_items -- return
@@ -694,10 +837,11 @@ struct MenuDefinition_v
 	Add submenu or flattened existing menu.
 	Returns MenuDefinition_v for submenu when flat:false.
 	*/
-	function addSubMenu menu_title index:undefined =
+	function addSubMenu menu_title index:undefined separators:undefined =
 	(
 		submenu_items = this.loadExistingMenuItems menu_title
-		submenu_data = this.makeSubMenuItemData menu_title submenu_items
+		this.insertSeparatorsInItemArray submenu_items separators:separators
+		submenu_data = this.makeSubMenuItemData menu_title submenu_items separators:separators
 		this.appendSavedItem submenu_data index:index
 
 		submenu_definition = MenuDefinition_v \
@@ -719,7 +863,7 @@ struct MenuDefinition_v
 	Main menus use submenu by default.
 	Quad menus flatten by default because nested menu references can exist in the editor but do not show in the runtime quad popup.
 	*/
-	function addMenu menu_title flat:false index:undefined =
+	function addMenu menu_title flat:false index:undefined separators:undefined =
 	(
 		result_data = undefined
 		effective_flat = flat
@@ -731,12 +875,12 @@ struct MenuDefinition_v
 
 		if effective_flat then
 		(
-			this.appendExistingMenuItems menu_title index:index
+			this.appendExistingMenuItems menu_title index:index separators:separators
 			result_data = this
 		)
 		else
 		(
-			result_data = this.addSubMenu menu_title index:index
+			result_data = this.addSubMenu menu_title index:index separators:separators
 		)
 
 		result_data -- return
@@ -747,9 +891,9 @@ struct MenuDefinition_v
 	OOP-friendly submenu getter/creator.
 	Creates a real submenu definition. In quad runtime, prefer addMenu() because addMenu() flattens menu items into the quad.
 	*/
-	function menu menu_title index:undefined =
+	function menu menu_title index:undefined separators:undefined =
 	(
-		submenu_definition = this.addSubMenu menu_title index:index
+		submenu_definition = this.addSubMenu menu_title index:index separators:separators
 
 		submenu_definition -- return
 	),

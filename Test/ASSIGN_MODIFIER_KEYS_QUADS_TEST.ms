@@ -5,7 +5,6 @@ filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildMa
 macroScript _test_macro
 category:"_TEST_CATEGORY"
 toolTip:"Test Macro Tooltip"
-toolTip:"Test Macro Button Text"
 (
 	on execute do
 		messageBox "SeparatorTestAction1" title:"Separator Test"
@@ -21,6 +20,9 @@ modifier_specs = #(
 	#("CtrlAlt",	"Ctrl+Alt",	#controlAndAltPressed),
 	#("ShiftAltCtrl",	"Shift+Alt+Ctrl",	#shiftAndAltAndControlPressed)
 )
+macro
+
+
 
 /*------------------------------------------------------------------------------
 	RUN TEST
@@ -31,8 +33,7 @@ format "MenuBuildManager: %\n" MenuBuildManager
 
 for modifier_spec in modifier_specs do 
 (
-	quad_new = MenuBuildManager.menu ("_"+modifier_spec[1]) type:#quad
-	--quad_new = MenuBuildManager.quad ("_"+modifier_spec[1])
+	quad_new = MenuBuildManager.quad ("_"+modifier_spec[1])
 	
 	quad_new.quad_modifier = modifier_spec[3]
 	
@@ -44,4 +45,3 @@ for modifier_spec in modifier_specs do
 )
 
 MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
-

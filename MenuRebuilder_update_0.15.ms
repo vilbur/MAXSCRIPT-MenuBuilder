@@ -1033,35 +1033,39 @@ struct MenuRebuilder_v
 	),
 
 
-	function normalizeQuadModifier modifier_value =
+function normalizeQuadModifier modifier_value =
+(
+	/** Join array to string
+	 */
+	function arrayToString arr delimeter:"" = ( _string = ""; for item in arr do _string += item as string  + delimeter; substring _string 1 (_string.count-delimeter.count))
+	
+	valid_mods =  #("shift", "alt", "control", "none")
+	
+	modifier_string = toLower( modifier_value as string )
+
+	if (matchPattern modifier_string pattern:"*Pressed") then
+		modifier_string	= substring modifier_string 1 (( findString modifier_string "Pressed" ) - 1)
+
+	modifier_string = substituteString modifier_string "and" "-"
+	
+	mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key collect mod_key 
+
+	if ( mod_keys_count = mod_keys_valid.count) > 0 then
 	(
-		normalized_modifier = undefined
-		modifier_text = ""
+		normalized_key = if mod_keys_count > 1 then arrayToString mod_keys_valid else mod_keys_valid[1]
 
-		if modifier_value != undefined then
+		normalized_mod = case normalized_key of
 		(
-			modifier_text = modifier_value as string
+			"altshift":	#ShiftAndAltPressed
+			"altcontrol":	#ControlAndAltPressed
+			"controlshift":	#ShiftAndControlPressed
+			"altcontrolshift":	#ShiftAndAltAndControlPressed
+			
+			default: (normalized_key + "Pressed") as name
 		)
-
-		if modifier_text == "#nonePressed" then normalized_modifier = #nonePressed
-		if modifier_text == "nonePressed" then normalized_modifier = #nonePressed
-		if modifier_text == "#nonePresses" then normalized_modifier = #nonePressed
-		if modifier_text == "nonePresses" then normalized_modifier = #nonePressed
-
-		if modifier_text == "#shiftPressed" then normalized_modifier = #shiftPressed
-		if modifier_text == "shiftPressed" then normalized_modifier = #shiftPressed
-
-		if modifier_text == "#controlPressed" then normalized_modifier = #controlPressed
-		if modifier_text == "controlPressed" then normalized_modifier = #controlPressed
-
-		if modifier_text == "#altPressed" then normalized_modifier = #altPressed
-		if modifier_text == "altPressed" then normalized_modifier = #altPressed
-
-		if modifier_text == "#shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
-		if modifier_text == "shiftAndControlPressed" then normalized_modifier = #shiftAndControlPressed
-
-		normalized_modifier -- return
-	),
+		normalized_mod --return
+	)
+),
 
 
 	function getMenuId =
