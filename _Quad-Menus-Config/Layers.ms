@@ -1,0 +1,49 @@
+--function configQuad1 QuadMenu =
+--(
+--	QuadMenu.setTitle("HIDE LAYERS")
+--
+--	Layers1Menu	= MenuDefinition_v title:("_Layers-1")
+--
+--	Layers1Menu.addSeparator index:#( 2 )
+--
+--	QuadMenu.addMenu(Layers1Menu)
+--
+--	QuadMenu.addSeparator()
+--
+--	QuadMenu.addMenu("_Layers-Wirecolor")
+--
+--)
+--
+--function configQuad2 QuadMenu =
+--(
+--	QuadMenu.setTitle("SELECT LAYERS")
+--
+--	QuadMenu.addMenu("_Layers-Select") separators:#( 2,4 )
+--
+--	QuadMenu.addMenu(Layers2Menu)
+--)
+--
+--function configQuad3 QuadMenu =
+--(
+--	QuadMenu.setTitle("MANAGE LAYERS")
+--
+--	QuadMenu.addMenu("_Layers-Manage") separators:#( 2,4 )
+--
+--	QuadMenu.addSeparator()
+--
+--	QuadMenu.addMenu("_Layers-Dialogs")
+--)
+--
+--function configQuad4 QuadMenu =
+--(
+--
+--	QuadMenu.setTitle("UNHIDE LAYERS")
+--
+--	LayersVisibility	= MenuDefinition_v title:("_Layers-Visibility")
+--
+--	QuadMenu.addMenu(LayersVisibility)
+--
+--	QuadMenu.addSeparator()
+--
+--	QuadMenu.addMenu("_Layers-Name")
+--)

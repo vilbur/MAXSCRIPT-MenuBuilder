@@ -1,6 +1,8 @@
 clearListener(); print("Cleared in: "+getSourceFileName())
 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+-- filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" )	--"./../include-QuadMenuManager.ms"
+
+
 
 macroScript _test_macro
 category:"_TEST_CATEGORY"

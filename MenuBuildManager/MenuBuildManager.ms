@@ -1,3 +1,24 @@
+global MenuBuildManager
+global MenuRebuilder_v
+global MenuDefinition_v
+global QuadDefaultQmnxClear_v
+
+
+/* HEPERS */ 
+filein( getFilenamePath(getSourceFileName()) + "/../MenuJsonIO/MenuJsonIO.ms" )	--"./../MenuJsonIO/MenuJsonIO.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../MenuNativeDataIO/MenuNativeDataIO.ms" )	--"./../MenuNativeDataIO/MenuNativeDataIO.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms" )	--"./../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms"
+
+
+/* LIBRARY */ 
+filein( getFilenamePath(getSourceFileName()) + "/../MenuDefinition/MenuDefinition.ms" )	--"./../MenuDefinition/MenuDefinition.ms"
+
+filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder/MenuRebuilder.ms" )	--"./../MenuRebuilder/MenuRebuilder.ms"
+
+/* UI */ 
+filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManagerRollout.ms" )	--"./../JsonManagerRollout/JsonManagerRollout.ms"
+
+
 
 /*
 	MenuBuildManager_v 0.56
@@ -2757,6 +2778,12 @@ struct MenuBuildManager_v
 		print "MenuBuildManager_v.build()"
 		this.applyWaitForBuildToMenusData()
 		this.buildMenus()
+		
+		timer_buildMenus = timeStamp()
+		this.buildMenus()
+		format "buildMenus: % ms\n" (( timeStamp()) - timer_buildMenus)
+		
+		
 		this.saveJsonData()
 		this.saveStartupScript()
 		this.saved_menus_data -- return
@@ -2787,7 +2814,6 @@ struct MenuBuildManager_v
 	Create default global manager instance.
 	Allows MenuBuildManager.getQuad() after fileIn without manual construction.
 */
-global MenuBuildManager
 
 MenuBuildManager = MenuBuildManager_v()
 

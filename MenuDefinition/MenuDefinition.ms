@@ -4,7 +4,6 @@
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
-global MenuDefinition_v
 
 struct MenuDefinition_v
 (

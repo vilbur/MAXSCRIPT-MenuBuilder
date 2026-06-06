@@ -7,10 +7,8 @@
 		Default quad targets are injected into existing CUI quad menus.
 */
 
-global MenuRebuilder_qmnx_clear_guard
 if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_guard = false
 
-global MenuRebuilder_v
 
 struct MenuRebuilder_v
 (
