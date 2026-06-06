@@ -1,7 +1,17 @@
-fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
+filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
-/*
-	MenuBuildManager_v 0.57
+/*	
+	TODO GPT: DESCRIBE THESE METHODS:
+		clearWaitForBuild()
+		build()
+		buildMenu()
+		installAndShow()
+		installMenusNow()
+		registerCallback()
+		getQuad()
+		
+
+	MenuBuildManager_v 0.51
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -10,7 +20,7 @@ fileIn( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 */
 struct MenuBuildManager_v
 (
-	version = 0.58,
+	version = 0.51,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -32,17 +42,39 @@ struct MenuBuildManager_v
 	native_data_io_file_path = "",
 	custom_menu_root_title = "_Custom-Menus",
 	custom_menu_root_id = "4a93a53d-8cf7-4d16-b217-8fe6c2b9d6f1",
-	title_alias_category = "_MenuBuilder_Title_Aliases",
 	main_menu_bar_title = "Main Menu Bar",
+	default_quad_names = #(
+		"Default Viewport Quad",
+		"Snap                     Shift+RMB",
+		"Animation                Alt+RMB",
+		"Modeling                 Ctrl+RMB",
+		"MassFX                   Shift+Alt+RMB",
+		"User Defined 1         Shift+Ctrl+RMB",
+		"Lighting | Render        Ctrl+Alt+RMB",
+		"User Defined 2         Shift+Ctrl+Alt+RMB",
+		"Track View Key Quad (Classic)",
+		"Trackbar Quad",
+		"Viewports",
+		"Track View Key Quad",
+		"LayerExplorer Quad",
+		"SceneExplorer Quad",
+		"Lock",
+		"Windows",
+		"Texture Tools",
+		"ActiveShade Quad",
+		"Unwrap UVW Quad",
+		"Schematic View Quad",
+		"Track View Quad",
+		"Asset Tracking Quad",
+		"Retimer Span Type"
+	),
 	startup_file_name = "MenuRebuilder_startup.ms",
 	data_file_path = "",
 	startup_file_path = "",
 	rebuilder_file_path = "",
 	qmnx_clear_directory = "",
 	clear_default_menu = false,
-	load_default_cui_configuration_before_install = true,
 	auto_register_callback = true,
-	auto_queue_menu_on_create = true,
 	merge_existing_data = true,
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
@@ -346,25 +378,6 @@ struct MenuBuildManager_v
 	),
 
 
-	function createSavedSeparatorItemData id:undefined =
-	(
-		separator_data = Dictionary #name
-		separator_id = id
-
-		if separator_id == undefined then
-		(
-			separator_id = this.createGuidString()
-		)
-
-		separator_data[#id] = separator_id
-		separator_data[#title] = #SEPARATOR
-		separator_data[#type] = #SEPARATOR
-		separator_data[#separator] = true
-
-		separator_data -- return
-	),
-
-
 	function createSavedSubMenuData submenu_title submenu_items id:undefined =
 	(
 		submenu_data = Dictionary #name
@@ -374,54 +387,6 @@ struct MenuBuildManager_v
 		submenu_data[#title] = submenu_title
 		submenu_data[#items] = submenu_items
 		submenu_data -- return
-	),
-
-
-	function isSeparatorItemData item_data =
-	(
-		was_found = false
-
-		if item_data == #SEPARATOR then
-		(
-			was_found = true
-		)
-		else
-		(
-			if this.isDictionaryValue item_data then
-			(
-				if this.hasDictValueSafe item_data #type then
-				(
-					if item_data[#type] == #SEPARATOR then
-					(
-						was_found = true
-					)
-				)
-
-				if not was_found then
-				(
-					if this.hasDictValueSafe item_data #separator then
-					(
-						if item_data[#separator] == true then
-						(
-							was_found = true
-						)
-					)
-				)
-
-				if not was_found then
-				(
-					if this.hasDictValueSafe item_data #title then
-					(
-						if item_data[#title] == #SEPARATOR then
-						(
-							was_found = true
-						)
-					)
-				)
-			)
-		)
-
-		was_found -- return
 	),
 
 
@@ -448,125 +413,50 @@ struct MenuBuildManager_v
 	function isSavedItemData item_data =
 	(
 		was_found = false
-
-		if this.isSeparatorItemData item_data then
+		if this.isDictionaryValue item_data then
 		(
-			was_found = true
+			was_found = this.hasDictValueSafe item_data #title
+			if was_found then was_found = (this.isSubMenuData item_data) or (this.isMacroItemData item_data)
 		)
-		else
-		(
-			if this.isDictionaryValue item_data then
-			(
-				was_found = this.hasDictValueSafe item_data #title
-
-				if was_found then
-				(
-					was_found = (this.isSubMenuData item_data) or (this.isMacroItemData item_data)
-				)
-			)
-		)
-
 		was_found -- return
 	),
+
 
 	function normalizeMenuItems items_value =
 	(
 		normalized_items = #()
-
 		if this.isArrayValue items_value then
 		(
 			for item_value in items_value do
 			(
-				if this.isSeparatorItemData item_value then
+				if this.isSavedItemData item_value then
 				(
-					if this.isDictionaryValue item_value then
-					(
-						if not (this.hasDictValueSafe item_value #id) then
-						(
-							item_value[#id] = this.createGuidString()
-						)
-
-						item_value[#title] = #SEPARATOR
-						item_value[#type] = #SEPARATOR
-						item_value[#separator] = true
-						append normalized_items item_value
-					)
-					else
-					(
-						append normalized_items (this.createSavedSeparatorItemData())
-					)
-				)
-				else
-				(
-					if this.isSavedItemData item_value then
-					(
-						if not (this.hasDictValueSafe item_value #id) then
-						(
-							item_value[#id] = this.createGuidString()
-						)
-
-						if this.hasDictValueSafe item_value #items then
-						(
-							item_value[#items] = this.normalizeMenuItems item_value[#items]
-						)
-
-						append normalized_items item_value
-					)
+					if not (this.hasDictValueSafe item_value #id) then item_value[#id] = this.createGuidString()
+					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
+					append normalized_items item_value
 				)
 			)
 		)
-		else
+		else if this.isDictionaryValue items_value then
 		(
-			if this.isDictionaryValue items_value then
+			item_keys = GetDictKeys items_value
+			for item_key in item_keys do
 			(
-				item_keys = GetDictKeys items_value
-
-				for item_key in item_keys do
+				item_value = items_value[item_key]
+				item_id = item_key as string
+				if this.isSavedItemData item_value then
 				(
-					item_value = items_value[item_key]
-					item_id = item_key as string
-
-					if this.isSeparatorItemData item_value then
-					(
-						append normalized_items (this.createSavedSeparatorItemData id:item_id)
-					)
-					else
-					(
-						if this.isSavedItemData item_value then
-						(
-							item_value[#id] = item_id
-
-							if this.hasDictValueSafe item_value #items then
-							(
-								item_value[#items] = this.normalizeMenuItems item_value[#items]
-							)
-
-							append normalized_items item_value
-						)
-						else
-						(
-							if this.isDictionaryValue item_value then
-							(
-								append normalized_items (this.createSavedSubMenuData item_id (this.normalizeMenuItems item_value) id:item_id)
-							)
-							else
-							(
-								if classOf item_value == Array then
-								(
-									if item_value.count >= 2 then
-									(
-										append normalized_items (this.createSavedMacroItemData item_id item_value[1] item_value[2] id:item_id)
-									)
-								)
-							)
-						)
-					)
+					item_value[#id] = item_id
+					if this.hasDictValueSafe item_value #items then item_value[#items] = this.normalizeMenuItems item_value[#items]
+					append normalized_items item_value
 				)
+				else if this.isDictionaryValue item_value then append normalized_items (this.createSavedSubMenuData item_id (this.normalizeMenuItems item_value) id:item_id)
+				else if classOf item_value == Array then if item_value.count >= 2 then append normalized_items (this.createSavedMacroItemData item_id item_value[1] item_value[2] id:item_id)
 			)
 		)
-
 		normalized_items -- return
 	),
+
 
 	function getMenuDataValue menu_data key_name default_value =
 	(
@@ -647,7 +537,26 @@ struct MenuBuildManager_v
 	function isDefaultQuadInjectionData menu_data =
 	(
 		was_found = false
-		if this.isQuadCallbackData menu_data then if this.getSavedQuadModifier menu_data == #nonePressed then was_found = true
+
+		if this.isQuadCallbackData menu_data then
+		(
+			if this.hasDictValueSafe menu_data #is_default_quad then
+			(
+				if menu_data[#is_default_quad] == true then
+				(
+					was_found = true
+				)
+			)
+
+			if not was_found then
+			(
+				if this.isDefaultQuadTitle (this.getSavedMenuTitle menu_data) then
+				(
+					was_found = true
+				)
+			)
+		)
+
 		was_found -- return
 	),
 
@@ -681,6 +590,12 @@ struct MenuBuildManager_v
 			root_data[#qmnx_clear_directory] = definition_qmnx_clear_directory
 			root_data[#clear_default_menu] = clear_flag
 			root_data[#quad_menus] = #()
+
+				if definition_type == #quad then
+				(
+					root_data[#default_quad_title] = this.resolveDefaultQuadTitle menu_definition.title
+					root_data[#is_default_quad] = this.isDefaultQuadTitle menu_definition.title
+				)
 		)
 		root_data -- return
 	),
@@ -748,159 +663,15 @@ struct MenuBuildManager_v
 	),
 
 
-	function getMenuItemSourceTitle item_data =
-	(
-		source_title = this.getSavedItemTitle item_data
-
-		if this.hasDictValueSafe item_data #source_menu_title then
-		(
-			source_title = item_data[#source_menu_title]
-		)
-
-		source_title -- return
-	),
-
-
-	function isFlatMenuReferenceItem item_data =
-	(
-		was_found = false
-
-		if this.hasDictValueSafe item_data #flat_menu_reference then
-		(
-			if item_data[#flat_menu_reference] == true then
-			(
-				was_found = true
-			)
-		)
-
-		was_found -- return
-	),
-
-
-	function getMenuItemsFromRootDataByTitle menu_title root_menus_data =
-	(
-		menu_items = #()
-		found_menu_data = this.findSavedMenuDataByTitleInArray menu_title root_menus_data
-
-		if found_menu_data != undefined then
-		(
-			if this.hasDictValueSafe found_menu_data #items then
-			(
-				menu_items = this.cloneArrayValue found_menu_data[#items]
-			)
-		)
-
-		menu_items -- return
-	),
-
-
-	function resolveMenuReferencesInItems source_items root_menus_data =
-	(
-		resolved_items = #()
-
-		if this.isArrayValue source_items then
-		(
-			for source_item in source_items do
-			(
-				if this.isDictionaryValue source_item then
-				(
-					if this.isFlatMenuReferenceItem source_item then
-					(
-						reference_title = this.getMenuItemSourceTitle source_item
-						reference_items = this.getMenuItemsFromRootDataByTitle reference_title root_menus_data
-
-						for reference_item in reference_items do
-						(
-							append resolved_items (this.cloneValue reference_item)
-						)
-					)
-					else
-					(
-						resolved_item = this.cloneValue source_item
-
-						if this.hasDictValueSafe resolved_item #items then
-						(
-							if resolved_item[#items].count == 0 then
-							(
-								reference_title = this.getMenuItemSourceTitle resolved_item
-								reference_items = this.getMenuItemsFromRootDataByTitle reference_title root_menus_data
-
-								if reference_items.count > 0 then
-								(
-									resolved_item[#items] = reference_items
-								)
-							)
-
-							resolved_item[#items] = this.resolveMenuReferencesInItems resolved_item[#items] root_menus_data
-						)
-
-						append resolved_items resolved_item
-					)
-				)
-			)
-		)
-
-		resolved_items -- return
-	),
-
-
-	function resolveMenuReferencesInMenuData menu_data root_menus_data =
-	(
-		resolved_menu_data = this.cloneValue menu_data
-
-		if this.hasDictValueSafe resolved_menu_data #items then
-		(
-			resolved_menu_data[#items] = this.resolveMenuReferencesInItems resolved_menu_data[#items] root_menus_data
-		)
-
-		if this.hasDictValueSafe resolved_menu_data #quad_menus then
-		(
-			if this.isArrayValue resolved_menu_data[#quad_menus] then
-			(
-				for quad_data in resolved_menu_data[#quad_menus] do
-				(
-					if this.hasDictValueSafe quad_data #items then
-					(
-						quad_data[#items] = this.resolveMenuReferencesInItems quad_data[#items] root_menus_data
-					)
-				)
-			)
-		)
-
-		resolved_menu_data -- return
-	),
-
-
-	function resolveMenuReferencesInMenusData menus_data_array =
-	(
-		resolved_menus_data = #()
-
-		for menu_data in menus_data_array do
-		(
-			append resolved_menus_data (this.resolveMenuReferencesInMenuData menu_data menus_data_array)
-		)
-
-		resolved_menus_data -- return
-	),
-
-
 	function buildSavedMenusData =
 	(
 		this.saved_menus_data = #()
-
 		for menu_definition in this.menus_data do
 		(
 			menu_data = this.buildSavedMenuDataFromDefinition menu_definition
-
-			if menu_data != undefined then
-			(
-				append this.saved_menus_data menu_data
-			)
+			if menu_data != undefined then append this.saved_menus_data menu_data
 		)
-
-		this.saved_menus_data = this.resolveMenuReferencesInMenusData this.saved_menus_data
 		this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
-
 		this.saved_menus_data -- return
 	),
 
@@ -1224,30 +995,13 @@ struct MenuBuildManager_v
 	(
 		found_index = 0
 
-		if item_title == #SEPARATOR then
+		if this.isArrayValue saved_items then
 		(
-			found_index = 0
-		)
-		else
-		(
-			if (item_title as string) == "#SEPARATOR" then
+			for item_index = 1 to saved_items.count while found_index == 0 do
 			(
-				found_index = 0
-			)
-			else
-			(
-				if this.isArrayValue saved_items then
+				if this.getSavedItemTitle saved_items[item_index] == item_title then
 				(
-					for item_index = 1 to saved_items.count while found_index == 0 do
-					(
-						if not (this.isSeparatorItemData saved_items[item_index]) then
-						(
-							if this.getSavedItemTitle saved_items[item_index] == item_title then
-							(
-								found_index = item_index
-							)
-						)
-					)
+					found_index = item_index
 				)
 			)
 		)
@@ -1393,13 +1147,218 @@ struct MenuBuildManager_v
 		this.getSplitDataRootDirectory() -- return
 	),
 
+
+	function trimString source_text =
+	(
+		trimmed_text = source_text as string
+		start_index = 1
+		end_index = trimmed_text.count
+
+		while start_index <= end_index and (findString " \t\r\n" (substring trimmed_text start_index 1)) != undefined do
+		(
+			start_index += 1
+		)
+
+		while end_index >= start_index and (findString " \t\r\n" (substring trimmed_text end_index 1)) != undefined do
+		(
+			end_index -= 1
+		)
+
+		if end_index < start_index then
+		(
+			trimmed_text = ""
+		)
+		else
+		(
+			trimmed_text = substring trimmed_text start_index (end_index - start_index + 1)
+		)
+
+		trimmed_text -- return
+	),
+
+
+	function getDefaultQuadModifierTextArray =
+	(
+		#(
+			"Shift+Ctrl+Alt+RMB",
+			"Shift+Ctrl+RMB",
+			"Shift+Alt+RMB",
+			"Ctrl+Alt+RMB",
+			"Shift+RMB",
+			"Alt+RMB",
+			"Ctrl+RMB"
+		) -- return
+	),
+
+
+	function removeBracketCharacters source_text =
+	(
+		clean_text = source_text as string
+		clean_text = substituteString clean_text "[" ""
+		clean_text = substituteString clean_text "]" ""
+		clean_text -- return
+	),
+
+
+	function collapseWhitespace source_text =
+	(
+		clean_text = this.trimString (source_text as string)
+		while findString clean_text "  " != undefined do
+		(
+			clean_text = substituteString clean_text "  " " "
+		)
+		clean_text -- return
+	),
+
+
+	function normalizeDefaultQuadTitleForCompare quad_title =
+	(
+		normalized_title = this.removeBracketCharacters (quad_title as string)
+		normalized_title = this.collapseWhitespace normalized_title
+		normalized_title -- return
+	),
+
+
+	function getDefaultQuadShortTitle quad_title =
+	(
+		short_title = this.normalizeDefaultQuadTitleForCompare quad_title
+		modifier_text_array = this.getDefaultQuadModifierTextArray()
+
+		for modifier_text in modifier_text_array do
+		(
+			modifier_index = findString short_title modifier_text
+
+			if modifier_index != undefined then
+			(
+				short_title = substring short_title 1 (modifier_index - 1)
+				short_title = this.trimString short_title
+			)
+		)
+
+		short_title -- return
+	),
+
+
+	function defaultQuadTitlesMatch title_a title_b =
+	(
+		was_match = false
+		normal_a = this.normalizeDefaultQuadTitleForCompare title_a
+		normal_b = this.normalizeDefaultQuadTitleForCompare title_b
+		short_a = this.getDefaultQuadShortTitle title_a
+		short_b = this.getDefaultQuadShortTitle title_b
+
+		if normal_a == normal_b then
+		(
+			was_match = true
+		)
+		else if short_a == normal_b then
+		(
+			was_match = true
+		)
+		else if normal_a == short_b then
+		(
+			was_match = true
+		)
+		else if short_a == short_b then
+		(
+			was_match = true
+		)
+
+		was_match -- return
+	),
+
+
+	function resolveDefaultQuadTitle quad_title =
+	(
+		resolved_title = quad_title as string
+		was_found = false
+
+		for default_quad_name in this.default_quad_names while not was_found do
+		(
+			if this.defaultQuadTitlesMatch quad_title default_quad_name then
+			(
+				resolved_title = default_quad_name
+				was_found = true
+			)
+		)
+
+		resolved_title -- return
+	),
+
+
+	function isDefaultQuadTitle quad_title =
+	(
+		was_found = false
+
+		for default_quad_name in this.default_quad_names while not was_found do
+		(
+			if this.defaultQuadTitlesMatch quad_title default_quad_name then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function getDefaultQuadModifier quad_title =
+	(
+		modifier_value = undefined
+		resolved_title = this.resolveDefaultQuadTitle quad_title
+		modifier_source = this.normalizeDefaultQuadTitleForCompare resolved_title
+
+		if this.getDefaultQuadShortTitle resolved_title == "Default Viewport Quad" then
+		(
+			modifier_value = #nonePressed
+		)
+		else if findString modifier_source "Shift+Ctrl+Alt+RMB" != undefined then
+		(
+			modifier_value = #shiftAndControlAndAltPressed
+		)
+		else if findString modifier_source "Shift+Ctrl+RMB" != undefined then
+		(
+			modifier_value = #shiftAndControlPressed
+		)
+		else if findString modifier_source "Shift+Alt+RMB" != undefined then
+		(
+			modifier_value = #shiftAndAltPressed
+		)
+		else if findString modifier_source "Ctrl+Alt+RMB" != undefined then
+		(
+			modifier_value = #controlAndAltPressed
+		)
+		else if findString modifier_source "Shift+RMB" != undefined then
+		(
+			modifier_value = #shiftPressed
+		)
+		else if findString modifier_source "Alt+RMB" != undefined then
+		(
+			modifier_value = #altPressed
+		)
+		else if findString modifier_source "Ctrl+RMB" != undefined then
+		(
+			modifier_value = #controlPressed
+		)
+
+		modifier_value -- return
+	),
+
+
+	function isDefaultQuadRightClickTitle quad_title =
+	(
+		(this.getDefaultQuadModifier quad_title) != undefined -- return
+	),
+
+
 	function findMenuDefinitionByTitle menu_title =
 	(
 		found_definition = undefined
+		resolved_title = this.resolveDefaultQuadTitle menu_title
 
 		for menu_definition in this.menus_data while found_definition == undefined do
 		(
-			if menu_definition.title == menu_title then
+			if menu_definition.title == menu_title or menu_definition.title == resolved_title then
 			(
 				found_definition = menu_definition
 			)
@@ -1470,12 +1429,47 @@ struct MenuBuildManager_v
 	function findSavedMenuDataByTitle menu_title =
 	(
 		found_menu_data = undefined
-		if this.saved_menus_data.count > 0 then found_menu_data = this.findSavedMenuDataByTitleInArray menu_title this.saved_menus_data
-		if found_menu_data == undefined then if this.split_json_enabled then found_menu_data = this.loadSplitMenuDataByTitle menu_title
-		if found_menu_data == undefined then found_menu_data = this.findSavedMenuDataByTitleInArray menu_title (this.loadSavedMenusDataFromJson())
+		resolved_title = this.resolveDefaultQuadTitle menu_title
+
+		if this.saved_menus_data.count > 0 then
+		(
+			found_menu_data = this.findSavedMenuDataByTitleInArray resolved_title this.saved_menus_data
+		)
+
+		if found_menu_data == undefined then
+		(
+			if this.split_json_enabled then
+			(
+				found_menu_data = this.loadSplitMenuDataByTitle resolved_title
+			)
+		)
+
+		if found_menu_data == undefined then
+		(
+			found_menu_data = this.findSavedMenuDataByTitleInArray resolved_title (this.loadSavedMenusDataFromJson())
+		)
+
+		if found_menu_data == undefined then
+		(
+			if resolved_title != menu_title then
+			(
+				if this.saved_menus_data.count > 0 then
+				(
+					found_menu_data = this.findSavedMenuDataByTitleInArray menu_title this.saved_menus_data
+				)
+
+				if found_menu_data == undefined then
+				(
+					if this.split_json_enabled then
+					(
+						found_menu_data = this.loadSplitMenuDataByTitle menu_title
+					)
+				)
+			)
+		)
+
 		found_menu_data -- return
 	),
-
 
 	function createQuadDefinitionFromSavedQuadData quad_data root_menu_data =
 	(
@@ -1509,12 +1503,16 @@ struct MenuBuildManager_v
 	),
 
 
-	/*
-	Get or create top-level menu definition.
-	Returned menu is automatically queued for build.
-	*/
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
+		definition_type = this.normalizeMenuType type
+		resolved_title = title
+
+		if definition_type == #quad then
+		(
+			resolved_title = this.resolveDefaultQuadTitle title
+		)
+
 		if clear_default_menu == undefined then
 		(
 			clear_default_menu = this.clear_default_menu
@@ -1525,11 +1523,11 @@ struct MenuBuildManager_v
 			qmnx_clear_directory = this.qmnx_clear_directory
 		)
 
-		menu_definition = this.findMenuDefinitionByTitle title
+		menu_definition = this.findMenuDefinitionByTitle resolved_title
 
 		if menu_definition == undefined then
 		(
-			saved_menu_data = this.findSavedMenuDataByTitle title
+			saved_menu_data = this.findSavedMenuDataByTitle resolved_title
 
 			if saved_menu_data != undefined then
 			(
@@ -1542,47 +1540,41 @@ struct MenuBuildManager_v
 			)
 			else
 			(
-				definition_type = this.normalizeMenuType type
 				definition_quad_modifier = undefined
 				definition_quad_position = undefined
 
-				if title == "Default Viewport Quad" then
+				if definition_type == #quad then
 				(
-					definition_type = #quad
-					definition_quad_modifier = #nonePressed
-					definition_quad_position = #BottomRight
+					if this.isDefaultQuadTitle resolved_title then
+					(
+						definition_quad_modifier = this.getDefaultQuadModifier resolved_title
+						definition_quad_position = #BottomRight
+					)
 				)
 
 				menu_definition = MenuDefinition_v \
 					type:definition_type \
-					title:title \
+					title:resolved_title \
 					quad_modifier:definition_quad_modifier \
 					quad_position:definition_quad_position \
 					manager:this \
 					qmnx_clear_directory:qmnx_clear_directory \
 					clear_default_menu:clear_default_menu
 			)
+
+			append this.menus_data menu_definition
 		)
 
-		if this.auto_queue_menu_on_create then
-		(
-			this.queueMenuDefinition menu_definition
-		)
-		else
-		(
-			menu_definition.manager = this
-		)
+		menu_definition.manager = this
 
 		menu_definition -- return
 	),
 
-	/*
-	Get or create top-level quad menu definition.
-	Returned quad menu is automatically queued through menu().
-	*/
+
 	function getQuad title clear_default_menu:false =
 	(
-		quad_menu_definition = this.menu title type:#quad clear_default_menu:clear_default_menu
+		resolved_title = this.resolveDefaultQuadTitle title
+		quad_menu_definition = this.menu resolved_title type:#quad clear_default_menu:clear_default_menu
 		quad_menu_definition.manager = this
 
 		quad_menu_definition -- return
@@ -1909,210 +1901,6 @@ struct MenuBuildManager_v
 	),
 
 
-
-	function escapeMaxScriptString source_value =
-	(
-		escaped_text = source_value as string
-		escaped_text = substituteString escaped_text "\\" "\\\\"
-		escaped_text = substituteString escaped_text "\"" "\\\""
-		escaped_text = substituteString escaped_text "\r" " "
-		escaped_text = substituteString escaped_text "\n" " "
-
-		escaped_text -- return
-	),
-
-
-	function sanitizeMacroScriptIdentifier source_text =
-	(
-		source_value = source_text as string
-		safe_text = ""
-		allowed_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-		number_chars = "0123456789"
-
-		for character_index = 1 to source_value.count do
-		(
-			character_text = substring source_value character_index 1
-
-			if findString allowed_chars character_text != undefined then
-			(
-				safe_text += character_text
-			)
-			else
-			(
-				safe_text += "_"
-			)
-		)
-
-		if safe_text == "" then
-		(
-			safe_text = "TitleAlias"
-		)
-
-		first_character = substring safe_text 1 1
-
-		if findString number_chars first_character != undefined then
-		(
-			safe_text = "_" + safe_text
-		)
-
-		safe_text -- return
-	),
-
-
-	function makeTitleAliasMacroName item_data =
-	(
-		item_id = this.getMenuDataValue item_data #id (this.createGuidString())
-		alias_macro_name = "MenuBuilder_TitleAlias_" + (this.sanitizeMacroScriptIdentifier item_id)
-
-		alias_macro_name -- return
-	),
-
-
-	function shouldCreateTitleAliasMacro item_data =
-	(
-		should_create = false
-
-		if this.isMacroItemData item_data then
-		(
-			item_title = this.getMenuDataValue item_data #title ""
-			macro_category = this.getMenuDataValue item_data #category ""
-			macro_name = this.getMenuDataValue item_data #macro ""
-
-			if item_title != "" then
-			(
-				if macro_category != "" then
-				(
-					if macro_name != "" then
-					(
-						should_create = true
-					)
-				)
-			)
-		)
-
-		should_create -- return
-	),
-
-
-	function createTitleAliasMacro item_data =
-	(
-		alias_created = false
-
-		if this.shouldCreateTitleAliasMacro item_data then
-		(
-			item_title = this.getMenuDataValue item_data #title ""
-			macro_category = this.getMenuDataValue item_data #category ""
-			macro_name = this.getMenuDataValue item_data #macro ""
-			alias_macro_name = this.makeTitleAliasMacroName item_data
-			escaped_title = this.escapeMaxScriptString item_title
-			escaped_source_category = this.escapeMaxScriptString macro_category
-			escaped_source_macro = this.escapeMaxScriptString macro_name
-			escaped_alias_category = this.escapeMaxScriptString this.title_alias_category
-
-			quote_text = "\""
-			macro_text = ""
-			macro_text += "macroScript " + alias_macro_name + "\n"
-			macro_text += "category:" + quote_text + escaped_alias_category + quote_text + "\n"
-			macro_text += "toolTip:" + quote_text + escaped_title + quote_text + "\n"
-			macro_text += "buttonText:" + quote_text + escaped_title + quote_text + "\n"
-			macro_text += "(\n"
-			macro_text += "\ton execute do\n"
-			macro_text += "\t(\n"
-			macro_text += "\t\tmacros.run " + quote_text + escaped_source_category + quote_text + " " + quote_text + escaped_source_macro + quote_text + "\n"
-			macro_text += "\t)\n"
-			macro_text += ")\n"
-
-			try
-			(
-				execute macro_text
-				item_data[#source_category] = macro_category
-				item_data[#source_macro] = macro_name
-				item_data[#category] = this.title_alias_category
-				item_data[#macro] = alias_macro_name
-				item_data[#title_alias_applied] = true
-				alias_created = true
-			)
-			catch
-			(
-				format "MenuBuildManager_v.createTitleAliasMacro failed for title: %\n" item_title
-			)
-		)
-
-		alias_created -- return
-	),
-
-
-	function applyTitleAliasesToItems ordered_items =
-	(
-		if this.isArrayValue ordered_items then
-		(
-			for item_data in ordered_items do
-			(
-				if this.isDictionaryValue item_data then
-				(
-					if this.isSeparatorItemData item_data then
-					(
-						ok
-					)
-					else if this.isSubMenuData item_data then
-					(
-						if this.hasDictValueSafe item_data #items then
-						(
-							this.applyTitleAliasesToItems item_data[#items]
-						)
-					)
-					else
-					(
-						this.createTitleAliasMacro item_data
-					)
-				)
-			)
-		)
-
-		ordered_items -- return
-	),
-
-	function applyTitleAliasesToMenuData menu_data =
-	(
-		if this.hasDictValueSafe menu_data #items then
-		(
-			this.applyTitleAliasesToItems menu_data[#items]
-		)
-
-		if this.hasDictValueSafe menu_data #quad_menus then
-		(
-			if this.isArrayValue menu_data[#quad_menus] then
-			(
-				for quad_data in menu_data[#quad_menus] do
-				(
-					if this.hasDictValueSafe quad_data #items then
-					(
-						this.applyTitleAliasesToItems quad_data[#items]
-					)
-				)
-			)
-		)
-
-		menu_data -- return
-	),
-
-
-	/*
-	Create real separator marker for MenuRebuilder_v.
-	MenuRebuilder_v must translate this into ICuiMenu.CreateSeparator item_id.
-	No fake dashed macro is created here.
-	*/
-	function createLegacySeparatorItemForRebuilder item_data item_id =
-	(
-		legacy_item = Dictionary #name
-		legacy_item[#id] = item_id
-		legacy_item[#title] = #SEPARATOR
-		legacy_item[#type] = #SEPARATOR
-		legacy_item[#separator] = true
-
-		legacy_item -- return
-	),
-
 	function createLegacyItemDictionaryForRebuilder ordered_items =
 	(
 		legacy_items = Dictionary #string
@@ -2121,37 +1909,23 @@ struct MenuBuildManager_v
 		(
 			for item_data in ordered_items do
 			(
-				if this.isSeparatorItemData item_data then
+				if this.isDictionaryValue item_data then
 				(
-					item_id = this.createGuidString()
+					item_id = this.getMenuDataValue item_data #id (this.createGuidString())
+					legacy_item = Dictionary #name
+					legacy_item[#title] = this.getMenuDataValue item_data #title ""
 
-					if this.isDictionaryValue item_data then
+					if this.hasDictValueSafe item_data #items then
 					(
-						item_id = this.getMenuDataValue item_data #id item_id
+						legacy_item[#items] = this.createLegacyItemDictionaryForRebuilder item_data[#items]
+					)
+					else
+					(
+						legacy_item[#category] = this.getMenuDataValue item_data #category ""
+						legacy_item[#macro] = this.getMenuDataValue item_data #macro ""
 					)
 
-					legacy_items[item_id] = this.createLegacySeparatorItemForRebuilder item_data item_id
-				)
-				else
-				(
-					if this.isDictionaryValue item_data then
-					(
-						item_id = this.getMenuDataValue item_data #id (this.createGuidString())
-						legacy_item = Dictionary #name
-						legacy_item[#title] = this.getMenuDataValue item_data #title ""
-
-						if this.hasDictValueSafe item_data #items then
-						(
-							legacy_item[#items] = this.createLegacyItemDictionaryForRebuilder item_data[#items]
-						)
-						else
-						(
-							legacy_item[#category] = this.getMenuDataValue item_data #category ""
-							legacy_item[#macro] = this.getMenuDataValue item_data #macro ""
-						)
-
-						legacy_items[item_id] = legacy_item
-					)
+					legacy_items[item_id] = legacy_item
 				)
 			)
 		)
@@ -2168,16 +1942,11 @@ struct MenuBuildManager_v
 
 	function createRebuilderCompatibleMenuData menu_data =
 	(
-		rebuilder_menu_data = this.cloneValue menu_data
-		rebuilder_menu_data = this.applyTitleAliasesToMenuData rebuilder_menu_data
-
 		/*
-		Important:
-		Do not convert ordered item arrays to Dictionary here.
-		Dictionary key order is not stable in MaxScript, so separators and items
-		can appear at random positions. MenuRebuilder_v 0.17+ accepts ordered arrays.
+		Keep ordered arrays for MenuRebuilder_v.
+		Dictionary conversion destroys order and breaks real separator placement.
 		*/
-
+		rebuilder_menu_data = this.cloneValue menu_data
 		rebuilder_menu_data -- return
 	),
 
@@ -2387,46 +2156,17 @@ struct MenuBuildManager_v
 	),
 
 
-	/*
-	Queue menu definition once.
-	Called automatically by menu() and getQuad().
-	*/
-	function queueMenuDefinition menu_definition =
+	function waitForBuild menu_data =
 	(
-		if menu_definition != undefined then
+		if menu_data == undefined then format "MenuBuildManager_v.waitForBuild ignored undefined menu_data.\n"
+		else
 		(
-			try
-			(
-				menu_definition.manager = this
-			)
-			catch
-			(
-				ok
-			)
-
-			if (findItem this.wait_for_build menu_definition) == 0 then
-			(
-				append this.wait_for_build menu_definition
-			)
-
-			if (findItem this.menus_data menu_definition) == 0 then
-			(
-				append this.menus_data menu_definition
-			)
+			if (findItem this.wait_for_build menu_data) == 0 then append this.wait_for_build menu_data
+			if (findItem this.menus_data menu_data) == 0 then append this.menus_data menu_data
 		)
-
-		menu_definition -- return
+		menu_data -- return
 	),
 
-
-	/*
-	Backward-compatible manual queue method.
-	It now delegates to queueMenuDefinition().
-	*/
-	function waitForBuild menu_definition =
-	(
-		this.queueMenuDefinition menu_definition -- return
-	),
 
 	function clearWaitForBuild =
 	(
@@ -2497,87 +2237,6 @@ struct MenuBuildManager_v
 		quad_menu_manager -- return
 	),
 
-
-	function loadDefaultCuiMenuConfiguration =
-	(
-		load_ok = false
-		menu_manager = this.getCurrentCuiMenuManager()
-
-		if menu_manager == undefined then
-		(
-			format "MenuBuildManager_v.loadDefaultCuiMenuConfiguration failed. CUI menu manager is undefined.\n"
-		)
-		else
-		(
-			try
-			(
-				menu_manager.LoadConfiguration (menu_manager.GetDefaultConfiguration())
-				load_ok = true
-			)
-			catch
-			(
-				format "MenuBuildManager_v.loadDefaultCuiMenuConfiguration failed.\n"
-				load_ok = false
-			)
-		)
-
-		load_ok -- return
-	),
-
-
-	function loadDefaultCuiQuadConfiguration =
-	(
-		load_ok = false
-		quad_menu_manager = this.getCurrentCuiQuadMenuManager()
-
-		if quad_menu_manager == undefined then
-		(
-			format "MenuBuildManager_v.loadDefaultCuiQuadConfiguration failed. CUI quad menu manager is undefined.\n"
-		)
-		else
-		(
-			try
-			(
-				quad_menu_manager.LoadConfiguration (quad_menu_manager.GetDefaultConfiguration())
-				load_ok = true
-			)
-			catch
-			(
-				format "MenuBuildManager_v.loadDefaultCuiQuadConfiguration failed.\n"
-				load_ok = false
-			)
-		)
-
-		load_ok -- return
-	),
-
-
-	function loadDefaultCuiConfiguration load_menus:true load_quads:true =
-	(
-		menu_load_ok = false
-		quad_load_ok = false
-
-		if load_menus then
-		(
-			menu_load_ok = this.loadDefaultCuiMenuConfiguration()
-		)
-
-		if load_quads then
-		(
-			quad_load_ok = this.loadDefaultCuiQuadConfiguration()
-		)
-
-		try
-		(
-			windows.processPostedMessages()
-		)
-		catch
-		(
-			ok
-		)
-
-		#(menu_load_ok, quad_load_ok) -- return
-	),
 
 	function rebuildVisibleMainMenusNow =
 	(
@@ -2791,25 +2450,58 @@ struct MenuBuildManager_v
 		save_ok -- return
 	),
 
-	function installMenusNow save_cui_configuration:true update_quads:true load_default_cui_configuration:undefined =
+	function loadDefaultCuiMenuConfiguration =
+	(
+		load_ok = false
+		menu_manager = this.getCurrentCuiMenuManager()
+
+		if menu_manager != undefined then
+		(
+			try
+			(
+				menu_manager.LoadConfiguration (menu_manager.GetDefaultConfiguration())
+				load_ok = true
+			)
+			catch
+			(
+				load_ok = false
+			)
+		)
+
+		load_ok -- return
+	),
+
+
+	function loadDefaultCuiQuadConfiguration =
+	(
+		load_ok = false
+		quad_menu_manager = this.getCurrentCuiQuadMenuManager()
+
+		if quad_menu_manager != undefined then
+		(
+			try
+			(
+				quad_menu_manager.LoadConfiguration (quad_menu_manager.GetDefaultConfiguration())
+				load_ok = true
+			)
+			catch
+			(
+				load_ok = false
+			)
+		)
+
+		load_ok -- return
+	),
+
+
+	function installMenusNow save_cui_configuration:true update_quads:true load_default_cui_configuration:true =
 	(
 		format "\n"
 		print "MenuBuildManager_v.installMenusNow()"
 
-		if load_default_cui_configuration == undefined then
-		(
-			load_default_cui_configuration = this.load_default_cui_configuration_before_install
-		)
-
 		/*
-		Important order for 3ds Max 2026:
-		1) build and save data
-		2) register callbacks
-		3) load/reload CUI configuration
-
-		#cuiRegisterMenus and #cuiRegisterQuadMenus are fired during LoadConfiguration.
-		If LoadConfiguration is called before registerCallback(), menus are created only in the
-		manual fallback path and can stay invisible/stale until Menu Editor is opened.
+		Correct immediate-install order for 3ds Max 2026:
+		build data -> register callbacks -> LoadConfiguration triggers callbacks.
 		*/
 		this.build()
 		this.registerCallback()
@@ -2857,8 +2549,7 @@ struct MenuBuildManager_v
 		this.saved_menus_data -- return
 	),
 
-
-	function installAndShow save_cui_configuration:true update_quads:true load_default_cui_configuration:undefined =
+	function installAndShow save_cui_configuration:true update_quads:true load_default_cui_configuration:true =
 	(
 		this.installMenusNow save_cui_configuration:save_cui_configuration update_quads:update_quads load_default_cui_configuration:load_default_cui_configuration -- return
 	),
@@ -2900,3 +2591,39 @@ struct MenuBuildManager_v
 		if this.native_data_io_file_path == "" then this.native_data_io_file_path = (getFilenamePath this.rebuilder_file_path) + this.native_data_io_file_name
 	)
 )
+
+
+/*
+	Create default global manager instance.
+	Allows MenuBuildManager.getQuad() after fileIn without manual construction.
+*/
+global MenuBuildManager
+--menu_build_manager_needs_create = false
+--try
+--(
+--	if MenuBuildManager == undefined then
+--	(
+--		menu_build_manager_needs_create = true
+--	)
+--)
+--catch
+--(
+--	menu_build_manager_needs_create = true
+--)
+--
+--try
+--(
+--	if MenuBuildManager.version < 0.51 then
+--	(
+--		menu_build_manager_needs_create = true
+--	)
+--)
+--catch
+--(
+--	menu_build_manager_needs_create = true
+--)
+--
+--if menu_build_manager_needs_create then
+--(
+	MenuBuildManager = MenuBuildManager_v()
+--)

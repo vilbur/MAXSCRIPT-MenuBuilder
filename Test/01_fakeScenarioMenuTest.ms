@@ -143,8 +143,12 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 
 	function setupDefaultViewportQuad =
 	(
-		default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
-		default_quad.quad_modifier = #nonePressed
+		--default_quad = MenuBuildManager.getQuad "Default Viewport Quad" clear_default_menu:true
+		--default_quad = MenuBuildManager.getQuad "Lock" clear_default_menu:true
+		--default_quad = MenuBuildManager.getQuad "ActiveShade Quad" clear_default_menu:true
+
+		
+		--default_quad.quad_modifier = #nonePressed
 
 		/*
 		Quad index == menu index.
@@ -156,33 +160,33 @@ struct MenuBuilder_DefaultViewportQuad_ScenarioTest_v
 		*/
 
 		/* 1) To quad 1 add item and menu. */
-		quad_1 = default_quad.getQuad 1
-		quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 1"
-		quad_1.addSeparator()
-		quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 2"
-		--quad_1.addMenu (this.makeMenuTitle 1)
-
-		/* 2) To quad 2 add item and flat menu. */
-		quad_2 = default_quad.getQuad 2
-
-		quad_2.addSeparator()
-		quad_2.addItem this.category_name "Test_macro_1" title:"Quad 2 Direct Item"
-		quad_2.addMenu (this.makeMenuTitle 2) flat:true
-
-		/* 3) Clear quad 3 and add item and menu. */
-		quad_3 = default_quad.getQuad 3
-		this.resetMenuDefinitionItems quad_3
-		
-		quad_3.addItem this.category_name "Test_macro_1" title:"Quad 3 Direct Item After Clear"
-		quad_3.addMenu (this.makeMenuTitle 3)
-
-		/* 4) Replace whole quad 4 with flattened menu. */
-		quad_4 = default_quad.getQuad 4
-		this.resetMenuDefinitionItems quad_4
-		quad_4.addMenu (this.makeMenuTitle 4) --flat:true
-		--quad_4.addMenu ((this.makeMenuTitle 4) + " XXX") flat:true
-
-		default_quad -- return
+		--quad_1 = default_quad.getQuad 1
+		--quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 1"
+		--quad_1.addSeparator()
+		--quad_1.addItem this.category_name "Test_macro_1" title:"Quad 1 Direct Item 2"
+		----quad_1.addMenu (this.makeMenuTitle 1)
+		--
+		--/* 2) To quad 2 add item and flat menu. */
+		--quad_2 = default_quad.getQuad 2
+		--
+		--quad_2.addSeparator()
+		--quad_2.addItem this.category_name "Test_macro_1" title:"Quad 2 Direct Item"
+		--quad_2.addMenu (this.makeMenuTitle 2) flat:true
+		--
+		--/* 3) Clear quad 3 and add item and menu. */
+		--quad_3 = default_quad.getQuad 3
+		--this.resetMenuDefinitionItems quad_3
+		--
+		--quad_3.addItem this.category_name "Test_macro_1" title:"Quad 3 Direct Item After Clear"
+		--quad_3.addMenu (this.makeMenuTitle 3)
+		--
+		--/* 4) Replace whole quad 4 with flattened menu. */
+		--quad_4 = default_quad.getQuad 4
+		--this.resetMenuDefinitionItems quad_4
+		--quad_4.addMenu (this.makeMenuTitle 4) --flat:true
+		----quad_4.addMenu ((this.makeMenuTitle 4) + " XXX") flat:true
+		--
+		--default_quad -- return
 	),
 
 

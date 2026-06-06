@@ -230,6 +230,7 @@ function runMenuBuilderWorkflowScenarioTest =
 	--default_quad_2.addMenu "_WORKFLOW_MENU_1"
 	--
 	default_quad_1 = default_quad.getQuad 1
+	--default_quad_1.addSeparator()
 	--resetMenuDefinitionItems default_quad_1
 	default_quad_1.addMenu "_WORKFLOW_MENU_1"
 	
