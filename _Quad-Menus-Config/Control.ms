@@ -18,25 +18,25 @@ function addQuad1 QuadMenu =
 	----format "HideSelection	= % \n" HideSelection
 
 
-	QuadMenu.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
-	QuadMenu.addItem("Tools")("Hide Unselected")	group:"Main UI" title:"Hide UNSELECTED"
-
-	QuadMenu.addSeparator()
-
-	QuadMenu.addMenu("_Visibility-Hide")	--flat:false --index:1
-
+	--QuadMenu.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
+	--QuadMenu.addItem("Tools")("Hide Unselected")	group:"Main UI" title:"Hide UNSELECTED"
+	--
 	--QuadMenu.addSeparator()
 	--
-	--QuadMenu.addMenu("_Selection-Visibility")	--flat:false --index:1
-
-	QuadMenu.addSeparator()
-
-	QuadMenu.addItem("Tools")("Freeze Selection")	group:"Main UI"
-	QuadMenu.addItem("Tools")("Unfreeze All")	group:"Main UI"
-
-	QuadMenu.addSeparator()
-
-	QuadMenu.addMenu("_Selection-Object")	--flat:false --index:1
+	--QuadMenu.addMenu("_Visibility-Hide")	--flat:false --index:1
+	--
+	----QuadMenu.addSeparator()
+	----
+	----QuadMenu.addMenu("_Selection-Visibility")	--flat:false --index:1
+	--
+	--QuadMenu.addSeparator()
+	--
+	--QuadMenu.addItem("Tools")("Freeze Selection")	group:"Main UI"
+	--QuadMenu.addItem("Tools")("Unfreeze All")	group:"Main UI"
+	--
+	--QuadMenu.addSeparator()
+	--
+	--QuadMenu.addMenu("_Selection-Object")	--flat:false --index:1
 )
 
 /*------------------------------------------------------------------------------

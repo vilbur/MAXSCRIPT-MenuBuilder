@@ -20,7 +20,7 @@ modifier_specs = #(
 	#("CtrlAlt",	"Ctrl+Alt",	#controlAndAltPressed),
 	#("ShiftAltCtrl",	"Shift+Alt+Ctrl",	#shiftAndAltAndControlPressed)
 )
-macro
+
 
 
 

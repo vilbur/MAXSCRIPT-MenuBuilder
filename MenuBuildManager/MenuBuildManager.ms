@@ -9,10 +9,11 @@
 		getQuad()
 
 */
+
 filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 /*
-	MenuBuildManager_v 0.53
+	MenuBuildManager_v 0.55
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -33,7 +34,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-menus.ms" )
 
 struct MenuBuildManager_v
 (
-	version = 0.54,
+	version = 0.55,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -431,8 +432,16 @@ struct MenuBuildManager_v
 		if item_id == undefined then item_id = this.createGuidString()
 		item_data[#id] = item_id
 		item_data[#title] = item_title
+		item_data[#display_title] = item_title
+		item_data[#menu_title] = item_title
+		item_data[#buttonText] = item_title
+		item_data[#button_text] = item_title
+		item_data[#tooltip] = item_title
+		item_data[#toolTip] = item_title
+		item_data[#label] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name
+		item_data[#custom_title] = ((item_title as string) != (macro_name as string))
 		item_data -- return
 	),
 
@@ -645,7 +654,13 @@ struct MenuBuildManager_v
 		)
 		else if this.isDictionaryValue item_data then
 		(
-			if this.hasDictValueSafe item_data #title then item_title = item_data[#title]
+			if item_title == "" then if this.hasDictValueSafe item_data #title then item_title = item_data[#title]
+			if item_title == "" then if this.hasDictValueSafe item_data #display_title then item_title = item_data[#display_title]
+			if item_title == "" then if this.hasDictValueSafe item_data #menu_title then item_title = item_data[#menu_title]
+			if item_title == "" then if this.hasDictValueSafe item_data #buttonText then item_title = item_data[#buttonText]
+			if item_title == "" then if this.hasDictValueSafe item_data #button_text then item_title = item_data[#button_text]
+			if item_title == "" then if this.hasDictValueSafe item_data #tooltip then item_title = item_data[#tooltip]
+			if item_title == "" then if this.hasDictValueSafe item_data #toolTip then item_title = item_data[#toolTip]
 		)
 
 		item_title -- return

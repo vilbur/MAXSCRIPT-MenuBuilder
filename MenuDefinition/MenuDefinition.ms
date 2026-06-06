@@ -15,15 +15,9 @@
 		getQuad()
 	
 */
-
 /*
 	MenuDefinition_v
-	Version: 0.48
-	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
-*/
-/*
-	MenuDefinition_v
-	Version: 0.49
+	Version: 0.50
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 	
 	
@@ -43,7 +37,7 @@ global MenuDefinition_v
 
 struct MenuDefinition_v
 (
-	version = 0.49,
+	version = 0.50,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -352,6 +346,8 @@ struct MenuDefinition_v
 		item_data[#menu_title] = item_title
 		item_data[#buttonText] = item_title
 		item_data[#button_text] = item_title
+		item_data[#tooltip] = item_title
+		item_data[#toolTip] = item_title
 		item_data[#label] = item_title
 		item_data[#category] = macro_category
 		item_data[#macro] = macro_name

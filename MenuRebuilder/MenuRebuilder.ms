@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.24
+	Version: 0.25
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -14,11 +14,12 @@ global MenuRebuilder_v
 
 struct MenuRebuilder_v
 (
-	version = 0.24,
+	version = 0.25,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
+	title_alias_macro_category = "_MenuRebuilder_Title_Alias",
 
 
 	function isDictionaryValue value =
@@ -516,6 +517,175 @@ struct MenuRebuilder_v
 	),
 
 
+	/*
+	Escape string for generated MaxScript code.
+	Used by title alias MacroScripts.
+	*/
+	function escapeMaxScriptString source_value =
+	(
+		escaped_value = source_value as string
+		escaped_value = substituteString escaped_value "\\" "\\\\"
+		escaped_value = substituteString escaped_value "\"" "\\\""
+
+		escaped_value -- return
+	),
+
+
+	/*
+	Sanitize text to MacroScript identifier.
+	Keeps only alphanumeric characters and underscores.
+	*/
+	function sanitizeMacroIdentifier source_value prefix:"MenuRebuilderTitleAlias" =
+	(
+		valid_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+		source_text = source_value as string
+		identifier_text = prefix
+
+		for char_index = 1 to source_text.count do
+		(
+			char_value = substring source_text char_index 1
+
+			if (findString valid_chars char_value) != undefined then
+			(
+				identifier_text += char_value
+			)
+		)
+
+		identifier_text -- return
+	),
+
+
+	/*
+	Get dictionary string value.
+	Returns default when key is missing or empty.
+	*/
+	function getItemStringValue item_data key_name default_value =
+	(
+		result_value = default_value
+
+		if this.isDictionaryValue item_data then
+		(
+			if this.hasDictValueSafe item_data key_name then
+			(
+				try
+				(
+					if item_data[key_name] != undefined then
+					(
+						if (item_data[key_name] as string) != "" then
+						(
+							result_value = item_data[key_name] as string
+						)
+					)
+				)
+				catch
+				(
+					result_value = default_value
+				)
+			)
+		)
+
+		result_value -- return
+	),
+
+
+	/*
+	Get item display title by priority.
+	#title wins over buttonText and tooltip.
+	*/
+	function getActionItemDisplayTitle item_data macro_name =
+	(
+		item_title = ""
+
+		if this.isDictionaryValue item_data then
+		(
+			if item_title == "" then item_title = this.getItemStringValue item_data #title ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #display_title ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #menu_title ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #buttonText ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #button_text ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #tooltip ""
+			if item_title == "" then item_title = this.getItemStringValue item_data #toolTip ""
+		)
+
+		if item_title == "" then
+		(
+			item_title = macro_name as string
+		)
+
+		item_title -- return
+	),
+
+
+	/*
+	Check if CUI action needs generated title alias.
+	Alias is required because CreateAction uses MacroScript button text.
+	*/
+	function shouldUseTitleAlias item_data macro_name item_title =
+	(
+		use_alias = false
+		custom_title = false
+
+		if this.isDictionaryValue item_data then
+		(
+			if this.hasDictValueSafe item_data #custom_title then
+			(
+				try (custom_title = item_data[#custom_title]) catch (custom_title = false)
+			)
+		)
+
+		if custom_title == true then
+		(
+			use_alias = true
+		)
+		else if item_title != "" then
+		(
+			if item_title != (macro_name as string) then
+			(
+				use_alias = true
+			)
+		)
+
+		use_alias -- return
+	),
+
+
+	/*
+	Create title alias MacroScript and return action id.
+	Generated macro keeps visible CUI title independent from source macro button text.
+	*/
+	function createTitleAliasActionId item_id macro_category macro_name item_title =
+	(
+		alias_macro_name = this.sanitizeMacroIdentifier item_id prefix:"MenuRebuilderTitleAlias_"
+		alias_category = this.title_alias_macro_category
+		escaped_alias_category = this.escapeMaxScriptString alias_category
+		escaped_macro_category = this.escapeMaxScriptString macro_category
+		escaped_macro_name = this.escapeMaxScriptString macro_name
+		escaped_item_title = this.escapeMaxScriptString item_title
+
+		macro_code = "macroScript " + alias_macro_name + "\n"
+		macro_code += "category:\"" + escaped_alias_category + "\"\n"
+		macro_code += "buttonText:\"" + escaped_item_title + "\"\n"
+		macro_code += "toolTip:\"" + escaped_item_title + "\"\n"
+		macro_code += "(\n"
+		macro_code += "\ton execute do\n"
+		macro_code += "\t(\n"
+		macro_code += "\t\tmacros.run \"" + escaped_macro_category + "\" \"" + escaped_macro_name + "\"\n"
+		macro_code += "\t)\n"
+		macro_code += ")\n"
+
+		try
+		(
+			execute macro_code
+		)
+		catch
+		(
+			format "MenuRebuilder_v.createTitleAliasActionId failed. item:'%' title:'%'\n" item_id item_title
+		)
+
+		this.getMacroActionId alias_category alias_macro_name -- return
+	),
+
+
 	function createRealCuiSeparator target_menu item_id =
 	(
 		separator_item = undefined
@@ -536,10 +706,21 @@ struct MenuRebuilder_v
 	),
 
 
-	function createRealCuiAction parent_menu item_id macro_category macro_name =
+	function createRealCuiAction parent_menu item_id macro_category macro_name item_data:undefined =
 	(
 		created_item = undefined
 		persistent_action_id = this.getMacroActionId macro_category macro_name
+		item_title = macro_name as string
+
+		if item_data != undefined then
+		(
+			item_title = this.getActionItemDisplayTitle item_data macro_name
+
+			if this.shouldUseTitleAlias item_data macro_name item_title then
+			(
+				persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title
+			)
+		)
 
 		if parent_menu != undefined then
 		(
@@ -593,7 +774,7 @@ struct MenuRebuilder_v
 		(
 			macro_category = item_data[#category]
 			macro_name = item_data[#macro]
-			created_item = this.createRealCuiAction parent_menu saved_guid macro_category macro_name
+			created_item = this.createRealCuiAction parent_menu saved_guid macro_category macro_name item_data:item_data
 		)
 		else
 		(

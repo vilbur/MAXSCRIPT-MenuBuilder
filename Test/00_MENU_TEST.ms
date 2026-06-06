@@ -35,14 +35,7 @@ format "MenuBuildManager: %\n" MenuBuildManager
 --for modifier_spec in modifier_specs do 
 (
 	menu_new = MenuBuildManager.menu ("_TEST_MENU_A" ) --type:#quad
-	--quad_new = MenuBuildManager.quad ("_"+modifier_spec[1])
-	
-	--quad_new.quad_modifier = modifier_spec[3]
-	
-	--quad_1 = quad_new.getQuad 1
-	
-	--quad_1 = quad_1.setTitle ("Title of " + modifier_spec[2] )
-	
+
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM")
 	menu_new.addSeparator()
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM")
@@ -50,3 +43,6 @@ format "MenuBuildManager: %\n" MenuBuildManager
 )
 
 MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+
+
+
