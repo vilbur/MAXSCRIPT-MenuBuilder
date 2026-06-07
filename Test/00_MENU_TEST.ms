@@ -7,7 +7,7 @@ clearListener(); print("Cleared in: "+getSourceFileName())
 macroScript _test_macro
 category:"_TEST_CATEGORY"
 toolTip:"Test Macro Tooltip"
-toolTip:"Test Macro Button Text"
+buttontext:"Test Macro Button Text"
 (
 	on execute do
 		messageBox "SeparatorTestAction1" title:"Separator Test"

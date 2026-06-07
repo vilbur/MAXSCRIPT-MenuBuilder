@@ -1,5 +1,7 @@
 function configQuad1 QuadMenu =
 (
+	format "\n"; print "Control.ms.configQuad1()"
+	--format "QuadMenu: %\n" QuadMenu
 	QuadMenu.setTitle("QUAD TITLE 1")
 
 	--QuadMenu.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
@@ -19,6 +21,7 @@ function configQuad1 QuadMenu =
 	--QuadMenu.addSeparator()
 	--
 	--QuadMenu.addMenu("_Selection-Object")
+	
 )
 
 function configQuad2 QuadMenu =
@@ -68,13 +71,3 @@ function configQuad4 QuadMenu =
 	--
 	--QuadMenu.addMenu("_Selection-Hierarchy")
 )
-
---format "\nWWWWWWWWWWTTTTTTTTTTTF"
-
---/** Test call
--- */
---function testCall QuadMenu =
---(
---	format "\n"; print ".testCall()"
---	format "QuadMenu: %\n" QuadMenu
---)

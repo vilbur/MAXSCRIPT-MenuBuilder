@@ -1,5 +1,11 @@
-filein( getFilenamePath(getSourceFileName()) + "/MacroScriptFileParser/MacroScriptFileParser.ms" )	--"./MacroScriptFileParser/MacroScriptFileParser.ms"
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+
+
+global configQuad1 = undefined
+global configQuad2 = undefined
+global configQuad3 = undefined
+global configQuad4 = undefined
+
 
 /** Quad menu manager
   
@@ -34,39 +40,65 @@ struct QuadMenuManager_v
 	hotkeys = #( #RightClick, #shiftPressed, #altPressed, #controlPressed, #shiftAndAltPressed, #shiftAndControlPressed, #controlAndAltPressed, #shiftAndAltAndControlPressed ),
 	
 	
+	
+	/** Add item to menu
+	 */
+	function addItemToMenu macro_category macro_name title =
+	(
+		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--menu_name = item_data[1] -- menu name is category of macroscript  
+		
+		if menus_data[macro_category] == undefined then
+			menus_data[macro_category] = #()
+		
+		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
+		
+	),
+	
 	/** Create menus
 	 */
 	function createMenus =
 	(
-		format "\n"; print "QuadMenuManager_v.createMenus()"
-		--format "\n"; print "QuadMenuManager_v.setupMenus()"
+		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
 
-		macroscript_files_allowed = for macroscript_file in this.macroscript_to_import where not this.isOnBlacklist macroscript_file blacklist collect macroscript_file
-
+		MenuBuildManagerTest = MenuBuildManager_v()
+		format "MenuBuildManagerTest: %\n" MenuBuildManagerTest
 		
-		if macroscript_files_allowed.count > 0 then
+		--format "\n"; print "QuadMenuManager_v.createMenus()"
+		for menu_name in menus_data.keys do
 		(
-			this._setMenusData( macroscript_files_allowed )
-
-			this._createMenus()
+			--format "menu_name: %\n" menu_name
+			menu_new = MenuBuildManagerTest.menu (menu_name) --type:#quad
+		
+			for menu_item_data in menus_data[menu_name] do
+				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
+		
+		
+		MenuBuildManagerTest.installMenusNow update_quads:true load_default_cui_configuration:true
 	),
 	
+
 	/** Setup menus by config files in dir
 	  * 
 	  * NOTE: hotkey of DEFAULT QUAD is set to CTRL+SHIFT+AL+RMB
 	  * 
 	 */
-	function setupQuadMenus =
+	function createQuadMenus =
 	(
+		FORMAT "\n\n"; print "========================= CREATE QUAD MENU FROM QUAD AUTO CONFIG FILES ========================="
 
+		
+		
+		
 		/*------------------------------------------------------------------------------
 			QUADS
 		--------------------------------------------------------------------------------*/
 		--this._createQuads(this._getQuadConfigFiles())
 		
 		--quad_cfg_files = this._getQuadConfigFiles()
-		
+		QuadBuildManager = MenuBuildManager_v()
+
 		for quad_cfg_file in this._getQuadConfigFiles() do
 		(
 			
@@ -77,30 +109,42 @@ struct QuadMenuManager_v
 			
 			filename = getFilenameFile(quad_cfg_file)
 			
-			QuadMenuNew = this.MenuBuildManager.menu ("_"+filename) type:#quad
+			QuadMenuNew = QuadBuildManager.quad ("_"+filename) --type:#quad
+			--QuadMenuNew = QuadBuildManager.menu ("_"+filename) type:#quad
+			--QuadMenuNew = QuadBuildManager.menu (filename) type:#quad
 			--format "QuadMenuNew: %\n" QuadMenuNew
 
-			format "\nINSTALL QUAD MENU FROM FILE: %\n" quad_cfg_file
+			format "\nINSTALL QUAD MENU FROM FILE: %.ms\n" filename
 			
 			filein quad_cfg_file
 			
-			/* SET MODIFIER KEYS */ 
-			if ( mod_keys_by_filename = _normalizeQuadModifier filename ) != undefined then 
-				QuadMenuNew.quad_modifier = mod_keys_by_filename
-			--testCall( QuadMenuNew.quad "QUAD 1" )
+			--format "configQuad1: %\n" configQuad1
 			
+			/*------------------------------------------------------------------------------
+				 SET MODIFIER HOTKEYS KEYS E.G.: CTRL + RMB
+			--------------------------------------------------------------------------------*/
+			if ( mod_keys_by_filename = this._normalizeQuadModifier filename ) != undefined then 
+				QuadMenuNew.quad_modifier = mod_keys_by_filename
+			
+			
+			/*------------------------------------------------------------------------------
+				MODIFY QUADS BY CODE IN FILE
+			--------------------------------------------------------------------------------*/
 			if configQuad1 != undefined then configQuad1( QuadMenuNew.getQuad 1 )
 			if configQuad2 != undefined then configQuad2( QuadMenuNew.getQuad 2 )
 			if configQuad3 != undefined then configQuad3( QuadMenuNew.getQuad 3 )
 			if configQuad4 != undefined then configQuad4( QuadMenuNew.getQuad 4 )			
 		)
 		
-		/* BUILD AND INSTALL MENUS AND QUAD MENUS */ 
-		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+		/*------------------------------------------------------------------------------
+			BUILD AND INSTALL QUAD MENUS
+		--------------------------------------------------------------------------------*/
+		QuadBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+	),
 		
 	
-	),
 	
+
 	/** Add macros to menus
 	 */
 	function addMacrosToMenus macroscript_paths =
@@ -142,41 +186,6 @@ struct QuadMenuManager_v
 	
 	function isOnBlacklist macroscript_file blacklist = ((for pattern in blacklist where matchPattern macroscript_file pattern:pattern collect pattern).count > 0),
 	
-	/** Import macroscript files to menus
-	 */
-	function _setMenusData macroscript_files_allowed =
-	(
-		--format "\n"; print "QuadMenuManager_v._setMenusData()"
-		--format "dir: %\n" dir
-		--format "\n"; print "QuadMenuManager_v.addDir()"
-		
-
-		for macroscript_file in macroscript_files_allowed where findItem parsed_macroscript_files macroscript_file == 0 do
-		( 
-			--format "CREATE MENUS FROM FILE: %\n" (filenameFromPath(macroscript_file))
-			
-			appendIfUnique parsed_macroscript_files macroscript_file
-			
-			MacroScriptFileParser = MacroScriptFileParser_v macroscript_file
-			
-			if MacroScriptFileParser.MacroScripts.count > 0 then
-			(
-				for _MacroScript in MacroScriptFileParser.MacroScripts where ( item_data =  this._getMenuData _MacroScript ) != undefined do
-				(
-					--format "item_data: %\n" item_data	
-					menu_name = item_data[1] -- menu name is category of macroscript  
-					
-					if menus_data[menu_name] == undefined then
-						menus_data[menu_name] = #()
-					
-					appendIfUnique menus_data[menu_name] item_data
-				)
-			)
-		)
-			--catch
-				--FORMAT "!!!!! FILEIN *.mcr file ERROR\n\n%\n\n" (getCurrentException())
-	),
-	
 	/** Createa menus
 	 */
 	function _createMenus =
@@ -193,38 +202,6 @@ struct QuadMenuManager_v
 		)
 		
 		this.MenuBuildManager.installMenusNow()
-	),
-	
-	/*
-	
-		@return #( macro_category, macro_name, title )
-	*/ 
-	function _getMenuData _MacroScript =
-	(
-		--format "\n\n"; print "ScriptFile_Content_v._getMenuData()"
-		--format "_MacroScript.Params[#menu]: %\n" _MacroScript.Params[#menu]
-		if (menu_name_param = _MacroScript.Params[#menu]) != undefined then
-			if menu_name_param != false then
-			(
-				
-				title = case of
-				(
-					(menu_name_param	== true ): case of
-					(
-						(_MacroScript.buttontext	!= undefined):	_MacroScript.buttontext
-						(_MacroScript.tooltip	!= ""):	_MacroScript.tooltip
-						
-						default: _MacroScript.macro_name
-					)
-					
-					(menu_name_param as name	== #TOOLTIP ):	if _MacroScript.tooltip != undefined then _MacroScript.tooltip else _MacroScript.buttontext
-					
-					default: 	menu_name_param
-				)
-		
-				#( _MacroScript.category, _MacroScript.macro_name, title ) --return
-				
-			)
 	),
 
 	/** Get macroscript files
@@ -251,21 +228,21 @@ struct QuadMenuManager_v
 		quad_cfg_files --return
 	),
 
-	/** Get blacklist
-	 */
-	function _getAddToBlacklist blacklist =
-	(
-		--format "\n"; print "QuadMenuManager_v._getAddToBlacklist()"
-		if blacklist != undefined then
-		(
-			if classOf blacklist != Array then
-				blacklist = #(blacklist)
-			
-			blacklist = makeUniqueArray ( this.blacklist + blacklist )
-		)
-		
-		blacklist --return
-	),
+	--/** Get blacklist
+	-- */
+	--function _getAddToBlacklist blacklist =
+	--(
+	--	--format "\n"; print "QuadMenuManager_v._getAddToBlacklist()"
+	--	if blacklist != undefined then
+	--	(
+	--		if classOf blacklist != Array then
+	--			blacklist = #(blacklist)
+	--		
+	--		blacklist = makeUniqueArray ( this.blacklist + blacklist )
+	--	)
+	--	
+	--	blacklist --return
+	--),
 	
 	/*
 	Normalize quad modifier.
@@ -329,44 +306,6 @@ struct QuadMenuManager_v
 	),
 	
 	
-	--/** Setup quad configs
-	-- */
-	--function _createQuads quad_cfg_files =
-	--(
-	--	format "\n"; print "QuadMenuManager_v._createQuads()"
-	--	format "quad_cfg_files: %\n" quad_cfg_files
-	--	
-	--	for quad_cfg_file in quad_cfg_files do
-	--	(
-	--		
-	--		configQuad1 = undefined
-	--		configQuad2 = undefined
-	--		configQuad3 = undefined
-	--		configQuad4 = undefined
-	--		
-	--		filename = getFilenameFile(quad_cfg_file)
-	--		
-	--		QuadMenuNew = this.MenuBuildManager.menu ("_"+filename) type:#quad
-	--		--format "QuadMenuNew: %\n" QuadMenuNew
-	--
-	--		format "\nINSTALL QUAD MENU FROM FILE: %\n" quad_cfg_file
-	--		
-	--		filein quad_cfg_file
-	--		
-	--		/* SET MODIFIER KEYS */ 
-	--		if ( mod_keys_by_filename = _normalizeQuadModifier filename ) != undefined then 
-	--			QuadMenuNew.quad_modifier = mod_keys_by_filename
-	--		--testCall( QuadMenuNew.quad "QUAD 1" )
-	--		
-	--		if configQuad1 != undefined then configQuad1( QuadMenuNew.getQuad 1 )
-	--		if configQuad2 != undefined then configQuad2( QuadMenuNew.getQuad 2 )
-	--		if configQuad3 != undefined then configQuad3( QuadMenuNew.getQuad 3 )
-	--		if configQuad4 != undefined then configQuad4( QuadMenuNew.getQuad 4 )			
-	--	)
-	--	
-	--	/* BUILD AND INSTALL MENUS AND QUAD MENUS */ 
-	--	this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
-	--),
 
 	/** Update menus hotkeys by OPENING and CLOSING hotkey editor
 	  * Workaround for reconnect of quad menus hotkeys and reinstalled quadmenus
@@ -393,7 +332,7 @@ struct QuadMenuManager_v
 	on create do
 	(
 		--format "\n"; print "QuadMenuManager.onCreate()"
-		MenuBuildManager = MenuBuildManager_v()
+		--MenuBuildManager = MenuBuildManager_v()
 	)
 
 )

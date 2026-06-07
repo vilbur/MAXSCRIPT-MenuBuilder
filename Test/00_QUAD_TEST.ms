@@ -26,7 +26,7 @@ toolTip:"Test Macro Button Text"
 
 
 /*------------------------------------------------------------------------------
-	RUN TEST
+	CREATE MUNUS
 --------------------------------------------------------------------------------*/
 
 MenuBuildManager = MenuBuildManager_v()
@@ -45,10 +45,12 @@ for letter in #( "A", "B", "C") do
 
 MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 
+/*------------------------------------------------------------------------------
+	CREATE QUAD MUNUS
+--------------------------------------------------------------------------------*/
 
 QuadBuildManager = MenuBuildManager_v()
 format "QuadBuildManager: %\n" QuadBuildManager
-
 --for modifier_spec in modifier_specs do 
 (
 	quad_new = QuadBuildManager.quad ("_TEST_QUAD_A" ) --type:#quad
@@ -74,8 +76,6 @@ format "QuadBuildManager: %\n" QuadBuildManager
 	--quad_2.addSeparator()
 	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
 	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM QUAD")
-	
-	
 	
 )
 

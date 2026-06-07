@@ -5,6 +5,12 @@
 </file>
 <file id="3de5cd95-ff2d-43f3-bc47-3da9824e5e7f" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="MenuRebuilder_startup.ms" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_startup.ms">
 </file>
+<livefolder id="88942d19-ffc1-4a63-9126-f9a2c51f31a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_Quad-Menus-Config" url="_Quad-Menus-Config/">
+</livefolder>
+<livefolder id="a20afc33-848e-424b-93da-844305ae45b0" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Test" url="Test/">
+</livefolder>
+<livefolder id="d62144ef-8c14-4560-8fc2-f28dda1246a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="QuadMenuManager" url="QuadMenuManager/">
+</livefolder>
 <file id="e1a9c406-7759-4e28-95ee-b6a996510b74" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="MenuRebuilder_data.json" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_data.json">
 </file>
 <file id="e556b049-06b8-42da-94fa-b14848124924" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="CuiMessage.log" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/en-US/UI/CuiMessage.log">
