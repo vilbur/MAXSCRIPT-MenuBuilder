@@ -21,7 +21,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 
 /*
-	MenuBuildManager_v 0.56
+	MenuBuildManager_v 0.90
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -42,7 +42,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 struct MenuBuildManager_v
 (
-	version = 0.56,
+	version = 0.90,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),

@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.48
+	Version: 0.90
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.48,
+	version = 0.90,
 	type = #menu,
 	title = "",
 	data = undefined,

@@ -1,10 +1,10 @@
 /*
-	MenuNativeDataIO_v 0.03
+	MenuNativeDataIO_v 0.90
 	Fast native MaxScript cache for MenuBuildManager saved_menus_data.
 */
 struct MenuNativeDataIO_v
 (
-	version = 0.03,
+	version = 0.90,
 	cache_variable_name = "MENU_BUILD_MANAGER_NATIVE_DATA_CACHE",
 
 	/*

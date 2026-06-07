@@ -1,3 +1,8 @@
+/*
+	include-QuadMenuManager.ms
+	Version: 0.90
+	Release candidate main include file.
+*/
 
 global QUAD_MENU_MANAGER_GLOBAL
 

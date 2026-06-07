@@ -1,7 +1,13 @@
+/*
+	QuadDefaultQmnxClear_v
+	Version: 0.90
+	Release candidate default quad QMNX clear helper.
+*/
 
 struct QuadDefaultQmnxClear_v
 (
-	qmnx_clear_directory = "",
+	
+	version = 0.90,qmnx_clear_directory = "",
 	qmnx_user_data_directory = "",
 	xsd_file_path = "",
 	forced_root_name = "MaxQuadMenuTransformations",

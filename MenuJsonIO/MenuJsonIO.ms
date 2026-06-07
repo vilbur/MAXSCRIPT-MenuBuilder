@@ -1,10 +1,10 @@
 /*
-	MenuJsonIO_v 0.38
+	MenuJsonIO_v 0.90
 	Ordered item JSON model: items are arrays, each item has id property.
 */
 struct MenuJsonIO_v
 (
-	version = 0.38,
+	version = 0.90,
 	source_text = "",
 	current_index = 1,
 
