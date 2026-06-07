@@ -2786,6 +2786,10 @@ struct MenuBuildManager_v
 		
 		this.saveJsonData()
 		this.saveStartupScript()
+		
+		gc light:true --delayed:true
+
+		
 		this.saved_menus_data -- return
 	),
 

@@ -38,7 +38,7 @@ QUAD_MENU_MANAGER_GLOBAL.quadDir ( cfg_dir + "/QuadMenus/" )
 
 
 /* CREATE QUAD MENUS */ 
-QUAD_MENU_MANAGER_GLOBAL.createMenus()
+--QUAD_MENU_MANAGER_GLOBAL.createMenus()
 
 
 /* CREATE QUAD MENUS */ 
