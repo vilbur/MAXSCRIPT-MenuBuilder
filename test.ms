@@ -1,35 +1,81 @@
 /*
-    Proof of Concept: Replace Default Viewport Right-Click Quad Menu
-    API: ICuiQuadMenuMgr (3ds Max 2025 / 2026)
+Create one spline shape for weld threshold test.
+Total X length is 20 cm and middle gap is 1 mm.
 */
-
--- 1. Create a fake MacroScript item
-macroScript PoC_FakeItem category:"PoC_Category" tooltip:"Fake Item"
+function createWeldThresholdTestSpline length_value:(units.decodeValue "20cm") gap_value:(units.decodeValue "1mm") =
 (
-    on execute do ( messageBox "Custom Quad Menu active!" title:"PoC" )
+	delete (for object_node in objects where object_node.name == "_TEST_spline_weld_threshold" collect object_node)
+
+	test_shape = splineShape name:"_TEST_spline_weld_threshold"
+
+	left_x = 0.0
+	gap_left_x = (length_value - gap_value) * 0.5
+	gap_right_x = gap_left_x + gap_value
+	right_x = length_value
+
+	addNewSpline test_shape
+	addKnot test_shape 1 #corner #line [left_x, 0, 0]
+	addKnot test_shape 1 #corner #line [gap_left_x, 0, 0]
+
+	addNewSpline test_shape
+	addKnot test_shape 2 #corner #line [gap_right_x, 0, 0]
+	addKnot test_shape 2 #corner #line [right_x, 0, 0]
+
+	updateShape test_shape
+
+	test_shape.wirecolor = yellow
+	test_shape.name = "_TEST_spline_weld_threshold"
+
+	format "Created: %\n" test_shape.name
+	format "Length: %\n" (units.formatValue length_value)
+	format "Gap: %\n" (units.formatValue gap_value)
+	format "Knots before weld: %\n" ((numKnots test_shape 1) + (numKnots test_shape 2))
+
+	select test_shape
+
+	test_shape -- return
 )
 
+/*
+Weld selected middle knots of test spline.
+Use threshold bigger than 1 mm to weld, smaller than 1 mm to fail.
+*/
+function weldThresholdTestSpline shape_node threshold_value:(units.decodeValue "2mm") =
 (
-    local quadMenuMgr = maxOps.GetICuiQuadMenuMgr()
-    local viewportContextId = "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e"
-    local viewportContext = quadMenuMgr.GetContextById viewportContextId
-    
-    if viewportContext != undefined do
-    (
-        -- 2. Create the parent Quad Menu
-        local customQuad = viewportContext.CreateQuadMenu (genGUID()) "MyPoC_Quad"
-        
-        -- 3. FIX: Create the quadrant menu explicitly instead of getting it
-        -- Syntax: <quadMenu>.CreateMenu <guid> <title> <quadPosEnum>
-        local topRightMenu = customQuad.CreateMenu (genGUID()) "MyPoC_TopRight" #TopRight
-        
-        -- 4. Add the macroscript action to the newly created quadrant
-        local actionName = "PoC_FakeItem`PoC_Category" 
-        topRightMenu.CreateAction (genGUID()) 647394 actionName
-        
-        -- 5. Bind the custom Quad Menu to Right-Click (no modifier keys)
-        viewportContext.SetRightClickModifiers customQuad #nonePressed
-        
-        print "Default right-click viewport quad menu replaced successfully."
-    )
+	if isValidNode shape_node then
+	(
+		convertToSplineShape shape_node
+
+		subObjectLevel = 1
+
+		setKnotSelection shape_node 1 #(2)
+		setKnotSelection shape_node 2 #(1) keep:true
+
+		weldSpline shape_node threshold_value
+		updateShape shape_node
+
+		total_knots = 0
+
+		for spline_index = 1 to (numSplines shape_node) do
+		(
+			total_knots += numKnots shape_node spline_index
+		)
+
+		format "Weld threshold: %\n" (units.formatValue threshold_value)
+		format "Splines after weld: %\n" (numSplines shape_node)
+		format "Knots after weld: %\n" total_knots
+
+		select shape_node
+	)
+
+	shape_node -- return
 )
+
+
+--test_shape = createWeldThresholdTestSpline()
+
+----weldThresholdTestSpline $ threshold_value:(units.decodeValue "0.5mm")
+weldThresholdTestSpline $ threshold_value:(units.decodeValue "0mm")
+
+--test_shape = createWeldThresholdTestSpline()
+--weldThresholdTestSpline test_shape threshold_value:(units.decodeValue "2mm")

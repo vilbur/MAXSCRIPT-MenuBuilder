@@ -1,0 +1,451 @@
+filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+
+
+global configQuad1 = undefined
+global configQuad2 = undefined
+global configQuad3 = undefined
+global configQuad4 = undefined
+
+
+/** Quad menu manager
+  
+  1) Convert Macroscripts To Menus
+  
+  2) Create Quads From Menus
+  
+ */
+struct QuadMenuManager_v
+(
+	
+	version = 0.92,
+	/* construct */
+	blacklist = #(),
+	
+	quad_dirs = #(),
+	/* required */
+
+	/* properties */
+	--blacklist_quads = #(),
+
+	/* private */
+	macroscript_to_import = #(),
+	parsed_macroscript_files = #(),
+	
+	menus_data = Dictionary #STRING,
+	
+	/* dependency */
+	MenuBuildManager,
+	
+	/* reference */
+	/* inhered */
+	/* static */ 
+	hotkeys = #( #rightclick, #shiftPressed, #altPressed, #controlPressed, #shiftAndAltPressed, #shiftAndControlPressed, #controlAndAltPressed, #shiftAndAltAndControlPressed ),
+	
+	
+	
+	/** Add item to menu
+	 */
+	function addItemToMenu macro_category macro_name title =
+	(
+		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--menu_name = item_data[1] -- menu name is category of macroscript  
+		
+		if menus_data[macro_category] == undefined then
+			menus_data[macro_category] = #()
+		
+		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
+		
+	),
+	
+	/** Create menus
+	 */
+	function createMenus =
+	(
+		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
+
+		MenuBuildManagerTest = MenuBuildManager_v()
+		format "MenuBuildManagerTest: %\n" MenuBuildManagerTest
+		
+		--format "\n"; print "QuadMenuManager_v.createMenus()"
+		for menu_name in menus_data.keys do
+		(
+			--format "menu_name: %\n" menu_name
+			menu_new = MenuBuildManagerTest.menu (menu_name) --type:#quad
+		
+			for menu_item_data in menus_data[menu_name] do
+				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
+		)
+		
+		
+		MenuBuildManagerTest.installMenusNow update_quads:true load_default_cui_configuration:true
+	),
+	
+
+	/** Setup menus by config files in dir
+	  * 
+	  * NOTE: hotkey of DEFAULT QUAD is set to CTRL+SHIFT+AL+RMB
+	  * 
+	 */
+	function createQuadMenus =
+	(
+		FORMAT "\n\n"; print "========================= CREATE QUAD MENU FROM QUAD AUTO CONFIG FILES ========================="
+
+		
+		
+		
+		/*------------------------------------------------------------------------------
+			QUADS
+		--------------------------------------------------------------------------------*/
+		--this._createQuads(this._getQuadConfigFiles())
+		
+		--quad_cfg_files = this._getQuadConfigFiles()
+		QuadBuildManager = MenuBuildManager_v()
+
+		for quad_cfg_file in this._getQuadConfigFiles() do
+		(
+			
+			configQuad1 = undefined
+			configQuad2 = undefined
+			configQuad3 = undefined
+			configQuad4 = undefined
+			
+			filename = getFilenameFile(quad_cfg_file)
+			
+			native_menu_name = this.matchNativeQuadTitle filename
+			
+
+			
+			menu_name = if native_menu_name != false then native_menu_name else "_"+filename
+			
+			
+			
+			QuadMenuNew = QuadBuildManager.quad menu_name --type:#quad
+			--format "QuadMenuNew: %\n" QuadMenuNew
+			format "\nINSTALL QUAD MENU FROM FILE: %.ms\n" filename
+			
+			if native_menu_name != false then
+				FORMAT "MODIFY DEFAULT QUAD MENU: %\n" native_menu_name
+				
+			filein quad_cfg_file
+			
+			--format "configQuad1: %\n" configQuad1
+			
+			/*------------------------------------------------------------------------------
+				 SET MODIFIER HOTKEYS KEYS E.G.: CTRL + RMB
+			--------------------------------------------------------------------------------*/
+			if ( mod_keys_by_filename = this._normalizeQuadModifier filename ) != undefined then
+			(
+				QuadMenuNew.quad_modifier = mod_keys_by_filename
+
+				if mod_keys_by_filename == #rightclick then
+				(
+					QuadMenuNew = QuadBuildManager.prepareDefaultViewportQuadReplacement QuadMenuNew modifiers:#rightclick
+				)
+			)
+			
+			
+			/*------------------------------------------------------------------------------
+				MODIFY QUADS BY CODE IN FILE
+			--------------------------------------------------------------------------------*/
+			if configQuad1 != undefined then configQuad1( QuadMenuNew.getQuad 1 )
+			if configQuad2 != undefined then configQuad2( QuadMenuNew.getQuad 2 )
+			if configQuad3 != undefined then configQuad3( QuadMenuNew.getQuad 3 )
+			if configQuad4 != undefined then configQuad4( QuadMenuNew.getQuad 4 )			
+		)
+		
+		/*------------------------------------------------------------------------------
+			BUILD AND INSTALL QUAD MENUS
+		--------------------------------------------------------------------------------*/
+		QuadBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+	),
+		
+/**
+Match string against native quad menu titles.
+Returns native quad title without hotkey suffix, otherwise false.
+*/
+function matchNativeQuadTitle input_title =
+(
+	regex_class = dotNetClass "System.Text.RegularExpressions.Regex"
+	regex_options = (dotNetClass "System.Text.RegularExpressions.RegexOptions").IgnoreCase
+
+	quad_title_array = #(
+		"Default Viewport Quad",
+		"Snap [Shift+RMB]",
+		"Animation [Alt+RMB]",
+		"Modeling [Ctrl+RMB]",
+		"MassFX [Shift+Alt+RMB]",
+		"Custom [Shift+Ctrl+RMB]",
+		"Custom [Shift+Ctrl+Alt+RMB]",
+		"Lighting | Render [Ctrl+Alt+RMB]",
+		"Track View Key Quad (Classic)",
+		"Trackbar Quad",
+		"Viewports",
+		"Track View Key Quad",
+		"LayerExplorer Quad",
+		"SceneExplorer Quad",
+		"ActiveShade Quad",
+		"Unwrap UVW Quad",
+		"Schematic View Quad",
+		"Track View Quad",
+		"Asset Tracking Quad",
+		"Retimer Span Type"
+	)
+
+	input_clean_title = input_title as string
+	input_clean_title = regex_class.Replace input_clean_title "\\s*\\[[^\\]]*\\]\\s*$" ""
+	input_clean_title = regex_class.Replace input_clean_title "[^\\p{L}\\p{N}_\\-\\s]+" " "
+	input_clean_title = trimLeft (trimRight input_clean_title)
+
+	match_result = false
+
+	for quad_title in quad_title_array while match_result == false do
+	(
+		native_title = regex_class.Replace quad_title "\\s*\\[[^\\]]*\\]\\s*$" ""
+		native_title = trimLeft (trimRight native_title)
+
+		match_clean_title = regex_class.Replace native_title "[^\\p{L}\\p{N}_\\-\\s]+" " "
+		match_clean_title = trimLeft (trimRight match_clean_title)
+
+		word_array = filterString match_clean_title " -_"
+		pattern_text = "^"
+
+		for word_index = 1 to word_array.count do
+		(
+			if word_index > 1 then
+			(
+				pattern_text += "[-_\\s]+"
+			)
+
+			pattern_text += regex_class.Escape word_array[word_index]
+		)
+
+		pattern_text += "$"
+
+		if (regex_class.IsMatch input_clean_title pattern_text regex_options) then
+		(
+			match_result = native_title
+		)
+	)
+
+	match_result
+
+	-- return
+), 
+		
+
+	--/** Add macros to menus
+	-- */
+	--function addMacrosToMenus macroscript_paths =
+	--(
+	--	--format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+	--	
+	--	if classOf macroscript_paths != Array then
+	--		macroscript_paths = #(macroscript_paths)
+	--	
+	--	for macroscripts_path in macroscript_paths where doesFileExist macroscripts_path do
+	--	(
+	--		
+	--		if doesDirectoryExist macroscripts_path then
+	--		(
+	--			for file_path in getFiles macroscripts_path do 
+	--				appendIfUnique this.macroscript_to_import file_path
+	--		)
+	--		else
+	--			appendIfUnique this.macroscript_to_import macroscripts_path
+	--		
+	--	)
+	--),
+	
+	/** Add dir
+	 */
+	function quadDir dirs =
+	(
+		format "\n"; print "QuadMenuManager_v.addDir()"
+		if classOf dirs != Array then
+			dirs = #(dirs)
+			
+		for dir in dirs do
+			appendIfUnique this.quad_dirs dir
+	),
+	
+
+
+	private
+	
+	function isOnBlacklist macroscript_file blacklist = ((for pattern in blacklist where matchPattern macroscript_file pattern:pattern collect pattern).count > 0),
+	
+	/** Createa menus
+	 */
+	function _createMenus =
+	(
+		format "\n"; print "QuadMenuManager_v._createMenus()"
+		
+		for menu_name in menus_data.keys do
+		(
+			--format "menu_name: %\n" menu_name
+			menu_new = this.MenuBuildManager.menu (menu_name) --type:#quad
+		
+			for menu_item_data in menus_data[menu_name] do
+				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
+		)
+		
+		this.MenuBuildManager.installMenusNow()
+	),
+
+	/** Get macroscript files
+	 */
+	function _getQuadConfigFiles =
+	(
+		format "\n"; print "QuadMenuManager_v._getQuadConfigFiles()"
+		format "this.quad_dirs: %\n" this.quad_dirs
+		quad_cfg_files = #()
+
+		/** Test if path is on blacklist
+		 */
+
+		for dir in this.quad_dirs do
+		(
+			format "DIR: %\n" dir
+			quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
+			
+			----for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
+			for quad_config_file in quad_config_files do
+				appendIfUnique quad_cfg_files quad_config_file
+		)
+		
+		quad_cfg_files --return
+	),
+
+	--/** Get blacklist
+	-- */
+	--function _getAddToBlacklist blacklist =
+	--(
+	--	--format "\n"; print "QuadMenuManager_v._getAddToBlacklist()"
+	--	if blacklist != undefined then
+	--	(
+	--		if classOf blacklist != Array then
+	--			blacklist = #(blacklist)
+	--		
+	--		blacklist = makeUniqueArray ( this.blacklist + blacklist )
+	--	)
+	--	
+	--	blacklist --return
+	--),
+	
+	/*
+	Normalize quad modifier.
+	Example: #shiftAndControlAndAltPressed -> #shiftAndAltAndControlPressed.
+	*/
+	function _normalizeQuadModifier modifier_value =
+	(
+		/*
+		Join array to string.
+		Used after modifier tokens are sorted.
+		*/
+		function arrayToString arr delimeter:"" =
+		(
+			_string = ""
+
+			for item in arr do
+			(
+				_string += item as string + delimeter
+			)
+
+			substring _string 1 (_string.count - delimeter.count) -- return
+		)
+
+		normalized_mod = undefined
+		modifier_string = toLower (modifier_value as string)
+		modifier_key = substituteString modifier_string "#" ""
+		modifier_key = substituteString modifier_key " " ""
+		modifier_key = substituteString modifier_key "_" ""
+		modifier_key = substituteString modifier_key "-" ""
+
+		if (findString modifier_key "rightclick") != undefined or (findString modifier_key "rmb") != undefined then
+		(
+			normalized_mod = #rightclick
+		)
+		else
+		(
+			valid_mods = #("shift", "alt", "control", "none")
+
+			if (matchPattern modifier_string pattern:"*pressed") then
+			(
+				modifier_string = substring modifier_string 1 ((findString modifier_string "pressed") - 1)
+			)
+
+			modifier_string = substituteString modifier_string "and" "-"
+			mod_keys_valid = for mod_key in sort (filterString modifier_string "-") where findItem valid_mods mod_key > 0 collect mod_key
+			mod_keys_count = mod_keys_valid.count
+
+			if mod_keys_count > 0 then
+			(
+				normalized_key = if mod_keys_count > 1 then arrayToString mod_keys_valid else mod_keys_valid[1]
+
+				normalized_mod = case normalized_key of
+				(
+					"altshift": #shiftAndAltPressed
+					"altcontrol": #controlAndAltPressed
+					"controlshift": #shiftAndControlPressed
+					"altcontrolshift": #shiftAndAltAndControlPressed
+					default: (normalized_key + "Pressed") as name
+				)
+			)
+		)
+
+		normalized_mod -- return
+	),
+
+	
+	/** Import modify files of quad names
+	  * Each quad should has its own file
+	  *
+	  *
+	 */
+	function _fileInMacroscriptFiles macroscript_to_import =
+	(
+		format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
+		
+		for macroscript_file in macroscript_to_import do
+		(
+			macroscript_file = pathConfig.normalizePath macroscript_file
+			
+			--menu_name = getFilenameFile( macroscript_file )
+	
+			FORMAT "\n\n============================== SETUP QUAD MENU FILE ==========================================\n%\n" (getFilenameFile( macroscript_file ))
+		
+			filein( macroscript_file )
+		)
+	),
+	
+	
+
+	/** Update menus hotkeys by OPENING and CLOSING hotkey editor
+	  * Workaround for reconnect of quad menus hotkeys and reinstalled quadmenus
+	  * 
+	  * 
+	  * NOTE:
+	  *	PROBLEM:  Reinstalling of quad menus break their hotkey shortcuts
+	  *  	SOLUTION: Open and close hotkey editor will reconnect hotkeys and reinstalled quadmenus
+	  * 
+	 */
+	function _reconnectHotkeys =
+	(
+		--format "\n"; print "QuadMenuManager_v._reconnectHotkeys()"
+		/* OPEN HOTKEY EDITOR - for refresh quad menu keyboard shortcuts */
+		actionMan.executeAction 0 "59245"  -- Customize User Interface: Hotkey Editor
+
+		/* CLOSE HOTKEY EDITOR */
+		if (hotkey_dialog = (for hwnd in UIAccessor.GetPopupDialogs() where UIAccessor.GetWindowText hwnd == "Hotkey Editor" collect hwnd)[1]) != undefined then
+			UIAccessor.CloseDialog hotkey_dialog
+	),
+
+	/**
+	 */
+	on create do
+	(
+		--format "\n"; print "QuadMenuManager.onCreate()"
+		--MenuBuildManager = MenuBuildManager_v()
+	)
+
+)

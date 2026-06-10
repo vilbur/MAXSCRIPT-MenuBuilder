@@ -1,0 +1,678 @@
+/*
+	QuadDefaultQmnxClear_v 0.91
+	QMNX clear helper for Default Viewport Quad replacement.
+*/
+
+
+struct QuadDefaultQmnxClear_v
+(
+	version = 0.92,
+	qmnx_clear_directory = "",
+	qmnx_user_data_directory = "",
+	xsd_file_path = "",
+	forced_root_name = "MaxQuadMenuTransformations",
+	merged_clear_file_name = "MenuRebuilder_DefaultViewportQuad_Clear_Merged.qmnx",
+	top_left_clear_file = "topLeft-clear.qmnx",
+	top_right_clear_file = "topRight-clear.qmnx",
+	bottom_left_clear_file = "bottomLeft-clear.qmnx",
+	bottom_right_clear_file = "bottomRight-clear.qmnx",
+	invalid_helper_root_names = #(),
+
+
+	function getCurrentSourceDirectory =
+	(
+		source_directory = ""
+
+		try
+		(
+			source_file_path = getSourceFileName()
+
+			if source_file_path != undefined and source_file_path != "" then
+			(
+				source_directory = getFilenamePath source_file_path
+			)
+		)
+		catch
+		(
+			source_directory = ""
+		)
+
+		source_directory -- return
+	),
+
+
+	function normalizePath path_value =
+	(
+		normalized_path = path_value
+
+		if normalized_path != undefined then
+		(
+			normalized_path = normalized_path as string
+			normalized_path = substituteString normalized_path "/" "\\"
+			normalized_path = substituteString normalized_path "\\\\" "\\"
+		)
+
+		normalized_path -- return
+	),
+
+
+	function getDefaultClearDirectory =
+	(
+		source_directory = this.getCurrentSourceDirectory()
+
+		candidate_paths = #()
+
+		--if source_directory != "" then
+		--(
+		--	append candidate_paths (source_directory + "qmnx")
+		--	append candidate_paths (source_directory + "MenuRebuilder\\qmnx")
+		--)
+
+		append candidate_paths (getDir #userScripts + "\\MAXSCRIPT-MenuBuilder\\Data\\qmnx")
+		--append candidate_paths (getDir #userScripts + "\\MenuRebuilder\\qmnx")
+
+		clear_directory = candidate_paths[candidate_paths.count]
+
+		for candidate_path in candidate_paths while clear_directory == candidate_paths[candidate_paths.count] do
+		(
+			if doesDirectoryExist candidate_path then
+			(
+				clear_directory = candidate_path
+			)
+		)
+
+		this.normalizePath clear_directory -- return
+	),
+
+
+	function ensureClearDirectory =
+	(
+		if this.qmnx_clear_directory == "" then
+		(
+			this.qmnx_clear_directory = this.getDefaultClearDirectory()
+		)
+
+		this.qmnx_clear_directory = this.normalizePath this.qmnx_clear_directory
+
+		this.qmnx_clear_directory -- return
+	),
+
+
+	function getUserDataRootDirectory =
+	(
+		user_data_directory = ""
+
+		try
+		(
+			user_data_directory = getDir #userData
+		)
+		catch
+		(
+			user_data_directory = ""
+		)
+
+		if user_data_directory == "" then
+		(
+			try
+			(
+				user_data_directory = getDir #userScripts
+			)
+			catch
+			(
+				user_data_directory = ""
+			)
+		)
+
+		if user_data_directory == "" then
+		(
+			user_data_directory = this.getDefaultClearDirectory()
+		)
+
+		this.normalizePath user_data_directory -- return
+	),
+
+
+	function ensureUserDataDirectory =
+	(
+		if this.qmnx_user_data_directory == "" then
+		(
+			this.qmnx_user_data_directory = this.getUserDataRootDirectory() + "\\MenuRebuilder\\qmnx"
+		)
+
+		this.qmnx_user_data_directory = this.normalizePath this.qmnx_user_data_directory
+
+		try
+		(
+			makeDir this.qmnx_user_data_directory all:true
+		)
+		catch
+		(
+			ok
+		)
+
+		this.qmnx_user_data_directory -- return
+	),
+
+
+	function getMergedQmnxFilePath =
+	(
+		user_data_directory = this.ensureUserDataDirectory()
+		merged_file_path = user_data_directory + "\\" + this.merged_clear_file_name
+
+		this.normalizePath merged_file_path -- return
+	),
+
+
+	function getMenuTransformationsSchemaPath =
+	(
+		schema_path = this.xsd_file_path
+
+		if schema_path == "" then
+		(
+			try
+			(
+				max_root = getDir #maxRoot
+				schema_path = max_root + "\\UI_LN\\CUI\\XSD\\MenuTransformationsSchema.xsd"
+			)
+			catch
+			(
+				schema_path = ""
+			)
+		)
+
+		schema_path = this.normalizePath schema_path
+
+		schema_path -- return
+	),
+
+
+	function normalizeQuadPosition position_value =
+	(
+		position_name = #TopRight
+		position_text = position_value as string
+
+		if position_text == "#TopLeft" then position_name = #TopLeft
+		if position_text == "TopLeft" then position_name = #TopLeft
+
+		if position_text == "#TopRight" then position_name = #TopRight
+		if position_text == "TopRight" then position_name = #TopRight
+
+		if position_text == "#BottomLeft" then position_name = #BottomLeft
+		if position_text == "BottomLeft" then position_name = #BottomLeft
+
+		if position_text == "#BottomRight" then position_name = #BottomRight
+		if position_text == "BottomRight" then position_name = #BottomRight
+
+		position_name -- return
+	),
+
+
+	function getClearFileNameByPosition position_value =
+	(
+		position_name = this.normalizeQuadPosition position_value
+		file_name = ""
+
+		if position_name == #TopLeft then file_name = this.top_left_clear_file
+		if position_name == #TopRight then file_name = this.top_right_clear_file
+		if position_name == #BottomLeft then file_name = this.bottom_left_clear_file
+		if position_name == #BottomRight then file_name = this.bottom_right_clear_file
+
+		file_name -- return
+	),
+
+
+	function getClearFilePathByPosition position_value =
+	(
+		clear_directory = this.ensureClearDirectory()
+		file_name = this.getClearFileNameByPosition position_value
+		file_path = clear_directory + "\\" + file_name
+
+		this.normalizePath file_path -- return
+	),
+
+
+	function isStringInArray string_array string_value =
+	(
+		was_found = false
+
+		for item_string in string_array while not was_found do
+		(
+			if item_string == string_value then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function getUniqueClearFilePaths positions =
+	(
+		clear_file_paths = #()
+
+		for position_value in positions do
+		(
+			clear_file_path = this.getClearFilePathByPosition position_value
+
+			if doesFileExist clear_file_path then
+			(
+				if not this.isStringInArray clear_file_paths clear_file_path then
+				(
+					append clear_file_paths clear_file_path
+				)
+			)
+			else
+			(
+				format "QuadDefaultQmnxClear_v: missing qmnx clear file: %\n" clear_file_path
+			)
+		)
+
+		clear_file_paths -- return
+	),
+
+
+	function isInvalidHelperRootName root_name =
+	(
+		was_found = false
+
+		for invalid_root_name in this.invalid_helper_root_names while not was_found do
+		(
+			if root_name == invalid_root_name then
+			(
+				was_found = true
+			)
+		)
+
+		was_found -- return
+	),
+
+
+	function getAllowedRootNamesFromSchema =
+	(
+		root_names = #()
+		schema_path = this.getMenuTransformationsSchemaPath()
+
+		if doesFileExist schema_path then
+		(
+			try
+			(
+				xml_document = dotNetObject "System.Xml.XmlDocument"
+				xml_document.Load schema_path
+
+				element_nodes = xml_document.SelectNodes "/*[local-name()='schema']/*[local-name()='element']"
+
+				for node_index = 0 to element_nodes.Count - 1 do
+				(
+					element_node = element_nodes.Item node_index
+					name_attribute = element_node.Attributes.GetNamedItem "name"
+
+					if name_attribute != undefined then
+					(
+						root_name = name_attribute.Value
+
+						if not this.isStringInArray root_names root_name then
+						(
+							append root_names root_name
+						)
+					)
+				)
+			)
+			catch
+			(
+				format "QuadDefaultQmnxClear_v: failed to read schema root names: %\n" schema_path
+			)
+		)
+		else
+		(
+			format "QuadDefaultQmnxClear_v: schema file not found: %\n" schema_path
+		)
+
+		root_names -- return
+	),
+
+
+	function getPreferredRootName =
+	(
+		preferred_root_name = this.forced_root_name
+
+		if preferred_root_name == "" then
+		(
+			preferred_root_name = "MaxQuadMenuTransformations"
+		)
+
+		preferred_root_name -- return
+	),
+
+	function isRootNameAllowed root_name =
+	(
+		was_allowed = false
+
+		if root_name == "MaxQuadMenuTransformations" then
+		(
+			was_allowed = true
+		)
+		else
+		(
+			allowed_root_names = this.getAllowedRootNamesFromSchema()
+
+			if allowed_root_names.count > 0 then
+			(
+				was_allowed = this.isStringInArray allowed_root_names root_name
+			)
+		)
+
+		was_allowed -- return
+	),
+
+	function printQmnxRoot file_path =
+	(
+		if doesFileExist file_path then
+		(
+			try
+			(
+				xml_document = dotNetObject "System.Xml.XmlDocument"
+				xml_document.Load file_path
+
+				format "QMNX root: %\n" xml_document.DocumentElement.Name
+				format "File: %\n" file_path
+			)
+			catch
+			(
+				format "QuadDefaultQmnxClear_v.printQmnxRoot failed: %\n" file_path
+			)
+		)
+		else
+		(
+			format "QMNX file missing: %\n" file_path
+		)
+
+		ok -- return
+	),
+
+
+	function printAllowedQmnxRootNames =
+	(
+		root_names = this.getAllowedRootNamesFromSchema()
+
+		if not this.isStringInArray root_names "MaxQuadMenuTransformations" then
+		(
+			append root_names "MaxQuadMenuTransformations"
+		)
+
+		format "Allowed qmnx root names:\n"
+
+		for root_name in root_names do
+		(
+			format "    %\n" root_name
+		)
+
+		root_names -- return
+	),
+
+
+	function ensureXmlDeclaration xml_document =
+	(
+		try
+		(
+			first_child = xml_document.FirstChild
+			has_declaration = false
+
+			if first_child != undefined then
+			(
+				if first_child.NodeType.ToString() == "XmlDeclaration" then
+				(
+					has_declaration = true
+				)
+			)
+
+			if not has_declaration then
+			(
+				xml_declaration = xml_document.CreateXmlDeclaration "1.0" "UTF-8" undefined
+				xml_document.InsertBefore xml_declaration xml_document.DocumentElement
+			)
+		)
+		catch
+		(
+			format "QuadDefaultQmnxClear_v.ensureXmlDeclaration failed.\n"
+		)
+
+		xml_document -- return
+	),
+
+
+	function appendElementChildren target_document target_root source_root =
+	(
+		for child_index = 0 to source_root.ChildNodes.Count - 1 do
+		(
+			source_child = source_root.ChildNodes.Item child_index
+			node_type_text = source_child.NodeType.ToString()
+
+			if node_type_text == "Element" then
+			(
+				imported_child = target_document.ImportNode source_child true
+				target_root.AppendChild imported_child
+			)
+		)
+
+		ok -- return
+	),
+
+
+	function createEmptyQmnxDocument root_name =
+	(
+		xml_document = dotNetObject "System.Xml.XmlDocument"
+		xml_document.PreserveWhitespace = true
+
+		xml_declaration = xml_document.CreateXmlDeclaration "1.0" "UTF-8" undefined
+		xml_document.AppendChild xml_declaration
+
+		xml_root = xml_document.CreateElement root_name
+		xml_document.AppendChild xml_root
+
+		xml_document -- return
+	),
+
+	function createValidBaseDocumentFromSource source_file_path =
+	(
+		source_document = dotNetObject "System.Xml.XmlDocument"
+		source_document.PreserveWhitespace = true
+		source_document.Load source_file_path
+
+		source_root = source_document.DocumentElement
+		source_root_name = source_root.Name
+		preferred_root_name = this.getPreferredRootName()
+
+		if source_root_name == preferred_root_name then
+		(
+			base_document = source_document
+			this.ensureXmlDeclaration base_document
+		)
+		else
+		(
+			format "QuadDefaultQmnxClear_v: output qmnx root forced to '%'. Source root was '%'.\n" preferred_root_name source_root_name
+			format "Source: %\n" source_file_path
+
+			base_document = this.createEmptyQmnxDocument preferred_root_name
+			base_root = base_document.DocumentElement
+
+			this.appendElementChildren base_document base_root source_root
+		)
+
+		base_document -- return
+	),
+
+	function appendQmnxFileToBaseDocument base_document source_file_path =
+	(
+		base_root = base_document.DocumentElement
+		base_root_name = base_root.Name
+
+		source_document = dotNetObject "System.Xml.XmlDocument"
+		source_document.PreserveWhitespace = true
+		source_document.Load source_file_path
+
+		source_root = source_document.DocumentElement
+		source_root_name = source_root.Name
+
+		if this.isRootNameAllowed source_root_name then
+		(
+			if source_root_name != base_root_name then
+			(
+				format "QuadDefaultQmnxClear_v: source qmnx root differs from output root. Children imported into MaxQuadMenuTransformations.\n"
+				format "Output root: %\n" base_root_name
+				format "Source root: %\n" source_root_name
+				format "Source: %\n" source_file_path
+			)
+		)
+		else
+		(
+			format "QuadDefaultQmnxClear_v: source qmnx helper root '%' will not be written to output. Children imported only.\n" source_root_name
+			format "Source: %\n" source_file_path
+		)
+
+		this.appendElementChildren base_document base_root source_root
+
+		ok -- return
+	),
+
+
+	function mergeQmnxFilesToSingleFile source_file_paths merged_file_path =
+	(
+		was_merged = false
+
+		if source_file_paths.count == 0 then
+		(
+			false -- return
+		)
+		else
+		(
+			try
+			(
+				if doesFileExist merged_file_path then
+				(
+					deleteFile merged_file_path
+				)
+			)
+			catch
+			(
+				ok
+			)
+
+			try
+			(
+				base_document = this.createValidBaseDocumentFromSource source_file_paths[1]
+
+				for file_index = 2 to source_file_paths.count do
+				(
+					this.appendQmnxFileToBaseDocument base_document source_file_paths[file_index]
+				)
+
+				this.ensureXmlDeclaration base_document
+				base_document.Save merged_file_path
+
+				merged_document = dotNetObject "System.Xml.XmlDocument"
+				merged_document.Load merged_file_path
+				merged_root_name = merged_document.DocumentElement.Name
+
+				if this.isInvalidHelperRootName merged_root_name then
+				(
+					format "QuadDefaultQmnxClear_v: refused to save invalid helper root to merged qmnx: %\n" merged_root_name
+					deleteFile merged_file_path
+					was_merged = false
+				)
+				else
+				(
+					format "QuadDefaultQmnxClear_v: merged qmnx root: %\n" merged_root_name
+					format "QuadDefaultQmnxClear_v: merged qmnx clear file saved to: %\n" merged_file_path
+					was_merged = true
+				)
+			)
+			catch
+			(
+				format "QuadDefaultQmnxClear_v.mergeQmnxFilesToSingleFile failed.\n"
+				was_merged = false
+			)
+		)
+
+		was_merged -- return
+	),
+
+
+	function loadQmnxConfiguration qmnx_file_path =
+	(
+		was_loaded = false
+
+		if doesFileExist qmnx_file_path then
+		(
+			try
+			(
+				cui_quad_menu_manager = maxOps.GetICuiQuadMenuMgr()
+				cui_quad_menu_manager.LoadConfiguration qmnx_file_path
+
+				format "QuadDefaultQmnxClear_v: loaded merged qmnx clear file through CuiQuadMenuMgr: %\n" qmnx_file_path
+
+				was_loaded = true
+			)
+			catch
+			(
+				format "QuadDefaultQmnxClear_v.loadQmnxConfiguration failed: %\n" qmnx_file_path
+				was_loaded = false
+			)
+		)
+		else
+		(
+			format "QuadDefaultQmnxClear_v.loadQmnxConfiguration missing file: %\n" qmnx_file_path
+		)
+
+		was_loaded -- return
+	),
+
+
+	function clearPositions positions =
+	(
+		global MenuRebuilder_qmnx_clear_guard
+
+		was_loaded = false
+
+		if MenuRebuilder_qmnx_clear_guard then
+		(
+			format "QuadDefaultQmnxClear_v.clearPositions skipped. QMNX clear guard is active.\n"
+			false -- return
+		)
+		else
+		(
+			clear_file_paths = this.getUniqueClearFilePaths positions
+
+			if clear_file_paths.count == 0 then
+			(
+				format "QuadDefaultQmnxClear_v.clearPositions skipped. No qmnx clear files found.\n"
+			)
+			else
+			(
+				merged_file_path = this.getMergedQmnxFilePath()
+				was_merged = this.mergeQmnxFilesToSingleFile clear_file_paths merged_file_path
+
+				if was_merged then
+				(
+					MenuRebuilder_qmnx_clear_guard = true
+
+					try
+					(
+						was_loaded = this.loadQmnxConfiguration merged_file_path
+					)
+					catch
+					(
+						format "QuadDefaultQmnxClear_v.clearPositions failed while loading merged qmnx.\n"
+						was_loaded = false
+					)
+
+					MenuRebuilder_qmnx_clear_guard = false
+				)
+			)
+
+			was_loaded -- return
+		)
+	)
+)
+
+
