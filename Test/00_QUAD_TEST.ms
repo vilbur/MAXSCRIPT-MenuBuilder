@@ -2,14 +2,8 @@ clearListener(); print("Cleared in: "+getSourceFileName())
 
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
-macroScript _test_macro
-category:"_TEST_CATEGORY"
-toolTip:"Test Macro Tooltip"
-toolTip:"Test Macro Button Text"
-(
-	on execute do
-		messageBox "SeparatorTestAction1" title:"Separator Test"
-)
+filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
+
 
 --modifier_specs = #(
 --	#("None",	"None",	#nonePressed),
@@ -37,9 +31,15 @@ for letter in #( "A", "B", "C") do
 	menu_new = MenuBuildManager.menu ("_TEST_MENU_" + letter ) --type:#quad
 
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM "+letter)
+	
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM "+letter)
+
+	menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
+	
+	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:( "Time of test " + (getLocalTime())[5] as string + ":"+(getLocalTime())[6] as string )
+	
 	--menu_new.addSeparator()
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM "+letter)
+	--menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM "+letter)
 )
 
 

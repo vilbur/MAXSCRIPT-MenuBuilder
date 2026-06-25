@@ -2,13 +2,8 @@ clearListener(); print("Cleared in: "+getSourceFileName())
 
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
-macroScript _test_macro
-category:"_TEST_CATEGORY"
-toolTip:"Test Macro Tooltip"
-(
-	on execute do
-		messageBox "SeparatorTestAction1" title:"Separator Test"
-)
+filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
+
 
 modifier_specs = #(
 	#("None",	"None",	#nonePressed),

@@ -2,17 +2,8 @@ clearListener(); print("Cleared in: "+getSourceFileName())
 
  filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" )	--"./../include-QuadMenuManager.ms"
 
+filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
-
-macroScript _test_macro
-category:"_TEST_CATEGORY"
-toolTip:"Test Macro Tooltip"
-buttontext:"Test Macro Button Text"
-(
-	on execute do
-		messageBox "SeparatorTestAction1" title:"Separator Test"
-)
---
 ----modifier_specs = #(
 ----	#("None",	"None",	#nonePressed),
 ----	#("Shift",	"Shift",	#shiftPressed),
