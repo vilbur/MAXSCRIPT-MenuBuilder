@@ -90,9 +90,9 @@ function configQuad3 QuadMenu =
 	)
 
 	menus = #(
-         /* SUBMENU TITLE */     /* NAME OF MENU */	/* CATEGORY O MACROSCRIPTS */	/* MACROSCRIPT`S NAMES */
+         /* SUBMENU TITLE */     /* NAME OF MENU */                     /* CATEGORY OF MACROSCRIPTS */	/* MACROSCRIPT`S NAMES */
 		 
-         "Standard Primitives", (Menu_v("_Create Standard Primitives") flat:true).addItems("Objects Primitives")	(primitives[1]),
+         "Standard Primitives", (Menu_v("_Create Standard Primitives") flat:true).addItems("Objects Primitives")		(primitives[1]),
          "Shapes",              (Menu_v("_Shapes Primitives")          flat:true).addItems("Objects Shapes")		(shapes_primitives),
          "Helpers",             (Menu_v("_Helpers Primitives")         flat:true).addItems("Objects Helpers")		(helpers_primitives),
          "Other Primitives",    (Menu_v("_Create Other Primitives")    flat:false).addItems("Objects Primitives")	(primitives[2]),

@@ -1,20 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Komodo Project File - DO NOT EDIT -->
 <project id="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" kpf_version="5" name="MS   -   MenuBuilder.komodoproject">
-<file id="135dac01-439a-4202-91be-248cbccbf53a" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="MenuRebuilder_data.msdata" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_data.msdata">
+<livefolder id="175b2b5c-45db-467e-aaee-1c918655d8b7" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuBuildManager" url="MenuBuildManager/">
+</livefolder>
+<livefolder id="1e66b126-1edb-402f-ac67-6f02572d9a85" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="QuadDefaultQmnxClear" url="QuadDefaultQmnxClear/">
+</livefolder>
+<livefolder id="89916b7e-a0d0-4997-b786-ab685d298914" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuNativeDataIO" url="MenuNativeDataIO/">
+</livefolder>
+<livefolder id="8f5c0908-4955-4588-a5db-0908167eebaa" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuRebuilder" url="MenuRebuilder/">
+</livefolder>
+<livefolder id="9bf92dae-4cc6-4b50-9c02-6e23fea2794c" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuDefinition" url="MenuDefinition/">
+</livefolder>
+<livefolder id="ae90d8a9-3245-42f2-a902-3aaf7b50703e" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="QuadMenuManager" url="QuadMenuManager/">
+</livefolder>
+<livefolder id="d4e28b0b-a177-438b-b35b-a89d6310b505" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MacroscrpitsToMenuConvertor" url="MacroscrpitsToMenuConvertor/">
+</livefolder>
+<file id="0cf2e125-8bb1-423a-86ef-0c30597c293d" idref="697b0e38-e5b8-4040-a15a-28fc21bf9e37" name="include-QuadMenuManager.ms" url="include-QuadMenuManager.ms">
 </file>
-<file id="3de5cd95-ff2d-43f3-bc47-3da9824e5e7f" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="MenuRebuilder_startup.ms" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_startup.ms">
+<file id="4ce8ea87-0a48-4095-b877-78a3a4039cc4" idref="697b0e38-e5b8-4040-a15a-28fc21bf9e37" name="MenuRebuilder_data.msdata" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_data.msdata">
 </file>
-<livefolder id="88942d19-ffc1-4a63-9126-f9a2c51f31a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_Quad-Menus-Config" url="_Quad-Menus-Config/">
+<file id="a9c9cec2-ba68-4eb8-8126-46320b5b5140" idref="697b0e38-e5b8-4040-a15a-28fc21bf9e37" name="MenuRebuilder_startup.ms" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_startup.ms">
+</file>
+<file id="c8bd8916-5bed-47cf-be54-6ac3c28f44be" idref="697b0e38-e5b8-4040-a15a-28fc21bf9e37" name="CuiMessage.log" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/en-US/UI/CuiMessage.log">
+</file>
+<file id="1f3e3b99-b12d-4dfd-9ad5-c8f569bebb4e" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="include-QuadMenuManager.ms" url="include-QuadMenuManager.ms">
+</file>
+<folder id="3641cb2b-67e9-4e91-8547-78f8a33e6c00" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_LIB">
+</folder>
+<folder id="697b0e38-e5b8-4040-a15a-28fc21bf9e37" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_MENUS CACHE DATA">
+</folder>
+<livefolder id="88942d19-ffc1-4a63-9126-f9a2c51f31a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Config-Files" url="Config-Files/">
 </livefolder>
 <livefolder id="a20afc33-848e-424b-93da-844305ae45b0" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Test" url="Test/">
 </livefolder>
-<livefolder id="d62144ef-8c14-4560-8fc2-f28dda1246a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="QuadMenuManager" url="QuadMenuManager/">
-</livefolder>
-<file id="e1a9c406-7759-4e28-95ee-b6a996510b74" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="MenuRebuilder_data.json" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/scripts/startup/MenuRebuilder_data.json">
-</file>
-<file id="e556b049-06b8-42da-94fa-b14848124924" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="CuiMessage.log" url="file:///C:/Users/vilbur/AppData/Local/Autodesk/3dsMax/2026%20-%2064bit/ENU/en-US/UI/CuiMessage.log">
-</file>
 <preference-set idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" id="project" preftype="project">
   <long id="prefs_version">1</long>
 </preference-set>

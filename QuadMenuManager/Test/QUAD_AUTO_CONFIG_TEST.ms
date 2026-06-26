@@ -17,19 +17,19 @@ current_dir = getFilenamePath(getSourceFileName())
 
 cfg_dir = current_dir + "/Config-Files/"
 
-QUAD_MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
+MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
 
 /*------------------------------------------------------------------------------
 	MENU
 --------------------------------------------------------------------------------*/
 /* ADD ITEM */ 
-QUAD_MENU_MANAGER_GLOBAL.addItemToMenu "_TEST_CATEGORY" "_test_macro" "Custom Title"
+MENU_MANAGER_GLOBAL.addItemToMenu "_TEST_CATEGORY" "_test_macro" "Custom Title"
 
 
 /*------------------------------------------------------------------------------
 	QUAD MENU
 --------------------------------------------------------------------------------*/
-QUAD_MENU_MANAGER_GLOBAL.quadDir ( cfg_dir + "/QuadMenus/" )
+MENU_MANAGER_GLOBAL.quadDir ( cfg_dir + "/QuadMenus/" )
 
 
 /*------------------------------------------------------------------------------
@@ -38,8 +38,8 @@ QUAD_MENU_MANAGER_GLOBAL.quadDir ( cfg_dir + "/QuadMenus/" )
 
 
 /* CREATE QUAD MENUS */ 
---QUAD_MENU_MANAGER_GLOBAL.createMenus()
+--MENU_MANAGER_GLOBAL.createMenus()
 
 
 /* CREATE QUAD MENUS */ 
-QUAD_MENU_MANAGER_GLOBAL.createQuadMenus()
+MENU_MANAGER_GLOBAL.createQuadMenus()

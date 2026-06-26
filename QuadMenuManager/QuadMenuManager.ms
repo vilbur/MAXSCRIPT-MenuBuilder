@@ -1,3 +1,5 @@
+
+
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
 
@@ -38,48 +40,56 @@ struct QuadMenuManager_v
 	/* inhered */
 	/* static */ 
 	hotkeys = #( #RightClick, #shiftPressed, #altPressed, #controlPressed, #shiftAndAltPressed, #shiftAndControlPressed, #controlAndAltPressed, #shiftAndAltAndControlPressed ),
-	
-	
-	
-	/** Add item to menu
+
+
+	/** Add macros to menus
 	 */
-	function addItemToMenu macro_category macro_name title =
+	function addMacrosToMenus macroscript_paths =
 	(
-		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
-		--menu_name = item_data[1] -- menu name is category of macroscript  
+		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		MacroScripts_in_files = #()
 		
-		if menus_data[macro_category] == undefined then
-			menus_data[macro_category] = #()
+		this._setMacroscriptsToImport(macroscript_paths)
 		
-		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
+		format "macroscript_file: %\n" macroscript_file
 		
+		for macroscript_file in macroscript_to_import do
+		(
+			MacroScripts_in_file = (MacroScriptFileParser_v _path:macroscript_file).MacroScripts -- PARSE MACROSCRIPTS 	--"./MacroScriptFileParser/MacroScriptFileParser.ms"
+			format "MacroScripts_in_file: %\n" MacroScripts_in_file
+			this._addMacroscriptsToMenus (MacroScripts_in_file)
+			
+			MacroScripts_in_files += MacroScripts_in_file
+		)
+		format "MacroScripts_in_files: %\n" MacroScripts_in_files
+		MacroScripts_in_files --return
 	),
-	
-	/** Create menus
+
+	/** CREATE MENUS
 	 */
 	function createMenus =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
 
-		MenuBuildManagerTest = MenuBuildManager_v()
-		format "MenuBuildManagerTest: %\n" MenuBuildManagerTest
+		MenuBuildManager = MenuBuildManager_v()
+		format "MenuBuildManager: %\n" MenuBuildManager
 		
 		--format "\n"; print "QuadMenuManager_v.createMenus()"
 		for menu_name in menus_data.keys do
 		(
 			--format "menu_name: %\n" menu_name
-			menu_new = MenuBuildManagerTest.menu (menu_name) --type:#quad
+			menu_new = MenuBuildManager.menu (menu_name) --type:#quad
 		
 			for menu_item_data in menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
 		
 		
-		MenuBuildManagerTest.installMenusNow update_quads:true load_default_cui_configuration:true
+		MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 	),
 	
 
-	/** Setup menus by config files in dir
+	/** SETUP MENUS BY CONFIG FILES IN DIR
 	  * 
 	  * NOTE: hotkey of DEFAULT QUAD is set to CTRL+SHIFT+AL+RMB
 	  * 
@@ -87,8 +97,6 @@ struct QuadMenuManager_v
 	function createQuadMenus =
 	(
 		FORMAT "\n\n"; print "========================= CREATE QUAD MENU FROM QUAD AUTO CONFIG FILES ========================="
-
-		
 		
 		
 		/*------------------------------------------------------------------------------
@@ -145,29 +153,23 @@ struct QuadMenuManager_v
 	
 	
 
-	/** Add macros to menus
+
+		
+	/** Add item to menu
 	 */
-	function addMacrosToMenus macroscript_paths =
+	function addItemToMenu macro_category macro_name title =
 	(
-		--format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--menu_name = item_data[1] -- menu name is category of macroscript  
 		
-		if classOf macroscript_paths != Array then
-			macroscript_paths = #(macroscript_paths)
+		if menus_data[macro_category] == undefined then
+			menus_data[macro_category] = #()
 		
-		for macroscripts_path in macroscript_paths where doesFileExist macroscripts_path do
-		(
-			
-			if doesDirectoryExist macroscripts_path then
-			(
-				for file_path in getFiles macroscripts_path do 
-					appendIfUnique this.macroscript_to_import file_path
-			)
-			else
-				appendIfUnique this.macroscript_to_import macroscripts_path
-			
-		)
+		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
+		
 	),
 	
+		
 	/** Add dir
 	 */
 	function quadDir dirs =
@@ -175,16 +177,91 @@ struct QuadMenuManager_v
 		format "\n"; print "QuadMenuManager_v.addDir()"
 		if classOf dirs != Array then
 			dirs = #(dirs)
-			
+		
 		for dir in dirs do
 			appendIfUnique this.quad_dirs dir
 	),
 	
-
-
 	private
 	
-	function isOnBlacklist macroscript_file blacklist = ((for pattern in blacklist where matchPattern macroscript_file pattern:pattern collect pattern).count > 0),
+	/** Get file paths
+	  
+	  @param string|arraty macroscript_paths to macroscript files or dirs which contains .mcr files
+	  
+	 */
+	function _setMacroscriptsToImport macroscript_paths =
+	(
+		format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
+		
+		if classOf macroscript_paths != Array then
+			macroscript_paths = #(macroscript_paths)
+		
+		for macroscripts_path in macroscript_paths where doesFileExist macroscripts_path do
+		(
+			/* IF DIR */ 
+			if doesDirectoryExist macroscripts_path then
+			(
+				for file_path in getFiles macroscripts_path do 
+					appendIfUnique this.macroscript_to_import file_path
+			)
+			/* IF MACROSCRIPT FILE */ 
+			else
+				appendIfUnique this.macroscript_to_import macroscripts_path
+		)
+	),
+	
+	/** Add macroscripts to menus
+	  
+		@param struct MacroScripts --"./../../MAXSCRIPT-MacroScriptFileParser/MacroScript/MacroScript.ms"
+	  
+	 */
+	function _addMacroscriptsToMenus MacroScripts =
+	(
+		--format "\n"; print "MacroscrpitsToMenuConvertor_v._addMacroscriptsToMenus()"
+		for _MacroScript in MacroScripts do 
+			this._addToMenu (_MacroScript)
+	),
+	
+	/** ADD TO MENU
+	  
+	  
+	 */
+	function _addToMenu _MacroScript =
+	(
+		format "\n"; print "ScriptFile_Content_v._addToMenu()"
+		format "_MacroScript: %\n" _MacroScript
+		
+		if (menu_name = _MacroScript.Params[#menu]) != undefined and menu_name != false then
+		(
+			title = case of
+			(
+				(menu_name	== true ): case of
+				(
+					(_MacroScript.buttontext	!= undefined):	_MacroScript.buttontext
+					(_MacroScript.tooltip	!= ""):	_MacroScript.tooltip
+					
+					default: _MacroScript.macro_name
+				)
+				
+				(menu_name as name	== #TOOLTIP ):	if _MacroScript.tooltip != undefined then _MacroScript.tooltip else _MacroScript.buttontext
+				
+				default: 	menu_name
+			)
+	
+			/*------------------------------------------------------------------------------
+				ADD TO MENU
+			--------------------------------------------------------------------------------*/
+			MENU_MANAGER_GLOBAL.addItemToMenu (_MacroScript.category) (_MacroScript.macro_name) (title)  --return
+			
+		)
+	),
+	
+	/* TEST BLACKLIST
+		
+		currently unsused
+		
+	*/ 
+	----function isOnBlacklist macroscript_file blacklist = ((for pattern in blacklist where matchPattern macroscript_file pattern:pattern collect pattern).count > 0),
 	
 	/** Createa menus
 	 */
