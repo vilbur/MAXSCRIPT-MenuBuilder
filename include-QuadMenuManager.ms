@@ -12,8 +12,12 @@ global MENU_MANAGER_GLOBAL
 /* IMPORT FILES */ 
 --filein( getFilenamePath(getSourceFileName()) + "/MacroscrpitsToMenuConvertor/MacroscrpitsToMenuConvertor.ms" )	--"./MacroscrpitsToMenuConvertor/MacroscrpitsToMenuConvertor.ms"
 
+
 filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager.ms" )	--"./QuadMenuManager/QuadMenuManager.ms"
 
 
 /* CREATE GLOBAL INSTANCE */ 
 MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+
+
+filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI.ms" )	--"./MenuManagerUI.ms"

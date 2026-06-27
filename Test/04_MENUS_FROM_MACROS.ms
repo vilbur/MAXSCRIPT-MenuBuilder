@@ -66,3 +66,4 @@ MENU_MANAGER_GLOBAL.quadDir ( current_dir + "/../Config-Files/Test" )	--"./../Co
 
 /* CREATE QUAD MENUS */ 
 MENU_MANAGER_GLOBAL.createQuadMenus()
+

@@ -46,22 +46,31 @@ struct QuadMenuManager_v
 	 */
 	function addMacrosToMenus macroscript_paths =
 	(
-		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		--format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
 		MacroScripts_in_files = #()
 		
 		this._setMacroscriptsToImport(macroscript_paths)
 		
-		format "macroscript_file: %\n" macroscript_file
+		--format "macroscript_file: %\n" macroscript_file
 		
 		for macroscript_file in macroscript_to_import do
 		(
+			try(
+				
+				filein macroscript_file
+			)catch(
+				
+				format "ERROR TO FILEIN FILE: %\n" macroscript_file
+				
+			)
+			
 			MacroScripts_in_file = (MacroScriptFileParser_v _path:macroscript_file).MacroScripts -- PARSE MACROSCRIPTS 	--"./MacroScriptFileParser/MacroScriptFileParser.ms"
-			format "MacroScripts_in_file: %\n" MacroScripts_in_file
+			--format "MacroScripts_in_file: %\n" MacroScripts_in_file
 			this._addMacroscriptsToMenus (MacroScripts_in_file)
 			
 			MacroScripts_in_files += MacroScripts_in_file
 		)
-		format "MacroScripts_in_files: %\n" MacroScripts_in_files
+		--format "MacroScripts_in_files: %\n" MacroScripts_in_files
 		MacroScripts_in_files --return
 	),
 
@@ -72,7 +81,7 @@ struct QuadMenuManager_v
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
 
 		MenuBuildManager = MenuBuildManager_v()
-		format "MenuBuildManager: %\n" MenuBuildManager
+		--format "MenuBuildManager: %\n" MenuBuildManager
 		
 		--format "\n"; print "QuadMenuManager_v.createMenus()"
 		for menu_name in menus_data.keys do
@@ -122,7 +131,7 @@ struct QuadMenuManager_v
 			--QuadMenuNew = QuadBuildManager.menu (filename) type:#quad
 			--format "QuadMenuNew: %\n" QuadMenuNew
 
-			format "\nINSTALL QUAD MENU FROM FILE: %.ms\n" filename
+			--format "\nINSTALL QUAD MENU FROM FILE: %.ms\n" filename
 			
 			filein quad_cfg_file
 			
@@ -174,7 +183,7 @@ struct QuadMenuManager_v
 	 */
 	function quadDir dirs =
 	(
-		format "\n"; print "QuadMenuManager_v.addDir()"
+		--format "\n"; print "QuadMenuManager_v.addDir()"
 		if classOf dirs != Array then
 			dirs = #(dirs)
 		
@@ -191,7 +200,7 @@ struct QuadMenuManager_v
 	 */
 	function _setMacroscriptsToImport macroscript_paths =
 	(
-		format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
+		--format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
 		
 		if classOf macroscript_paths != Array then
 			macroscript_paths = #(macroscript_paths)
@@ -228,8 +237,8 @@ struct QuadMenuManager_v
 	 */
 	function _addToMenu _MacroScript =
 	(
-		format "\n"; print "ScriptFile_Content_v._addToMenu()"
-		format "_MacroScript: %\n" _MacroScript
+		--format "\n"; print "ScriptFile_Content_v._addToMenu()"
+		--format "_MacroScript: %\n" _MacroScript
 		
 		if (menu_name = _MacroScript.Params[#menu]) != undefined and menu_name != false then
 		(
@@ -267,7 +276,7 @@ struct QuadMenuManager_v
 	 */
 	function _createMenus =
 	(
-		format "\n"; print "QuadMenuManager_v._createMenus()"
+		--format "\n"; print "QuadMenuManager_v._createMenus()"
 		
 		for menu_name in menus_data.keys do
 		(
@@ -285,8 +294,8 @@ struct QuadMenuManager_v
 	 */
 	function _getQuadConfigFiles =
 	(
-		format "\n"; print "QuadMenuManager_v._getQuadConfigFiles()"
-		format "this.quad_dirs: %\n" this.quad_dirs
+		--format "\n"; print "QuadMenuManager_v._getQuadConfigFiles()"
+		--format "this.quad_dirs: %\n" this.quad_dirs
 		quad_cfg_files = #()
 
 		/** Test if path is on blacklist
@@ -294,7 +303,7 @@ struct QuadMenuManager_v
 
 		for dir in this.quad_dirs do
 		(
-			format "DIR: %\n" dir
+			--format "DIR: %\n" dir
 			quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
 			
 			----for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
@@ -368,7 +377,7 @@ struct QuadMenuManager_v
 	 */
 	function _fileInMacroscriptFiles macroscript_to_import =
 	(
-		format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
+		--format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
 		
 		for macroscript_file in macroscript_to_import do
 		(
