@@ -10,7 +10,7 @@ global MenuManagerUI
 
 try (destroyDialog MenuManagerUI_ROLLOUT) catch()
 
-function buildMacroTree nodes treeView
+function buildMacroTree nodes treeView =
 (
     treeView.Nodes.Clear()
 
@@ -62,7 +62,7 @@ function buildMacroTree nodes treeView
     )
 )
 
-function getSelectedMacro treeView
+function getSelectedMacro treeView =
 (
     try
     (
@@ -174,4 +174,4 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
     )
 )
 
-createDialog MenuManagerUI_ROLLOUT 420 520
+--createDialog MenuManagerUI_ROLLOUT 420 520

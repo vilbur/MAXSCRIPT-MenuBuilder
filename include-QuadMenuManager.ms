@@ -20,4 +20,4 @@ filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager
 MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
 
-filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI.ms" )	--"./MenuManagerUI.ms"
+filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI/MenuManagerUI.ms" )	--"./MenuManagerUI/MenuManagerUI.ms"

@@ -25,7 +25,6 @@ current_dir = getFilenamePath(getSourceFileName())
 --------------------------------------------------------------------------------*/
 
 
-
 /*==============================================================================
 
 	CUSTOM MENUS
@@ -41,29 +40,33 @@ macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/MacroScriptsToM
 MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
 		
 		
-/* CREATE MENUS */ 
-MENU_MANAGER_GLOBAL.createMenus()
-
-
-
-
-
-/*==============================================================================
-
-	QUAD MENUS
-
-================================================================================*/
-
-quad_cfg_file = current_dir + "/../Config-Files/Test/Quads"	--"./../Config-Files/Test/Quads"
-
-
-/* QUAD MENU FILES */ 
-MENU_MANAGER_GLOBAL.quadDir ( current_dir + "/../Config-Files/Test" )	--"./../Config-Files/Test"
-
---filein( getFilenamePath(getSourceFileName()) + "/../Config-Files/Test/Control.ms" )	--"./../Config-Files/Test/Control.ms"
-
-
-
-/* CREATE QUAD MENUS */ 
-MENU_MANAGER_GLOBAL.createQuadMenus()
+		
+createDialog MenuManagerUI_ROLLOUT 420 520
+		
+		
+--/* CREATE MENUS */ 
+--MENU_MANAGER_GLOBAL.createMenus()
+--
+--
+--
+--
+--
+--/*==============================================================================
+--
+--	QUAD MENUS
+--
+--================================================================================*/
+--
+--quad_cfg_file = current_dir + "/../Config-Files/Test/Quads"	--"./../Config-Files/Test/Quads"
+--
+--
+--/* QUAD MENU FILES */ 
+--MENU_MANAGER_GLOBAL.quadDir ( current_dir + "/../Config-Files/Test" )	--"./../Config-Files/Test"
+--
+----filein( getFilenamePath(getSourceFileName()) + "/../Config-Files/Test/Control.ms" )	--"./../Config-Files/Test/Control.ms"
+--
+--
+--
+--/* CREATE QUAD MENUS */ 
+--MENU_MANAGER_GLOBAL.createQuadMenus()
 
