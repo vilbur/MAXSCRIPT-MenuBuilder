@@ -1,5 +1,3 @@
-/* IMPORT PARSER of .mcr files */ 
-filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MacroScriptFileParser/includes.ms" )	--"./../MAXSCRIPT-MacroScriptFileParser/includes.ms"
 
 /*
 	include-QuadMenuManager.ms
@@ -7,17 +5,19 @@ filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MacroScriptFilePar
 	Release candidate main include file.
 */
 
-global MENU_MANAGER_GLOBAL
+if MENU_MANAGER_GLOBAL == undefined then 
+	global MENU_MANAGER_GLOBAL
+
+/* IMPORT PARSER of .mcr files */ 
+filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MacroScriptFileParser/includes.ms" )	--"./../MAXSCRIPT-MacroScriptFileParser/includes.ms"
+
 
 /* IMPORT FILES */ 
---filein( getFilenamePath(getSourceFileName()) + "/MacroscrpitsToMenuConvertor/MacroscrpitsToMenuConvertor.ms" )	--"./MacroscrpitsToMenuConvertor/MacroscrpitsToMenuConvertor.ms"
-
-
 filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager.ms" )	--"./QuadMenuManager/QuadMenuManager.ms"
+
+filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI/MenuManagerUI.ms" )	--"./MenuManagerUI/MenuManagerUI.ms"
 
 
 /* CREATE GLOBAL INSTANCE */ 
-MENU_MANAGER_GLOBAL = QuadMenuManager_v()
-
-
-filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI/MenuManagerUI.ms" )	--"./MenuManagerUI/MenuManagerUI.ms"
+if MENU_MANAGER_GLOBAL == undefined then 
+	MENU_MANAGER_GLOBAL = QuadMenuManager_v()

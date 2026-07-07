@@ -26,9 +26,9 @@ struct QuadMenuManager_v
 
 	/* properties */
 	--blacklist_quads = #(),
-
+ 
 	/* private */
-	macroscript_to_import = #(),
+	macroscripts_to_import = #(),
 	parsed_macroscript_files = #(),
 	
 	menus_data = Dictionary #STRING,
@@ -51,16 +51,15 @@ struct QuadMenuManager_v
 		
 		this._setMacroscriptsToImport(macroscript_paths)
 		
-		--format "macroscript_file: %\n" macroscript_file
-		
-		for macroscript_file in macroscript_to_import do
+		for macroscript_file in macroscripts_to_import do
 		(
+			--format "MACROSCRIPT_FILE: %\n" macroscript_file
 			try(
 				
 				filein macroscript_file
 			)catch(
 				
-				format "ERROR TO FILEIN FILE: %\n" macroscript_file
+				FORMAT "ERROR TO FILEIN FILE: %\n" macroscript_file
 				
 			)
 			
@@ -160,9 +159,19 @@ struct QuadMenuManager_v
 	),
 		
 	
-	
+	/** Reset all custom quad menus.
+	  *
+	  * Removes "_custom-menus" and clears the persisted .msdata file.
+	  */
+	function resetMenus =
+	(
+		MenuBuildManager = MenuBuildManager_v()
 
+		MenuBuildManager.removeMenu "_custom-menus"
+		MenuBuildManager.clearDataFile()
 
+		format "QuadMenuManager: Custom quad menus have been reset.\n"
+	),
 		
 	/** Add item to menu
 	 */
@@ -177,7 +186,6 @@ struct QuadMenuManager_v
 		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
 		
 	),
-	
 		
 	/** Add dir
 	 */
@@ -198,24 +206,29 @@ struct QuadMenuManager_v
 	  @param string|arraty macroscript_paths to macroscript files or dirs which contains .mcr files
 	  
 	 */
-	function _setMacroscriptsToImport macroscript_paths =
+	function _setMacroscriptsToImport macroscripts_paths =
 	(
 		--format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
+		--format "macroscripts_path: %\n" macroscripts_path
 		
-		if classOf macroscript_paths != Array then
-			macroscript_paths = #(macroscript_paths)
+		if classOf macroscripts_paths != Array then
+			macroscripts_paths = #( pathConfig.normalizePath macroscripts_paths )
 		
-		for macroscripts_path in macroscript_paths where doesFileExist macroscripts_path do
+		for macroscript_path in macroscripts_paths where doesFileExist macroscript_path do
 		(
+			--format "IS DIR: %\n" ( doesDirectoryExist macroscript_path )
 			/* IF DIR */ 
-			if doesDirectoryExist macroscripts_path then
+			if doesDirectoryExist macroscript_path then
 			(
-				for file_path in getFiles macroscripts_path do 
-					appendIfUnique this.macroscript_to_import file_path
+				--format "FILES: %\n" (getFiles (macroscript_path +"\\*.mcr") )
+				
+				for file_path in getFiles (macroscript_path +"\\*.mcr") do
+					appendIfUnique this.macroscripts_to_import ( pathConfig.normalizePath file_path)
+
 			)
 			/* IF MACROSCRIPT FILE */ 
 			else
-				appendIfUnique this.macroscript_to_import macroscripts_path
+				appendIfUnique this.macroscripts_to_import ( pathConfig.normalizePath macroscript_path )
 		)
 	),
 	
@@ -375,11 +388,11 @@ struct QuadMenuManager_v
 	  *
 	  *
 	 */
-	function _fileInMacroscriptFiles macroscript_to_import =
+	function _fileInMacroscriptFiles macroscripts_to_import =
 	(
 		--format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
 		
-		for macroscript_file in macroscript_to_import do
+		for macroscript_file in macroscripts_to_import do
 		(
 			macroscript_file = pathConfig.normalizePath macroscript_file
 			

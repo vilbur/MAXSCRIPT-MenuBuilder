@@ -33,17 +33,28 @@ current_dir = getFilenamePath(getSourceFileName())
 
 
 /* GET MACTOSCRIPTS IN FILE */ 
-macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"	--"./../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"
+--macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"	--"./../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"
+macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/"	--"./../Config-Files/Test/Menus/"
 
 
 /* ADD MACORS TO MENUS */ 
 MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
 		
+format "MENU_MANAGER_GLOBAL.macroscripts_to_import: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import
+format "MENU_MANAGER_GLOBAL.macroscripts_to_import.count: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import.count
+-- MENU_MANAGER_GLOBAL.macroscripts_to_import.count: 1
+
+format "MENU_MANAGER_GLOBAL.menus_data.keys: %\n" MENU_MANAGER_GLOBAL.menus_data.keys
+-- MENU_MANAGER_GLOBAL.menus_data.keys: #("_TEST MENU A", "_TEST MENU B")
+
+format "MENU_MANAGER_GLOBAL.menus_data: %\n" MENU_MANAGER_GLOBAL.menus_data
+--MENU_MANAGER_GLOBAL.menus_data: (Dictionary #string (DataPair "_TEST MENU A" #(#("_TEST MENU A", "_test_macro_A1", "Test Macro Button Text"))) (DataPair "_TEST MENU B" #(#("r_GLOBAL.menus_data.keys do
+
 		
-		
-createDialog MenuManagerUI_ROLLOUT 420 520
-		
-		
+createDialog MenuManagerUI_ROLLOUT 420 1024
+
+
+
 --/* CREATE MENUS */ 
 --MENU_MANAGER_GLOBAL.createMenus()
 --
