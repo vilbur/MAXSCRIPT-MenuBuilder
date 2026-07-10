@@ -93,6 +93,9 @@ struct MenuManagerUICallbacks_Struct
 
     function installMenusFromSelected sel =
     (
+		format "\n"; print "MenuManagerUICallbacks_Struct.installMenusFromSelected()"
+		format "sel: %\n" sel
+		
         try
         (
             if sel != undefined then
@@ -103,6 +106,9 @@ struct MenuManagerUICallbacks_Struct
                     print ("Installed menu for: " + sel)
                 )
             )
+			else
+				MENU_MANAGER_GLOBAL.createMenus()
+
         )
         catch()
     ),
@@ -122,14 +128,15 @@ struct MenuManagerUICallbacks_Struct
 
     function resetMenus =
     (
-        try
-        (
-            if isProperty MENU_MANAGER_GLOBAL #resetMenus then
-            (
+        --try
+        --(
+        --    if isProperty MENU_MANAGER_GLOBAL #resetMenus then
+        --    (
+			if queryBox ( "REMOVE MENU: \"" + MENU_MANAGER_GLOBAL.MenuBuildManager.custom_menu_root_title +"\"Barbora Or\n\nFROM MAIN MENU BAR ?" ) title:"Title"  beep:false then
                 MENU_MANAGER_GLOBAL.resetMenus()
-            )
-        )
-        catch()
+        --    )
+        --)
+        --catch()
     ),
 
     function resetQuadMenus =
@@ -153,13 +160,14 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 (
     dotNetControl tv "TreeView" width:350 height:400
 
-    button btnInstallMenus "Install && Show Menus" width:170
-    button btnInstallQuads "Install && Show QuadMenus" width:170
+    button btnInstallMenus "INSTALL MENUS" width:170 height:32
+    button btnInstallQuads "INSTALL QUADS" width:170 height:32
 
-    button btnResetMenus "Reset Menus" width:170
-    button btnResetQuads "Reset QuadMenus" width:170
+	
+    button btnResetMenus "RESET MENUS" width:170 height:32 offset:[0,8]
+    button btnResetQuads "RESET QUADS" width:170 height:32
 
-    button btnRefresh "Refresh" width:170
+    button btnRefresh "REFRESH" width:170 height:32
 
     local macro_data = #()
 
@@ -214,10 +222,8 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 
     on btnInstallMenus pressed do
     (
-		MENU_MANAGER_GLOBAL.createMenus()
-		
-        --sel = MenuManagerUICallbacks.getSelectedMacro tv
-        --MenuManagerUICallbacks.installMenusFromSelected sel
+        sel = MenuManagerUICallbacks.getSelectedMacro tv
+        MenuManagerUICallbacks.installMenusFromSelected sel
     )
 
     on btnInstallQuads pressed do
@@ -244,3 +250,10 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         MenuManagerUICallbacks.buildMacroTree macro_data tv
     )
 )
+
+
+/*
+
+createDialog MenuManagerUI_ROLLOUT 420 1024
+
+*/ 

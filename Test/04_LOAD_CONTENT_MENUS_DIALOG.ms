@@ -36,9 +36,14 @@ current_dir = getFilenamePath(getSourceFileName())
 --macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"	--"./../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"
 macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/"	--"./../Config-Files/Test/Menus/"
 
+/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
+global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+
 
 /* ADD MACORS TO MENUS */ 
-MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
+--MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
+appendIfUnique MENU_MANAGER_GLOBAL.macroscripts_to_import macro_scripts_file
+		
 		
 format "MENU_MANAGER_GLOBAL.macroscripts_to_import: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import
 format "MENU_MANAGER_GLOBAL.macroscripts_to_import.count: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import.count

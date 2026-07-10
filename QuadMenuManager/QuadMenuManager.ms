@@ -165,12 +165,16 @@ struct QuadMenuManager_v
 	  */
 	function resetMenus =
 	(
+		format "\n"; print "QuadMenuManager_v.resetMenus()"
 		MenuBuildManager = MenuBuildManager_v()
 
-		MenuBuildManager.removeMenu "_custom-menus"
+		MenuBuildManager.removeMenu "_Custom-menus"
+		
 		MenuBuildManager.clearDataFile()
 
-		format "QuadMenuManager: Custom quad menus have been reset.\n"
+		MenuBuildManager.installMenusNow()
+		
+		format "QuadMenuManager: Custom menus have been reset.\n"
 	),
 		
 	/** Add item to menu
@@ -431,7 +435,7 @@ struct QuadMenuManager_v
 	on create do
 	(
 		--format "\n"; print "QuadMenuManager.onCreate()"
-		--MenuBuildManager = MenuBuildManager_v()
+		MenuBuildManager = MenuBuildManager_v()
 	)
 
 )

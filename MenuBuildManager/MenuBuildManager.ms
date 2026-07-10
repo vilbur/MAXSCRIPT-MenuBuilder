@@ -100,6 +100,40 @@ struct MenuBuildManager_v
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
 
+	
+	/** Remove menu.
+	  *
+	  * Removes a menu definition from the persisted menu data.
+	  */
+	function removeMenu menu_title =
+	(
+		format "\n"; print "MenuBuildManager.removeMenu()"
+
+		menu_rebuilder = MenuRebuilder_v ()
+		
+		menu_manager = this.getCurrentCuiMenuManager()
+
+		main_menu_bar = menu_rebuilder.getMainMenuBar menu_manager
+
+		menu_rebuilder.deleteMainMenu main_menu_bar
+		
+		this.updateVisibleMenuBarNow()
+	),
+
+	/** Clear native menu data file.
+	 */
+	function clearDataFile =
+	(
+		format "\n"; print "MenuBuildManager_v.clearDataFile()"
+		file_path = this.getNativeDataFilePath()
+		
+		if doesFileExist file_path then
+			deleteFile file_path
+		
+		this.saved_menus_data = #()
+		
+		true -- return
+	),
 
 	function createGuidString =
 	(
@@ -2519,6 +2553,7 @@ struct MenuBuildManager_v
 
 	function updateVisibleMenuBarNow =
 	(
+		format "\n"; print "MenuBuildManager.updateVisibleMenuBarNow()"
 		update_ok = false
 		menu_manager = this.getCurrentCuiMenuManager()
 
