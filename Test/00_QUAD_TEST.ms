@@ -1,6 +1,6 @@
 clearListener(); print("Cleared in: "+getSourceFileName())
 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" )	--"./../include-QuadMenuManager.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
@@ -18,17 +18,29 @@ filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" 
 --
 --
 
+cfg_files = getFilenamePath(getSourceFileName()) + "/../Config-Files/Test"
+
+/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
+global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+
+
+--MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
 
 /*------------------------------------------------------------------------------
-	CREATE MUNUS
+	MENU
 --------------------------------------------------------------------------------*/
+/* ADD ITEM */ 
+--MENU_MANAGER_GLOBAL.addItemToMenu "_TEST_CATEGORY" "_test_macro" "Custom Title"
 
-MenuBuildManager = MenuBuildManager_v()
-format "MenuBuildManager: %\n" MenuBuildManager
+MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
+
+
+--MenuBuildManager = MenuBuildManager_v()
+--format "MenuBuildManager: %\n" MenuBuildManager
 
 for letter in #( "A", "B", "C") do 
 (
-	menu_new = MenuBuildManager.menu ("_TEST_MENU_" + letter ) --type:#quad
+	menu_new = MENU_MANAGER_GLOBAL.menu ("_TEST_MENU_" + letter ) --type:#quad
 
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM "+letter)
 	
@@ -43,40 +55,63 @@ for letter in #( "A", "B", "C") do
 )
 
 
-MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+--MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+
 
 /*------------------------------------------------------------------------------
-	CREATE QUAD MUNUS
+	QUAD MENU
 --------------------------------------------------------------------------------*/
 
-QuadBuildManager = MenuBuildManager_v()
-format "QuadBuildManager: %\n" QuadBuildManager
---for modifier_spec in modifier_specs do 
-(
-	quad_new = QuadBuildManager.quad ("_TEST_QUAD_A" ) --type:#quad
-	
-	quad_new.quad_modifier = #controlPressed
+MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Quads/" 
 
-	quad_1 = quad_new.getQuad 1
 
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM QUAD")
-	quad_1.addSeparator()
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" --title:("3 ITEM QUAD")
-	
+----for modifier_spec in modifier_specs do 
+--(
+--	quad_new = MENU_MANAGER_GLOBAL.quad ("_TEST_QUAD_A" ) --type:#quad
+--	
+--	quad_new.quad_modifier = #controlPressed
+--
+--	quad_1 = quad_new.getQuad 1
+--
+--	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM QUAD")
+--	quad_1.addSeparator()
+--	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
+--	quad_1.addItem "_TEST_CATEGORY" "_test_macro" --title:("3 ITEM QUAD")
+--	
+--
+--	quad_2 = quad_new.getQuad 2
+--
+--	quad_2.setTitle "Custom Quad Title"
+--	
+--	--quad_2.addMenu "_TEST_MENU_A" separators:1
+--	quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
+--	--quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
+--	quad_2.addMenu "_TEST_MENU_B" flat:false
+--	--quad_2.addSeparator()
+--	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
+--	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM QUAD")
+--	
+--)
 
-	quad_2 = quad_new.getQuad 2
 
-	quad_2.setTitle "Custom Quad Title"
-	
-	--quad_2.addMenu "_TEST_MENU_A" separators:1
-	quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
-	--quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
-	quad_2.addMenu "_TEST_MENU_B" flat:false
-	--quad_2.addSeparator()
-	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
-	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM QUAD")
-	
-)
 
-QuadBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+/*------------------------------------------------------------------------------
+	CREATE MENUS
+--------------------------------------------------------------------------------*/
+		
+createDialog MenuManagerUI_ROLLOUT width:380 --1024
+
+
+/* CREATE QUAD MENUS */ 
+--MENU_MANAGER_GLOBAL.createMenus()
+
+
+/* CREATE QUAD MENUS */ 
+--MENU_MANAGER_GLOBAL.createQuadMenus()
+
+
+/* SUCCESS MESSAGE */ 
+--messageBox "Show quad by pressing:\n\nCTRL + RMB" title:"SHOW QUAD MENU"
+
+
+

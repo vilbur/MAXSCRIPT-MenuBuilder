@@ -94,23 +94,29 @@ struct MenuManagerUICallbacks_Struct
     function installMenusFromSelected sel =
     (
 		format "\n"; print "MenuManagerUICallbacks_Struct.installMenusFromSelected()"
+		format "INSTALL SELECTED MENS IS DISABLED BY DEV\n"
 		format "sel: %\n" sel
 		
         try
         (
-            if sel != undefined then
-            (
-                if isProperty MENU_MANAGER_GLOBAL #addMacrosToMenus then
-                (
-                    MENU_MANAGER_GLOBAL.addMacrosToMenus #(sel)
-                    print ("Installed menu for: " + sel)
-                )
-            )
-			else
+--            if sel != undefined then
+--            (
+--                if isProperty MENU_MANAGER_GLOBAL #addMacrosToMenus then
+--                (
+--                    MENU_MANAGER_GLOBAL.addMacrosToMenus #(sel)
+--                    print ("Installed menu for: " + sel)
+--                )
+--            )
+--			else
 				MENU_MANAGER_GLOBAL.createMenus()
-
-        )
-        catch()
+        
+		)catch(
+			this._showException()
+			--format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())
+			--format "\n————————————————— EXCEPTION —————————————————\n\n%\n" (getCurrentException())
+			--format "\n——————————————————— TRACE ———————————————————\n%\n"   (getCurrentExceptionStackTrace())
+			--format "\n——————————————————— STACK ———————————————————\n%\n"   (getCurrentExceptionCallStack())
+		)
     ),
 
     function installQuadMenusFromSelected sel =
@@ -123,7 +129,9 @@ struct MenuManagerUICallbacks_Struct
                 print ("Installed quad menu for: " + sel)
             )
         )
-        catch()
+        catch(
+			this._showException()
+		)
     ),
 
     function resetMenus =
@@ -149,7 +157,27 @@ struct MenuManagerUICallbacks_Struct
             )
         )
         catch()
-    )
+    ),
+	
+	private
+	
+	/** Show exception
+	 */
+	function _showException =
+	(
+		--format "\n"; print "MenuManagerUICallbacks_Struct._showException()"
+		format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())
+		format "\n————————————————— EXCEPTION —————————————————\n\n%\n" (getCurrentException())
+		format "\n——————————————————— TRACE ———————————————————\n%\n"   (getCurrentExceptionStackTrace())
+		format "\n——————————————————— STACK ———————————————————\n%\n"   (getCurrentExceptionCallStack())
+	),
+	/**
+	 */
+	on create do
+	(
+		--format "\n"; print "MenuManagerUICallbacks_Struct.onCreate()"
+	)
+	
 )
 
 -- Initialize the global struct instance
@@ -212,17 +240,20 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         
         -- Apply Dark Theme to the TreeView
         local drawingColor = dotNetClass "System.Drawing.Color"
+		
         tv.BackColor = drawingColor.FromArgb 45 45 45       -- Dark Gray background
         tv.ForeColor = drawingColor.FromArgb 220 220 220    -- Light Gray text
         tv.LineColor = drawingColor.FromArgb 150 150 150    -- Mid Gray hierarchy lines
         
         updateMacroData()
+		
         MenuManagerUICallbacks.buildMacroTree macro_data tv
     )
 
     on btnInstallMenus pressed do
     (
         sel = MenuManagerUICallbacks.getSelectedMacro tv
+		format "sel: %\n" sel
         MenuManagerUICallbacks.installMenusFromSelected sel
     )
 

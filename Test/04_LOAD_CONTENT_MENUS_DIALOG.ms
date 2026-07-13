@@ -41,8 +41,8 @@ global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
 
 /* ADD MACORS TO MENUS */ 
---MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
-appendIfUnique MENU_MANAGER_GLOBAL.macroscripts_to_import macro_scripts_file
+MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
+--appendIfUnique MENU_MANAGER_GLOBAL.macroscripts_to_import macro_scripts_file
 		
 		
 format "MENU_MANAGER_GLOBAL.macroscripts_to_import: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import
@@ -56,7 +56,7 @@ format "MENU_MANAGER_GLOBAL.menus_data: %\n" MENU_MANAGER_GLOBAL.menus_data
 --MENU_MANAGER_GLOBAL.menus_data: (Dictionary #string (DataPair "_TEST MENU A" #(#("_TEST MENU A", "_test_macro_A1", "Test Macro Button Text"))) (DataPair "_TEST MENU B" #(#("r_GLOBAL.menus_data.keys do
 
 		
-createDialog MenuManagerUI_ROLLOUT 420 1024
+createDialog MenuManagerUI_ROLLOUT width:380 --1024
 
 
 

@@ -16,3 +16,11 @@ icon:	"MENU:true"
 		messageBox "Macro C 2"
 )
 
+macroscript	_test_macro_D1
+category:	"_TEST MENU D"
+buttontext:	"Macro D 1"
+icon:	"MENU:true"
+(
+	on execute do
+		messageBox "Macro D 1"
+)
