@@ -186,22 +186,33 @@ MenuManagerUICallbacks = MenuManagerUICallbacks_Struct()
 
 rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 (
-    dotNetControl tv "TreeView" width:350 height:400
+    
+	dotNetControl tv_menus "TreeView" width:350 height:400
 
     button btnInstallMenus "INSTALL MENUS" width:170 height:32
-    button btnInstallQuads "INSTALL QUADS" width:170 height:32
 
 	
     button btnResetMenus "RESET MENUS" width:170 height:32 offset:[0,8]
-    button btnResetQuads "RESET QUADS" width:170 height:32
 
-    button btnRefresh "REFRESH" width:170 height:32
+	
+	
+	/*------------------------------------------------------------------------------
+		QUADS
+	--------------------------------------------------------------------------------*/
+    dotNetControl tv_quads "TreeView" width:350 height:400  offset:[0, 32 ]
+    
+    button btnInstallQuads "INSTALL QUADS" width:170 height:32
+	
+	button btnResetQuads "RESET QUADS" width:170 height:32 offset:[0,8]
+	
+    button btnRefresh "REFRESH" width:170 height:32 offset:[ 0, 32 ]
 
     local macro_data = #()
+    local quad_data = #()
 
     function updateMacroData =
     (
-        macro_data = #()
+        --macro_data = #()
         
         if MENU_MANAGER_GLOBAL != undefined then
         (
@@ -217,7 +228,7 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
                         fileName = parts[parts.count]
                         
                         -- Construct the tree hierarchy string
-                        treePath = "macroscripts_to_import\\" + parentDir + "\\" + fileName
+                        treePath =  parentDir + "\\" + fileName
                         append macro_data treePath
                     )
                     else
@@ -225,34 +236,92 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
                         -- Fallback for root-level files
                         if parts.count == 1 then
                         (
-                            append macro_data ("macroscripts_to_import\\" + parts[1])
+                            append macro_data ( parts[1])
                         )
                     )
                 )
             )
         )
     )
-
+    function updateQuadData =
+    (
+        --macro_data = #()
+        
+        if MENU_MANAGER_GLOBAL != undefined then
+        (
+            if isProperty MENU_MANAGER_GLOBAL #quad_dirs then
+            (
+                for mcr_path in MENU_MANAGER_GLOBAL.quad_dirs do
+                (
+                    parts = filterString mcr_path "\\/"
+                    
+                    if parts.count >= 2 then
+                    (
+                        parentDir = parts[parts.count - 1]
+                        fileName = parts[parts.count]
+                        
+                        -- Construct the tree hierarchy string
+                        treePath = parentDir + "\\" + fileName
+                        append quad_data treePath
+                    )
+                    else
+                    (
+                        -- Fallback for root-level files
+                        if parts.count == 1 then
+                        (
+                            append quad_data (parts[1])
+                        )
+                    )
+                )
+            )
+        )
+    )
+	
     on MenuManagerUI_ROLLOUT open do
     (
+		
+		/** Dark theme tree view
+		 */
+		function darkThemeTreeView tv =
+		(
+			-- Apply Dark Theme to the TreeView
+			local drawingColor = dotNetClass "System.Drawing.Color"
+			--format "\n"; print "MenuManagerUICallbacks_Struct.darkThemeTreeView()"
+			tv.BackColor = drawingColor.FromArgb 45 45 45       -- Dark Gray background
+			tv.ForeColor = drawingColor.FromArgb 220 220 220    -- Light Gray text
+			tv.LineColor = drawingColor.FromArgb 150 150 150    -- Mid Gray hierarchy lines
+		)
+		
         -- Dynamically append the version to the rollout title
         MenuManagerUI_ROLLOUT.title = "Menu Manager UI v" + (MenuManagerUICallbacks.version as string)
         
-        -- Apply Dark Theme to the TreeView
-        local drawingColor = dotNetClass "System.Drawing.Color"
-		
-        tv.BackColor = drawingColor.FromArgb 45 45 45       -- Dark Gray background
-        tv.ForeColor = drawingColor.FromArgb 220 220 220    -- Light Gray text
-        tv.LineColor = drawingColor.FromArgb 150 150 150    -- Mid Gray hierarchy lines
-        
         updateMacroData()
+        updateQuadData()
 		
-        MenuManagerUICallbacks.buildMacroTree macro_data tv
+		darkThemeTreeView tv_menus
+		
+		darkThemeTreeView tv_quads
+
+		
+        MenuManagerUICallbacks.buildMacroTree macro_data tv_menus
+        
+		
+		--for macro in macro_data do
+		--format "macro: %\n" macro
+		
+		--format "MENU_MANAGER_GLOBAL.quad_dirs[1]: %\n" MENU_MANAGER_GLOBAL.quad_dirs[1]
+		
+		--quad_data = MENU_MANAGER_GLOBAL.quad_dirs
+		--quad_data = #( Dictionary #( #path, MENU_MANAGER_GLOBAL.quad_dirs[1] ) #( #name, "Test" ) )
+		--quad_data = #( MENU_MANAGER_GLOBAL.quad_dirs[1]  )
+		
+		MenuManagerUICallbacks.buildMacroTree quad_data tv_quads
+		
     )
 
     on btnInstallMenus pressed do
     (
-        sel = MenuManagerUICallbacks.getSelectedMacro tv
+        sel = MenuManagerUICallbacks.getSelectedMacro tv_menus
 		format "sel: %\n" sel
         MenuManagerUICallbacks.installMenusFromSelected sel
     )
@@ -261,7 +330,7 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
     (
 		MENU_MANAGER_GLOBAL.createQuadMenus()
 		
-        --sel = MenuManagerUICallbacks.getSelectedMacro tv
+        --sel = MenuManagerUICallbacks.getSelectedMacro tv_menus
         --MenuManagerUICallbacks.installQuadMenusFromSelected sel
     )
 
@@ -278,7 +347,7 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
     on btnRefresh pressed do
     (
         updateMacroData()
-        MenuManagerUICallbacks.buildMacroTree macro_data tv
+        MenuManagerUICallbacks.buildMacroTree macro_data tv_menus
     )
 )
 

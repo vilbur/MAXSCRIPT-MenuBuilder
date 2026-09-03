@@ -84,8 +84,8 @@ struct QuadMenuManager_v
 	function addMacrosToMenus macroscripts_paths =
 	(
 		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
-	
-		this._appendMacroScriptPaths this.macroscripts_to_import macroscripts_paths -- return
+
+		this.macroscripts_to_import += this._appendMacroScriptPaths macroscripts_paths
 	),
 	
 	/** Add quad configuration directory or file.
@@ -94,8 +94,11 @@ struct QuadMenuManager_v
 	function quadDir quad_cfg_files =
 	(
 		--format "\n"; print "QuadMenuManager_v.quadDir()"
+		--format "quad_cfg_files: %\n" quad_cfg_files
 	
-		this._appendMacroScriptPaths this.quad_dirs quad_cfg_files -- return
+		this.quad_dirs += this._appendMacroScriptPaths quad_cfg_files -- return
+		
+		--format "this.quad_dirs: %\n" this.quad_dirs
 	),
 		
 	/** Add item to menu
@@ -225,7 +228,7 @@ struct QuadMenuManager_v
 	  */
 	function resetMenus =
 	(
-		format "\n"; print "QuadMenuManager_v.resetMenus()"
+		--format "\n"; print "QuadMenuManager_v.resetMenus()"
 		MenuBuildManager = MenuBuildManager_v()
 
 		/* REMOVE FFROM MAIN MENU */ 
@@ -237,7 +240,7 @@ struct QuadMenuManager_v
 		/* UPDATE MENU & QUADS */ 
 		MenuBuildManager.installMenusNow()
 		
-		format "QuadMenuManager: Custom menus have been reset.\n"
+		--format "QuadMenuManager: Custom menus have been reset.\n"
 	),
 		
 
@@ -251,7 +254,7 @@ struct QuadMenuManager_v
 	--  */
 	--function _setMacroscriptsToImport macroscripts_paths =
 	--(
-	--	format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
+	--format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
 	--
 	--	this._appendMacroScriptPaths this.macroscripts_to_import macroscripts_paths -- return
 	--),
@@ -260,27 +263,34 @@ struct QuadMenuManager_v
 	  *
 	  * Adds sanitized file paths into the destination array.
 	  */
-	function _appendMacroScriptPaths destination_array input_paths =
+	function _appendMacroScriptPaths input_paths =
 	(
-		format "\n"; print "QuadMenuManager_v._appendMacroScriptPaths()"
+		--format "\n"; print "QuadMenuManager_v._appendMacroScriptPaths()"
+	
+		destination_array = #()
 	
 		if classOf input_paths != Array then
 			input_paths = #( input_paths )
 	
-		for input_path in input_paths where doesFileExist input_path do
+		for input_path in input_paths where doesFileExist ( input_path = this._sanitizePath input_path) do
 		(
+			--format "Input_Path: %\n" input_path
+			--format "doesDirectoryExist input_path: %\n" (doesDirectoryExist input_path)
 			if doesDirectoryExist input_path then
 			(
-				for file_path in getFiles (pathConfig.appendPath input_path "*.mcr") do
+				
+				ms_and_mcr_files = getFiles ( pathConfig.appendPath input_path "*.ms")  + getFiles ( pathConfig.appendPath input_path "*.mcr") 
+				
+				for file_path in ms_and_mcr_files do
 					appendIfUnique destination_array (this._sanitizePath file_path)
 			)
 			else
 			(
-				appendIfUnique destination_array (this._sanitizePath input_path)
+				appendIfUnique destination_array (input_path)
 			)
 		)
-	
-		-- return
+		--format "destination_array: %\n" destination_array
+		destination_array -- return
 	),
 
 	/** Sanitize path
