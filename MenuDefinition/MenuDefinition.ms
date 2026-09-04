@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.91
+	Version: 0.92
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.91,
+	version = 0.92,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -17,6 +17,7 @@ struct MenuDefinition_v
 	quad_context_id = "ac7c70f8-3f86-4ff5-a510-e4fd6a9c368e",
 	manager = undefined,
 	parent_item_data = undefined,
+	last_added_item = undefined,
 	qmnx_clear_directory = "",
 	clear_default_menu = false,
 	quad_order = #(#BottomRight, #TopRight, #TopLeft, #BottomLeft),
@@ -124,6 +125,7 @@ struct MenuDefinition_v
 	(
 		this.data = value
 		this._data = value
+		this.last_added_item = undefined
 
 		if this.parent_item_data != undefined then
 		(
@@ -516,6 +518,7 @@ struct MenuDefinition_v
 			insertItem item_data items_array index
 		)
 
+		this.last_added_item = item_data
 		item_data -- return
 	),
 
@@ -561,19 +564,51 @@ struct MenuDefinition_v
 			this.appendSavedItem item_data index:index
 		)
 
+		this.last_added_item = item_data
 		item_data -- return
 	),
 
 
+	function isSeparatorData item_data =
+	(
+		local is_separator = false
+		if this.hasDictValueSafe item_data #separator then is_separator = (item_data[#separator] == true)
+		if this.hasDictValueSafe item_data #type then
+			if item_data[#type] == #SEPARATOR then is_separator = true
+		if this.hasDictValueSafe item_data #title then
+			if item_data[#title] == #SEPARATOR then is_separator = true
+		is_separator -- return
+	),
+
+
 	/*
-	Add separator item.
-	Returns created separator data dictionary.
+	Add a separator after the last added or reused item, or at an explicit index.
+	Reuse an adjacent separator so repeated script runs do not add another one.
 	*/
 	function addSeparator index:undefined =
 	(
-		separator_data = this.makeSeparatorItemData()
-		this.appendSavedItem separator_data index:index
+		local items_array = this.ensureItemsArray()
+		local insert_index = index
+		if insert_index == undefined then
+		(
+			local anchor_index = findItem items_array this.last_added_item
+			insert_index = if anchor_index > 0 then anchor_index + 1 else items_array.count + 1
+		)
+		if insert_index < 1 then insert_index = 1
+		if insert_index > items_array.count + 1 then insert_index = items_array.count + 1
 
+		local separator_data = undefined
+		if insert_index > 1 then
+			if this.isSeparatorData items_array[insert_index - 1] then separator_data = items_array[insert_index - 1]
+		if separator_data == undefined and insert_index <= items_array.count then
+			if this.isSeparatorData items_array[insert_index] then separator_data = items_array[insert_index]
+
+		if separator_data == undefined then
+		(
+			separator_data = this.makeSeparatorItemData()
+			this.appendSavedItem separator_data index:insert_index
+		)
+		this.last_added_item = separator_data
 		separator_data -- return
 	),
 

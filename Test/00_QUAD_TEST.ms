@@ -26,17 +26,20 @@ global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
 --MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
 
+
+
+
 /*------------------------------------------------------------------------------
+  
+  
 	MENU
+	
+	
 --------------------------------------------------------------------------------*/
 /* ADD ITEM */ 
---MENU_MANAGER_GLOBAL.addItemToMenu "_TEST_CATEGORY" "_test_macro" "Custom Title"
 
-MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
+--MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
 
-
---MenuBuildManager = MenuBuildManager_v()
---format "MenuBuildManager: %\n" MenuBuildManager
 
 for letter in #( "A", "B", "C") do 
 (
@@ -50,19 +53,27 @@ for letter in #( "A", "B", "C") do
 	
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:( "Time of test " + (getLocalTime())[5] as string + ":"+(getLocalTime())[6] as string )
 	
-	--menu_new.addSeparator()
-	--menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM "+letter)
 )
 
 
 --MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 
 
+
+
+
+
 /*------------------------------------------------------------------------------
+  
+  
 	QUAD MENU
+	
+	
 --------------------------------------------------------------------------------*/
 
-MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Quads/" 
+--MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Quads" 
+MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/ModKeys" )	--"./../Config-Files/Test/Quads/ModKeys" 
+MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/Quads-Custom" )	--"./../Config-Files/Test/Quads/Quads-Custom" 
 
 
 ----for modifier_spec in modifier_specs do 
@@ -102,7 +113,7 @@ MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Q
 createDialog MenuManagerUI_ROLLOUT width:380 --1024
 
 
-/* CREATE QUAD MENUS */ 
+/* CREATE MENUS */ 
 --MENU_MANAGER_GLOBAL.createMenus()
 
 

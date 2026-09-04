@@ -19,5 +19,5 @@ filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI/MenuManagerUI.ms"
 
 
 /* CREATE GLOBAL INSTANCE */ 
-if MENU_MANAGER_GLOBAL == undefined then 
+--if MENU_MANAGER_GLOBAL == undefined then 
 	MENU_MANAGER_GLOBAL = QuadMenuManager_v()

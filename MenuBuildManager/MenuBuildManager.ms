@@ -20,7 +20,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 
 /*
-	MenuBuildManager_v 0.94
+	MenuBuildManager_v 0.95
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -41,7 +41,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 struct MenuBuildManager_v
 (
-	version = 0.94,
+	version = 0.95,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -117,7 +117,49 @@ struct MenuBuildManager_v
 		is_target -- return
 	),
 
-	/** Remove a named top-level menu from native storage and the current UI.
+	/** Remove matching submenu nodes, preserving actions and sibling order. */
+	function removeSubMenusFromItems items menu_title =
+	(
+		local removed_count = 0
+		if this.isArrayValue items then
+		(
+			for item_index = items.count to 1 by -1 do
+			(
+				local item_data = items[item_index]
+				if this.isSubMenuData item_data then
+				(
+					if this.getSavedMenuTitle item_data == menu_title then
+					(
+						deleteItem items item_index
+						removed_count += 1
+					)
+					else removed_count += this.removeSubMenusFromItems item_data[#items] menu_title
+				)
+			)
+		)
+		removed_count -- return
+	),
+
+	function removeMenusFromSavedData menus_data_array menu_title =
+	(
+		local removed_count = 0
+		for menu_index = menus_data_array.count to 1 by -1 do
+		(
+			local menu_data = menus_data_array[menu_index]
+			if this.isMenuRemovalTarget menu_data menu_title then
+			(
+				deleteItem menus_data_array menu_index
+				removed_count += 1
+			)
+			else if this.isMenuCallbackData menu_data then
+			(
+				removed_count += this.removeSubMenusFromItems (this.getMenuDataValue menu_data #items #()) menu_title
+			)
+		)
+		removed_count -- return
+	),
+
+	/** Remove a named menu or submenu from native storage and the current UI.
 	  * Also removes matching in-memory definitions to prevent the next save restoring it.
 	  * Reinstalls normal menus after removal; returns true when a matching entry was found.
 	  */
@@ -138,8 +180,8 @@ struct MenuBuildManager_v
 				if not (this.isArrayValue (native_io.getCacheVariableValue())) then
 					throw "Cannot remove menu: native menu data could not be loaded."
 
-				local kept_data = for menu_data in disk_data where not (this.isMenuRemovalTarget menu_data menu_title) collect menu_data
-				if kept_data.count != disk_data.count then
+				local kept_data = this.cloneValue disk_data
+				if (this.removeMenusFromSavedData kept_data menu_title) > 0 then
 				(
 					-- Write directly; the normal save path merges deleted entries back in.
 					native_io.saveDataToNativeFile kept_data native_path
@@ -148,9 +190,7 @@ struct MenuBuildManager_v
 				)
 			)
 
-			local kept_saved_data = for menu_data in this.saved_menus_data where not (this.isMenuRemovalTarget menu_data menu_title) collect menu_data
-			if kept_saved_data.count != this.saved_menus_data.count then was_deleted = true
-			this.saved_menus_data = kept_saved_data
+			if (this.removeMenusFromSavedData this.saved_menus_data menu_title) > 0 then was_deleted = true
 			this.invalidateSplitJsonCache()
 
 			-- Definitions are not grouped yet. Apply the same title/type rules.
@@ -169,6 +209,10 @@ struct MenuBuildManager_v
 							deleteItem definitions definition_index
 							was_deleted = true
 						)
+						else if this.isMenuCallbackData definition_data then
+						(
+							if (this.removeSubMenusFromItems (definition.getActiveData()) menu_title) > 0 then was_deleted = true
+						)
 					)
 				)
 			)
@@ -179,26 +223,29 @@ struct MenuBuildManager_v
 			local main_menu_bar = menu_rebuilder.getMainMenuBar menu_manager
 			if main_menu_bar != undefined then
 			(
-				for menu_item in main_menu_bar.menuItems do
+				local pending_menus = #(main_menu_bar)
+				local menu_index = 1
+				while menu_index <= pending_menus.count do
 				(
-					if menu_item.isSubMenu then
+					for menu_item in pending_menus[menu_index].menuItems do
 					(
-						local submenu = menu_item.subMenu
-						if submenu != undefined then
+						if menu_item.isSubMenu then
 						(
-							if submenu.title == menu_title then was_deleted = true
+							local submenu = menu_item.subMenu
+							if submenu != undefined then
+							(
+								if submenu.title == menu_title then was_deleted = true
+								append pending_menus submenu
+							)
 						)
 					)
+					menu_index += 1
 				)
 			)
 		)
 
-		if was_deleted then
-		(
-			-- Reload the configuration and rebuild through #cuiRegisterMenus.
-			-- Direct DeleteItem plus redraw does not refresh the visible 2026 UI.
-			this.installMenusNow save_cui_configuration:false update_quads:false load_default_cui_configuration:true
-		)
+		-- Refresh from the filtered file without merging deleted submenus back in.
+		if was_deleted then this.updateMenus update_quads:false
 		was_deleted -- return
 	),
 
