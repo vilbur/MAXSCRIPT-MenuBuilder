@@ -20,7 +20,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 
 /*
-	MenuBuildManager_v 0.90
+	MenuBuildManager_v 0.94
 	Ordered item schema + split JSON development storage + native .msdata production cache.
 
 	Compile modes:
@@ -41,7 +41,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 struct MenuBuildManager_v
 (
-	version = 0.90,
+	version = 0.94,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -101,23 +101,105 @@ struct MenuBuildManager_v
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
 
 	
-	/** Remove menu.
-	  *
-	  * Removes a menu definition from the persisted menu data.
+	/** Match a normal root, including definitions grouped under the custom root.
+	  */
+	function isMenuRemovalTarget menu_data menu_title =
+	(
+		local is_target = false
+		if this.isMenuCallbackData menu_data then
+		(
+			is_target = (this.getSavedMenuTitle menu_data == menu_title)
+			if this.isCustomMenuRootTitle menu_title then
+			(
+				if this.shouldNestMenuUnderCustomRoot menu_data then is_target = true
+			)
+		)
+		is_target -- return
+	),
+
+	/** Remove a named top-level menu from native storage and the current UI.
+	  * Also removes matching in-memory definitions to prevent the next save restoring it.
+	  * Reinstalls normal menus after removal; returns true when a matching entry was found.
 	  */
 	function removeMenu menu_title =
 	(
 		format "\n"; print "MenuBuildManager.removeMenu()"
+		local was_deleted = false
 
-		menu_rebuilder = MenuRebuilder_v ()
-		
-		menu_manager = this.getCurrentCuiMenuManager()
+		if menu_title != undefined and menu_title != "" then
+		(
+			-- Read disk independently: this instance may not know other tools' menus.
+			local native_path = this.getNativeDataFilePath()
+			if doesFileExist native_path then
+			(
+				local native_io = this.getNativeDataIO()
+				if native_io == undefined then throw "Cannot remove menu: native data IO is unavailable."
+				local disk_data = native_io.loadDataFromNativeFile native_path
+				if not (this.isArrayValue (native_io.getCacheVariableValue())) then
+					throw "Cannot remove menu: native menu data could not be loaded."
 
-		main_menu_bar = menu_rebuilder.getMainMenuBar menu_manager
+				local kept_data = for menu_data in disk_data where not (this.isMenuRemovalTarget menu_data menu_title) collect menu_data
+				if kept_data.count != disk_data.count then
+				(
+					-- Write directly; the normal save path merges deleted entries back in.
+					native_io.saveDataToNativeFile kept_data native_path
+					native_io.clearCacheVariable()
+					was_deleted = true
+				)
+			)
 
-		menu_rebuilder.deleteMainMenu main_menu_bar
-		
-		this.updateVisibleMenuBarNow()
+			local kept_saved_data = for menu_data in this.saved_menus_data where not (this.isMenuRemovalTarget menu_data menu_title) collect menu_data
+			if kept_saved_data.count != this.saved_menus_data.count then was_deleted = true
+			this.saved_menus_data = kept_saved_data
+			this.invalidateSplitJsonCache()
+
+			-- Definitions are not grouped yet. Apply the same title/type rules.
+			for definitions in #(this.menus_data, this.wait_for_build) do
+			(
+				for definition_index = definitions.count to 1 by -1 do
+				(
+					local definition = definitions[definition_index]
+					if this.isMenuDefinitionLike definition then
+					(
+						local definition_data = Dictionary #name
+						definition_data[#title] = definition.title
+						definition_data[#type] = definition.type
+						if this.isMenuRemovalTarget definition_data menu_title then
+						(
+							deleteItem definitions definition_index
+							was_deleted = true
+						)
+					)
+				)
+			)
+
+			-- A menu can still be visible after its cache file was removed manually.
+			local menu_manager = this.getCurrentCuiMenuManager()
+			local menu_rebuilder = MenuRebuilder_v()
+			local main_menu_bar = menu_rebuilder.getMainMenuBar menu_manager
+			if main_menu_bar != undefined then
+			(
+				for menu_item in main_menu_bar.menuItems do
+				(
+					if menu_item.isSubMenu then
+					(
+						local submenu = menu_item.subMenu
+						if submenu != undefined then
+						(
+							if submenu.title == menu_title then was_deleted = true
+						)
+					)
+				)
+			)
+		)
+
+		if was_deleted then
+		(
+			-- Reload the configuration and rebuild through #cuiRegisterMenus.
+			-- Direct DeleteItem plus redraw does not refresh the visible 2026 UI.
+			this.installMenusNow save_cui_configuration:false update_quads:false load_default_cui_configuration:true
+		)
+		was_deleted -- return
 	),
 
 	/** Clear native menu data file.
@@ -2377,11 +2459,14 @@ struct MenuBuildManager_v
 	),
 
 
-	function registerCallback =
+	function registerCallback use_saved_data_only:false =
 	(
 		global MenuBuildManager
-		if this.saved_menus_data.count == 0 then this.saved_menus_data = this.loadSavedMenusDataFromJson()
-		if this.saved_menus_data.count == 0 then this.buildSavedMenusData()
+		if not use_saved_data_only then
+		(
+			if this.saved_menus_data.count == 0 then this.saved_menus_data = this.loadSavedMenusDataFromJson()
+			if this.saved_menus_data.count == 0 then this.buildSavedMenusData()
+		)
 		this.saved_menus_data = this.groupMenusUnderCustomMenuRoot this.saved_menus_data
 		MenuBuildManager = this
 		callbacks.removeScripts id:this.callback_id
@@ -2739,10 +2824,42 @@ struct MenuBuildManager_v
 	),
 
 
+	/** Refresh normal menus and quads from the current native cache only.
+	  * Does not build definitions, merge data, or write cache/startup files.
+	  * A missing or empty cache clears this manager's menus on configuration reload.
+	  */
+	function updateMenus update_quads:true =
+	(
+		local native_path = this.getNativeDataFilePath()
+		local disk_data = #()
+
+		if doesFileExist native_path then
+		(
+			local native_io = this.getNativeDataIO()
+			if native_io == undefined then throw "Cannot update menus: native data IO is unavailable."
+			disk_data = native_io.loadDataFromNativeFile native_path
+			if not (this.isArrayValue (native_io.getCacheVariableValue())) then
+				throw "Cannot update menus: native menu data could not be loaded."
+		)
+
+		this.saved_menus_data = disk_data
+		-- Empty data is authoritative: do not fall back to queued definitions or JSON.
+		this.registerCallback use_saved_data_only:true
+
+		local main_menu_updated = this.loadDefaultCuiMenuConfiguration()
+		local quad_menu_updated = false
+		if update_quads then quad_menu_updated = this.loadDefaultCuiQuadConfiguration()
+		this.updateVisibleMenuBarNow()
+
+		format "updateMenus loaded % saved menus from %. Main menu updated: %, Quad menu updated: %\n" this.saved_menus_data.count native_path main_menu_updated quad_menu_updated
+		this.saved_menus_data -- return
+	),
+
+
 	function installMenusNow save_cui_configuration:true update_quads:true load_default_cui_configuration:true =
 	(
-		format "\n"
-		print "MenuBuildManager_v.installMenusNow()"
+		--format "\n"
+		--print "MenuBuildManager_v.installMenusNow()"
 
 		/*
 		Correct immediate-install order for 3ds Max 2026:
@@ -2808,8 +2925,8 @@ struct MenuBuildManager_v
 
 	function build =
 	(
-		format "\n"
-		print "MenuBuildManager_v.build()"
+		format "\n";	print "MenuBuildManager_v.build()"
+		
 		this.applyWaitForBuildToMenusData()
 		this.buildMenus()
 		
