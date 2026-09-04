@@ -57,7 +57,7 @@ struct QuadMenuManager_v
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined	=
 	(
 		--format "\n"; print "QuadMenuManager_v.menu()"
-		MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory 
+		this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
 	),
 	
 	
@@ -122,31 +122,23 @@ struct QuadMenuManager_v
 	================================================================================*/
 	
 	
-	/** CREATE MENUS
+	/** Build menus on the same manager used by menu().
 	 */
 	function createMenus which:#() =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
 
-		MenuBuildManager = MenuBuildManager_v()
-		--format "MenuBuildManager: %\n" MenuBuildManager
-		
-		--format "\n"; print "QuadMenuManager_v.createMenus()"
-		
-		
-		for menu_name in menus_data.keys do
+		-- Add collected macro items without discarding directly declared menus.
+		for menu_name in this.menus_data.keys do
 		(
-			--format "menu_name: %\n" menu_name
-			menu_new = MenuBuildManager.menu (menu_name) --type:#quad
-		
-			for menu_item_data in menus_data[menu_name] do
+			local menu_new = this.MenuBuildManager.menu menu_name
+
+			for menu_item_data in this.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
-		
-		
-		MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+
+		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 	),
-	
 
 	/** SETUP MENUS BY CONFIG FILES IN DIR
 	  * 
