@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.92
+	Version: 0.93
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.92,
+	version = 0.93,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -536,12 +536,13 @@ struct MenuDefinition_v
 
 
 	/*
-	Add macro item once per category, macro name, and displayed title.
+	Add macro or grouped native action once per group, category, name, and title.
 	Returns existing item data when already present, preserving its ID and position.
 	*/
-	function addItem macro_category macro_name title:"" index:undefined =
+	function addItem macro_category macro_name title:"" group:"" index:undefined =
 	(
 		local item_title = title
+		local action_group = if group == undefined then "" else group as string
 		if item_title == "" then item_title = macro_name as string
 
 		local item_data = undefined
@@ -552,7 +553,8 @@ struct MenuDefinition_v
 			(
 				if not (this.hasDictValueSafe saved_item #items) then
 				(
-					if saved_item[#category] == macro_category and saved_item[#macro] == macro_name and saved_item[#title] == item_title then
+					local saved_group = if this.hasDictValueSafe saved_item #group then saved_item[#group] else ""
+					if saved_group == action_group and saved_item[#category] == macro_category and saved_item[#macro] == macro_name and saved_item[#title] == item_title then
 						item_data = saved_item
 				)
 			)
@@ -561,6 +563,7 @@ struct MenuDefinition_v
 		if item_data == undefined then
 		(
 			item_data = this.makeMacroItemData item_title macro_category macro_name custom_title:(title != "")
+			if action_group != "" then item_data[#group] = action_group
 			this.appendSavedItem item_data index:index
 		)
 

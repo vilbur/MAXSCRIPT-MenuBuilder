@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.90
+	Version: 0.91
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -12,7 +12,7 @@ if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_gua
 
 struct MenuRebuilder_v
 (
-	version = 0.90,
+	version = 0.91,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -645,7 +645,7 @@ struct MenuRebuilder_v
 	Create title alias MacroScript and return action id.
 	Generated macro keeps visible CUI title independent from source macro button text.
 	*/
-	function createTitleAliasActionId item_id macro_category macro_name item_title =
+	function createTitleAliasActionId item_id macro_category macro_name item_title action_table_id:undefined action_id:undefined =
 	(
 		alias_macro_name = this.sanitizeMacroIdentifier item_id prefix:"MenuRebuilderTitleAlias_"
 		alias_category = this.title_alias_macro_category
@@ -661,7 +661,14 @@ struct MenuRebuilder_v
 		macro_code += "(\n"
 		macro_code += "\ton execute do\n"
 		macro_code += "\t(\n"
-		macro_code += "\t\tmacros.run \"" + escaped_macro_category + "\" \"" + escaped_macro_name + "\"\n"
+		if action_table_id == undefined then
+		(
+			macro_code += "\t\tmacros.run \"" + escaped_macro_category + "\" \"" + escaped_macro_name + "\"\n"
+		)
+		else
+		(
+			macro_code += "\t\tactionMan.executeAction " + (action_table_id as string) + " \"" + (this.escapeMaxScriptString action_id) + "\"\n"
+		)
 		macro_code += "\t)\n"
 		macro_code += ")\n"
 
@@ -698,31 +705,94 @@ struct MenuRebuilder_v
 	),
 
 
+	/*
+	Resolve native actions by CUI group, category, and description/button/menu text.
+	MacroScripts without a group keep their existing name/category binding.
+	*/
+	function resolveNativeAction action_group action_category action_name =
+	(
+		local found_action = undefined
+		local match_count = 0
+		for table_index = 1 to actionMan.numActionTables do
+		(
+			local action_table = actionMan.getActionTable table_index
+			if action_table.contextName == action_group and action_table.id != this.macro_action_table_id then
+			(
+				for action_index = 1 to action_table.numActionItems do
+				(
+					local action_item = action_table.getActionItem action_index
+					local category_text = ""
+					local description_text = ""
+					local button_text = ""
+					local menu_text = ""
+					action_item.getCategory &category_text
+					if category_text == action_category then
+					(
+						action_item.getDescription &description_text
+						action_item.getButtonText &button_text
+						action_item.getMenuText &menu_text
+						if description_text == action_name or button_text == action_name or menu_text == action_name then
+						(
+							match_count += 1
+							local persistent_id = action_item.id as string
+							try (persistent_id = action_item.getPersistentActionId()) catch ()
+							found_action = #(action_table.id, persistent_id)
+						)
+					)
+				)
+			)
+		)
+		if match_count != 1 then
+		(
+			format "MenuRebuilder_v: expected one native action for group:'%' category:'%' name:'%', found %.\n" action_group action_category action_name match_count
+			found_action = undefined
+		)
+		found_action -- return
+	),
+
+
 	function createRealCuiAction parent_menu item_id macro_category macro_name item_data:undefined =
 	(
-		created_item = undefined
-		persistent_action_id = this.getMacroActionId macro_category macro_name
-		item_title = macro_name as string
+		local created_item = undefined
+		local action_table_id = this.macro_action_table_id
+		local persistent_action_id = this.getMacroActionId macro_category macro_name
+		local item_title = this.getActionItemDisplayTitle item_data macro_name
+		local action_group = this.getItemStringValue item_data #group ""
+		local binding_valid = true
 
-		if item_data != undefined then
+		if action_group != "" then
 		(
-			item_title = this.getActionItemDisplayTitle item_data macro_name
-
-			if this.shouldUseTitleAlias item_data macro_name item_title then
+			local native_action = this.resolveNativeAction action_group macro_category macro_name
+			if native_action == undefined then
+				binding_valid = false
+			else
 			(
-				persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title
+				action_table_id = native_action[1]
+				persistent_action_id = native_action[2]
 			)
 		)
 
-		if parent_menu != undefined then
+		if binding_valid then
 		(
-			try
+			if this.shouldUseTitleAlias item_data macro_name item_title then
 			(
-				created_item = parent_menu.CreateAction item_id this.macro_action_table_id persistent_action_id
+				if action_group == "" then
+					persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title
+				else
+					persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title action_table_id:action_table_id action_id:persistent_action_id
+				action_table_id = this.macro_action_table_id
 			)
-			catch
+
+			if parent_menu != undefined then
 			(
-				created_item = undefined
+				try
+				(
+					created_item = parent_menu.CreateAction item_id action_table_id persistent_action_id
+				)
+				catch
+				(
+					format "MenuRebuilder_v.createRealCuiAction failed. item:'%' table:% action:'%'\n" item_id action_table_id persistent_action_id
+				)
 			)
 		)
 
