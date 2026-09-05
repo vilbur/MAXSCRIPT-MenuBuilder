@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.91
+	Version: 0.92
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -12,12 +12,11 @@ if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_gua
 
 struct MenuRebuilder_v
 (
-	version = 0.91,
+	version = 0.92,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
 	macro_action_table_id = 647394,
-	title_alias_macro_category = "_MenuRebuilder_Title_Alias",
 
 
 	function isDictionaryValue value =
@@ -510,44 +509,6 @@ struct MenuRebuilder_v
 
 
 	/*
-	Escape string for generated MaxScript code.
-	Used by title alias MacroScripts.
-	*/
-	function escapeMaxScriptString source_value =
-	(
-		escaped_value = source_value as string
-		escaped_value = substituteString escaped_value "\\" "\\\\"
-		escaped_value = substituteString escaped_value "\"" "\\\""
-
-		escaped_value -- return
-	),
-
-
-	/*
-	Sanitize text to MacroScript identifier.
-	Keeps only alphanumeric characters and underscores.
-	*/
-	function sanitizeMacroIdentifier source_value prefix:"MenuRebuilderTitleAlias" =
-	(
-		valid_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-		source_text = source_value as string
-		identifier_text = prefix
-
-		for char_index = 1 to source_text.count do
-		(
-			char_value = substring source_text char_index 1
-
-			if (findString valid_chars char_value) != undefined then
-			(
-				identifier_text += char_value
-			)
-		)
-
-		identifier_text -- return
-	),
-
-
-	/*
 	Get dictionary string value.
 	Returns default when key is missing or empty.
 	*/
@@ -609,12 +570,12 @@ struct MenuRebuilder_v
 
 
 	/*
-	Check if CUI action needs generated title alias.
-	Alias is required because CreateAction uses MacroScript button text.
+	Check whether the saved item requests a custom display title.
+	Unmodified items keep the original action text.
 	*/
-	function shouldUseTitleAlias item_data macro_name item_title =
+	function shouldUseCustomTitle item_data macro_name item_title =
 	(
-		use_alias = false
+		use_custom_title = false
 		custom_title = false
 
 		if this.isDictionaryValue item_data then
@@ -627,61 +588,17 @@ struct MenuRebuilder_v
 
 		if custom_title == true then
 		(
-			use_alias = true
+			use_custom_title = true
 		)
 		else if item_title != "" then
 		(
 			if item_title != (macro_name as string) then
 			(
-				use_alias = true
+				use_custom_title = true
 			)
 		)
 
-		use_alias -- return
-	),
-
-
-	/*
-	Create title alias MacroScript and return action id.
-	Generated macro keeps visible CUI title independent from source macro button text.
-	*/
-	function createTitleAliasActionId item_id macro_category macro_name item_title action_table_id:undefined action_id:undefined =
-	(
-		alias_macro_name = this.sanitizeMacroIdentifier item_id prefix:"MenuRebuilderTitleAlias_"
-		alias_category = this.title_alias_macro_category
-		escaped_alias_category = this.escapeMaxScriptString alias_category
-		escaped_macro_category = this.escapeMaxScriptString macro_category
-		escaped_macro_name = this.escapeMaxScriptString macro_name
-		escaped_item_title = this.escapeMaxScriptString item_title
-
-		macro_code = "macroScript " + alias_macro_name + "\n"
-		macro_code += "category:\"" + escaped_alias_category + "\"\n"
-		macro_code += "buttonText:\"" + escaped_item_title + "\"\n"
-		macro_code += "toolTip:\"" + escaped_item_title + "\"\n"
-		macro_code += "(\n"
-		macro_code += "\ton execute do\n"
-		macro_code += "\t(\n"
-		if action_table_id == undefined then
-		(
-			macro_code += "\t\tmacros.run \"" + escaped_macro_category + "\" \"" + escaped_macro_name + "\"\n"
-		)
-		else
-		(
-			macro_code += "\t\tactionMan.executeAction " + (action_table_id as string) + " \"" + (this.escapeMaxScriptString action_id) + "\"\n"
-		)
-		macro_code += "\t)\n"
-		macro_code += ")\n"
-
-		try
-		(
-			execute macro_code
-		)
-		catch
-		(
-			format "MenuRebuilder_v.createTitleAliasActionId failed. item:'%' title:'%'\n" item_id item_title
-		)
-
-		this.getMacroActionId alias_category alias_macro_name -- return
+		use_custom_title -- return
 	),
 
 
@@ -774,20 +691,15 @@ struct MenuRebuilder_v
 
 		if binding_valid then
 		(
-			if this.shouldUseTitleAlias item_data macro_name item_title then
-			(
-				if action_group == "" then
-					persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title
-				else
-					persistent_action_id = this.createTitleAliasActionId item_id macro_category macro_name item_title action_table_id:action_table_id action_id:persistent_action_id
-				action_table_id = this.macro_action_table_id
-			)
-
 			if parent_menu != undefined then
 			(
 				try
 				(
 					created_item = parent_menu.CreateAction item_id action_table_id persistent_action_id
+					if created_item != undefined and this.shouldUseCustomTitle item_data macro_name item_title then
+					(
+						created_item.title = item_title
+					)
 				)
 				catch
 				(

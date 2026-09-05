@@ -5,6 +5,12 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" 
 filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
 
+/*
+
+
+
+*/
+
 --modifier_specs = #(
 --	#("None",	"None",	#nonePressed),
 --	#("Shift",	"Shift",	#shiftPressed),
@@ -23,6 +29,7 @@ cfg_files = getFilenamePath(getSourceFileName()) + "/../Config-Files/Test"
 /* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
 global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
+MENU_MANAGER_GLOBAL.resetMenus()
 
 --MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
 
@@ -45,21 +52,15 @@ for letter in #( "A", "B", "C") do
 (
 	menu_new = MENU_MANAGER_GLOBAL.menu ("_TEST_MENU_" + letter ) --type:#quad
 
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM "+letter)
+	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 1 "+letter)
 	
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM "+letter)
+	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 2 "+letter)
 
-	menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
+	--menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
 	
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:( "Time of test " + (getLocalTime())[5] as string + ":"+(getLocalTime())[6] as string )
+	--menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:( "Time of test " + (getLocalTime())[5] as string + ":"+(getLocalTime())[6] as string )
 	
 )
-
-
---MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
-
-
-
 
 
 
@@ -72,37 +73,38 @@ for letter in #( "A", "B", "C") do
 --------------------------------------------------------------------------------*/
 
 --MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Quads" 
-MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/ModKeys" )	--"./../Config-Files/Test/Quads/ModKeys" 
-MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/Quads-Custom" )	--"./../Config-Files/Test/Quads/Quads-Custom" 
+--MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/ModKeys" )	--"./../Config-Files/Test/Quads/ModKeys" 
+--MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/Quads-Custom" )	--"./../Config-Files/Test/Quads/Quads-Custom" 
 
 
-----for modifier_spec in modifier_specs do 
---(
---	quad_new = MENU_MANAGER_GLOBAL.quad ("_TEST_QUAD_A" ) --type:#quad
---	
---	quad_new.quad_modifier = #controlPressed
---
---	quad_1 = quad_new.getQuad 1
---
---	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("1 ITEM QUAD")
---	quad_1.addSeparator()
---	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
---	quad_1.addItem "_TEST_CATEGORY" "_test_macro" --title:("3 ITEM QUAD")
---	
---
---	quad_2 = quad_new.getQuad 2
---
---	quad_2.setTitle "Custom Quad Title"
---	
---	--quad_2.addMenu "_TEST_MENU_A" separators:1
---	quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
---	--quad_2.addMenu "_TEST_MENU_A" separators:#(1,2)
---	quad_2.addMenu "_TEST_MENU_B" flat:false
---	--quad_2.addSeparator()
---	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("2 ITEM QUAD")
---	--quad_2.addItem "_TEST_CATEGORY" "_test_macro" title:("3 ITEM QUAD")
---	
---)
+--for modifier_spec in modifier_specs do 
+(
+	quad_new = MENU_MANAGER_GLOBAL.quad ("_TEST_QUAD" ) --type:#quad
+	
+	quad_new.quad_modifier = #controlPressed
+
+	
+	/*------ BOTTOM LEFT QUAD ------*/
+	quad_1 = quad_new.getQuad 1
+
+	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:"ITEM 1 QUAD"
+	quad_1.addSeparator()
+	quad_1.addItem "_TEST_CATEGORY" "_test_macro" --title:("ITEM 2 QUAD")
+	
+	
+
+	/*------ BOTTOM RIGHT QUAD ------*/
+	quad_2 = quad_new.getQuad 2
+
+	quad_2.setTitle "Custom Quad Title"
+	
+	quad_2.addMenu "_TEST_MENU_A" title:"MENU AS SUBMENU" separators:#(1,2) 
+	
+	quad_2.addSeparator()
+	
+	quad_2.addMenu "_TEST_MENU_B" flat:true
+	
+)
 
 
 
@@ -110,15 +112,15 @@ MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/Quads-Custom" )	--"./../Config
 	CREATE MENUS
 --------------------------------------------------------------------------------*/
 		
-createDialog MenuManagerUI_ROLLOUT width:380 --1024
+--createDialog MenuManagerUI_ROLLOUT width:380 --1024
 
 
 /* CREATE MENUS */ 
---MENU_MANAGER_GLOBAL.createMenus()
+MENU_MANAGER_GLOBAL.createMenus()
 
 
 /* CREATE QUAD MENUS */ 
---MENU_MANAGER_GLOBAL.createQuadMenus()
+MENU_MANAGER_GLOBAL.createQuadMenus()
 
 
 /* SUCCESS MESSAGE */ 
