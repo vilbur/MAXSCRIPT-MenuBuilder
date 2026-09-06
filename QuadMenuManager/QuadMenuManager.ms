@@ -9,12 +9,30 @@ global configQuad3 = undefined
 global configQuad4 = undefined
 
 
-/** Quad menu manager
-  
-  1) Convert Macroscripts To Menus
-  
-  2) Create Quads From Menus
-  
+/**
+ * Quad menu manager.
+ *
+ * Converts macroscripts to menus and creates quad menus from configuration files.
+ *
+ * @method	menu	title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined	Creates or returns a menu definition managed by MenuBuildManager_v.
+ *
+ * @method	quad	title clear_default_menu:false qmnx_clear_directory:undefined	Creates or returns a quad-menu definition managed by MenuBuildManager_v.
+ *
+ * @method	addMacrosToMenus	macroscripts_paths	Queues one macroscript path, directory, or an array of paths for menu import.
+ *
+ * @method	quadDir	quad_cfg_files	Queues one quad-config path, directory, or an array of paths.
+ *
+ * @method	addItemToMenu	macro_category macro_name title	Adds a unique macroscript action to the collected menu data.
+ *
+ * @method	createMenus	which:#()	Builds collected menus and installs the current menu and quad definitions.
+ *
+ * @method	createQuadMenus	()	Loads queued quad-config files, builds their quads, and installs them.
+ *
+ * @method	resetAll	()	Removes all custom menus and quads, clears persisted data, and refreshes the CUI.
+ *
+ * @method	resetMenus	()	Removes only normal menus and preserves quad menus.
+ *
+ * @method	resetQuads	()	Removes only quad menus and preserves normal menus.
  */
 struct QuadMenuManager_v
 (
@@ -30,17 +48,18 @@ struct QuadMenuManager_v
 	--blacklist_quads = #(),
  
 	/* private */
-	macroscripts_to_import = #(),
+	macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
 	
-	parsed_macroscript_files = #(),
+	--parsed_macroscript_files = #(),
 	
 	quad_cfg_files = #(),
 
 	
-	menus_data = Dictionary #STRING,
+	--menus_data = Dictionary #STRING,
 	
 	/* dependency */
-	MenuBuildManager,
+	MenusData,	--"./../MenusData/MenusData.ms"
+	MenuBuildManager,	--"./../MenuBuildManager/MenuBuildManager.ms"
 	
 	/* reference */
 	/* inhered */
@@ -80,6 +99,9 @@ struct QuadMenuManager_v
 	),
 	
 	/** Add macros to menus
+	  
+	  * param string|array macroscripts_paths PATH OR PATHS TO FILES OR DIRECTORIES 
+	  
 	 */
 	function addMacrosToMenus macroscripts_paths =
 	(
@@ -106,13 +128,9 @@ struct QuadMenuManager_v
 	function addItemToMenu macro_category macro_name title =
 	(
 		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
-		--menu_name = item_data[1] -- menu name is category of macroscript  
 		
-		if menus_data[macro_category] == undefined then
-			menus_data[macro_category] = #()
-		
-		appendIfUnique menus_data[macro_category] #( macro_category, macro_name, title ) 
-		
+		/* ADD MACRO TO MENU */ 
+		this.MenusData.addItemToMenu macro_category macro_name title 
 	),
 			
 	/*==============================================================================
@@ -123,19 +141,31 @@ struct QuadMenuManager_v
 	
 	
 	/** Build menus on the same manager used by menu().
+
 	 */
 	function createMenus which:#() =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
+		format "this.MenusData.menus_data.keys: %\n" this.MenusData.menus_data.keys
 
-		-- Add collected macro items without discarding directly declared menus.
-		for menu_name in this.menus_data.keys do
+		/* PARSE MACROSCRIPT FILES TO MENU DATA
+		
+		*/ 
+		MenusData.addToMenuData (this.macroscripts_to_import)
+		
+		
+		/* DEFINE MENUS FROM PARSED DATA */ 
+		
+		for menu_name in this.MenusData.menus_data.keys do
 		(
 			local menu_new = this.MenuBuildManager.menu menu_name
 
-			for menu_item_data in this.menus_data[menu_name] do
+			for menu_item_data in this.MenusData.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
+		
+		
+		
 
 		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 	),
@@ -159,7 +189,6 @@ struct QuadMenuManager_v
 		QuadBuildManager = MenuBuildManager_v()
 
 		this._setQuadConfigFiles()
-		
 		
 		for quad_cfg_file in this.quad_cfg_files do
 		(
@@ -214,13 +243,13 @@ struct QuadMenuManager_v
 		RESET MENUS & QUADS
 	================================================================================*/
 	
-	/** Reset all custom quad menus.
+	/** Reset all custom menus and quad menus.
 	  *
 	  * Removes "_custom-menus" and clears the persisted .msdata file.
 	  */
-	function resetMenus =
+	function resetAll =
 	(
-		--format "\n"; print "QuadMenuManager_v.resetMenus()"
+		--format "\n"; print "QuadMenuManager_v.resetAll()"
 		MenuBuildManager = MenuBuildManager_v()
 
 		/* REMOVE FFROM MAIN MENU */ 
@@ -235,12 +264,59 @@ struct QuadMenuManager_v
 		--format "QuadMenuManager: Custom menus have been reset.\n"
 	),
 		
+	/** Reset only normal menus while preserving quad menus.
+	 */
+	function resetMenus =
+	(
+		this._resetMenuType #menu
+	),
 
+	/** Reset only quad menus while preserving normal menus.
+	 */
+	function resetQuads =
+	(
+		this._resetMenuType #quad
+	),
 
-	
 	private
+
+	/** Remove one definition type from memory and persisted data.
+	 */
+	function _resetMenuType menu_type =
+	(
+		local normalized_type = this.MenuBuildManager.normalizeMenuType menu_type
+		local kept_saved_data = #()
+
+		for menu_data in this.MenuBuildManager.loadSavedMenusDataFromJson() do
+		(
+			if this.MenuBuildManager.getSavedMenuType menu_data != normalized_type then
+				append kept_saved_data menu_data
+		)
+
+		for definitions in #(this.MenuBuildManager.menus_data, this.MenuBuildManager.wait_for_build) do
+		(
+			for definition_index = definitions.count to 1 by -1 do
+			(
+				local definition = definitions[definition_index]
+				if this.MenuBuildManager.isMenuDefinitionLike definition then
+				(
+					if this.MenuBuildManager.normalizeMenuType definition.type == normalized_type then
+						deleteItem definitions definition_index
+				)
+			)
+		)
+
+		if normalized_type == #menu then this.MenusData.menus_data = Dictionary #string
+
+		this.MenuBuildManager.saved_menus_data = kept_saved_data
+		this.MenuBuildManager.writeSavedMenusDataToJson kept_saved_data
+		this.MenuBuildManager.updateMenus update_quads:true
+		this.MenuBuildManager.saveCurrentCuiConfiguration()
+
+		kept_saved_data -- return
+	),
 	
-	--/** Get file paths
+	--/MenusData.** Get file paths
 	--  *
 	--  * @param string|array macroscript_paths to macroscript files or directories.
 	--  */
@@ -251,7 +327,7 @@ struct QuadMenuManager_v
 	--	this._appendMacroScriptPaths this.macroscripts_to_import macroscripts_paths -- return
 	--),
 	
-	/** Collect .mcr files from files or directories.
+	/** Collect .mcr files from FILES or DIRECTORIES.
 	  *
 	  * Adds sanitized file paths into the destination array.
 	  */
@@ -295,53 +371,6 @@ struct QuadMenuManager_v
 		pathConfig.normalizePath _path--return
 	),
 	
-	
-	/** Add macroscripts to menus
-	  
-		@param struct MacroScripts --"./../../MAXSCRIPT-MacroScriptFileParser/MacroScript/MacroScript.ms"
-	  
-	 */
-	function _addMacroscriptsToMenus MacroScripts =
-	(
-		--format "\n"; print "MacroscrpitsToMenuConvertor_v._addMacroscriptsToMenus()"
-		for _MacroScript in MacroScripts do 
-			this._addToMenu (_MacroScript)
-	),
-	
-	/** ADD TO MENU
-	  
-	  
-	 */
-	function _addToMenu _MacroScript =
-	(
-		--format "\n"; print "ScriptFile_Content_v._addToMenu()"
-		--format "_MacroScript: %\n" _MacroScript
-		
-		if (menu_name = _MacroScript.Params[#menu]) != undefined and menu_name != false then
-		(
-			title = case of
-			(
-				(menu_name	== true ): case of
-				(
-					(_MacroScript.buttontext	!= undefined):	_MacroScript.buttontext
-					(_MacroScript.tooltip	!= ""):	_MacroScript.tooltip
-					
-					default: _MacroScript.macro_name
-				)
-				
-				(menu_name as name	== #TOOLTIP ):	if _MacroScript.tooltip != undefined then _MacroScript.tooltip else _MacroScript.buttontext
-				
-				default: 	menu_name
-			)
-	
-			/*------------------------------------------------------------------------------
-				ADD TO MENU
-			--------------------------------------------------------------------------------*/
-			MENU_MANAGER_GLOBAL.addItemToMenu (_MacroScript.category) (_MacroScript.macro_name) (title)  --return
-			
-		)
-	),
-	
 	/* TEST BLACKLIST
 		
 		currently unsused
@@ -353,9 +382,9 @@ struct QuadMenuManager_v
 	 */
 	function _createMenus =
 	(
-		--format "\n"; print "QuadMenuManager_v._createMenus()"
+		format "\n"; print "QuadMenuManager_v._createMenus()"
 		
-		for menu_name in menus_data.keys do
+		for menu_name in this.MenusData.menus_data.keys do
 		(
 			--format "menu_name: %\n" menu_name
 			menu_new = this.MenuBuildManager.menu (menu_name) --type:#quad
@@ -446,9 +475,8 @@ struct QuadMenuManager_v
 		normalized_mod -- return
 	),
 	
-	/** Import modify files of quad names
-	  * Each quad should has its own file
-	  *
+	/** 
+	  * 
 	  *
 	 */
 	function _fileInMacroscriptFiles macroscripts_to_import =
@@ -467,8 +495,6 @@ struct QuadMenuManager_v
 		)
 	),
 	
-	
-
 	/** Update menus hotkeys by OPENING and CLOSING hotkey editor
 	  * Workaround for reconnect of quad menus hotkeys and reinstalled quadmenus
 	  * 
@@ -494,7 +520,7 @@ struct QuadMenuManager_v
 	on create do
 	(
 		--format "\n"; print "QuadMenuManager.onCreate()"
-		MenuBuildManager = MenuBuildManager_v()
+		MenusData	= MenusData_v()
+		MenuBuildManager	= MenuBuildManager_v()
 	)
-
 )

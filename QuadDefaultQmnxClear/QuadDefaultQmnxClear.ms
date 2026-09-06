@@ -68,8 +68,8 @@ struct QuadDefaultQmnxClear_v
 		--	append candidate_paths (source_directory + "MenuRebuilder\\qmnx")
 		--)
 
+		append candidate_paths (getDir #userScripts + "\\MAXSCRIPT-MenuBuilder\\MenuRebuilder\\qmnx")
 		append candidate_paths (getDir #userScripts + "\\MAXSCRIPT-MenuBuilder\\Data\\qmnx")
-		--append candidate_paths (getDir #userScripts + "\\MenuRebuilder\\qmnx")
 
 		clear_directory = candidate_paths[candidate_paths.count]
 

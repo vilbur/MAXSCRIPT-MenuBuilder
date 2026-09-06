@@ -140,20 +140,20 @@ struct MenuManagerUICallbacks_Struct
         --(
         --    if isProperty MENU_MANAGER_GLOBAL #resetMenus then
         --    (
-			if queryBox ( "REMOVE MENU: \"" + MENU_MANAGER_GLOBAL.MenuBuildManager.custom_menu_root_title +"\"Barbora Or\n\nFROM MAIN MENU BAR ?" ) title:"Title"  beep:false then
+			if queryBox ( "REMOVE MENU: \"" + MENU_MANAGER_GLOBAL.MenuBuildManager.custom_menu_root_title +"\"\n\nFROM MAIN MENU BAR ?" ) title:"Title"  beep:false then
                 MENU_MANAGER_GLOBAL.resetMenus()
         --    )
         --)
         --catch()
     ),
 
-    function resetQuadMenus =
+    function resetQuads =
     (
         try
         (
-            if isProperty MENU_MANAGER_GLOBAL #resetQuadMenus then
+            if isProperty MENU_MANAGER_GLOBAL #resetQuads then
             (
-                MENU_MANAGER_GLOBAL.resetQuadMenus()
+                MENU_MANAGER_GLOBAL.resetQuads()
             )
         )
         catch()
@@ -341,7 +341,7 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 
     on btnResetQuads pressed do
     (
-        MenuManagerUICallbacks.resetQuadMenus()
+        MenuManagerUICallbacks.resetQuads()
     )
 
     on btnRefresh pressed do

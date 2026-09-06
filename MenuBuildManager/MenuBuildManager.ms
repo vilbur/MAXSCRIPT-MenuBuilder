@@ -939,6 +939,7 @@ struct MenuBuildManager_v
 		definition_quad_menu_id = this.getDefinitionQuadMenuId quad_definition
 		quad_data[#quad_menu_id] = if definition_quad_menu_id != "" then definition_quad_menu_id else this.createGuidString()
 		quad_data[#items] = this.normalizeMenuItems quad_source_data
+		quad_data[#clear_default_menu] = quad_definition.clear_default_menu
 		quad_data -- return
 	),
 
@@ -963,7 +964,16 @@ struct MenuBuildManager_v
 			(
 				if quad_definition_array.count > 0 and this.isMenuDefinitionLike quad_definition_array[1] then
 				(
-					for quad_definition in quad_definition_array do append root_data[#quad_menus] (this.buildSavedQuadDataFromDefinition quad_definition)
+					for quad_definition in quad_definition_array do
+					(
+						quad_data = this.buildSavedQuadDataFromDefinition quad_definition
+						append root_data[#quad_menus] quad_data
+
+						if quad_data[#clear_default_menu] then
+						(
+							root_data[#clear_default_menu] = true
+						)
+					)
 				)
 				else root_data[#items] = this.normalizeMenuItems quad_definition_array
 			)
@@ -1802,6 +1812,12 @@ struct MenuBuildManager_v
 
 	function createQuadDefinitionFromSavedQuadData quad_data root_menu_data =
 	(
+		quad_clear_default_menu = this.getSavedClearDefaultMenu root_menu_data
+		if this.hasDictValueSafe quad_data #clear_default_menu then
+		(
+			quad_clear_default_menu = quad_data[#clear_default_menu]
+		)
+
 		quad_definition = MenuDefinition_v \
 			type:#quad \
 			title:quad_data[#title] \
@@ -1811,7 +1827,7 @@ struct MenuBuildManager_v
 			quad_context_id:root_menu_data[#quad_context_id] \
 			manager:this \
 			qmnx_clear_directory:(this.getSavedQmnxClearDirectory root_menu_data) \
-			clear_default_menu:(this.getSavedClearDefaultMenu root_menu_data)
+			clear_default_menu:quad_clear_default_menu
 
 		quad_definition -- return
 	),
@@ -2071,6 +2087,11 @@ struct MenuBuildManager_v
 			merged_quad_data[#quad_position] = new_quad_data[#quad_position]
 		)
 
+		if this.hasDictValueSafe new_quad_data #clear_default_menu then
+		(
+			merged_quad_data[#clear_default_menu] = new_quad_data[#clear_default_menu]
+		)
+
 		old_items = #()
 		new_items = #()
 
@@ -2084,7 +2105,14 @@ struct MenuBuildManager_v
 			new_items = new_quad_data[#items]
 		)
 
-		merged_quad_data[#items] = this.mergeSavedItems old_items new_items
+		if this.hasDictValueSafe new_quad_data #clear_default_menu and new_quad_data[#clear_default_menu] then
+		(
+			merged_quad_data[#items] = new_items
+		)
+		else
+		(
+			merged_quad_data[#items] = this.mergeSavedItems old_items new_items
+		)
 
 		merged_quad_data -- return
 	),
@@ -2331,7 +2359,13 @@ struct MenuBuildManager_v
 		(
 			for quad_data in menu_data[#quad_menus] do
 			(
-				if this.hasDictValueSafe quad_data #quad_position then
+				should_clear_position = true
+				if this.hasDictValueSafe quad_data #clear_default_menu then
+				(
+					should_clear_position = quad_data[#clear_default_menu]
+				)
+
+				if should_clear_position and this.hasDictValueSafe quad_data #quad_position then
 				(
 					append clear_positions quad_data[#quad_position]
 				)

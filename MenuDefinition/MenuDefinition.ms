@@ -589,6 +589,11 @@ struct MenuDefinition_v
 	(
 		this.setActiveData #()
 
+		if this.type == #quad and this.quad_position != undefined then
+		(
+			this.clear_default_menu = true
+		)
+
 		this -- return
 	),
 

@@ -13,6 +13,8 @@
 </livefolder>
 <livefolder id="ae90d8a9-3245-42f2-a902-3aaf7b50703e" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="QuadMenuManager" url="QuadMenuManager/">
 </livefolder>
+<livefolder id="b89bc8a3-8edf-4a43-a0a3-91871098ef6b" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuManagerUI" url="MenuManagerUI/">
+</livefolder>
 <livefolder id="d4e28b0b-a177-438b-b35b-a89d6310b505" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MacroscrpitsToMenuConvertor" url="MacroscrpitsToMenuConvertor/">
 </livefolder>
 <file id="0cf2e125-8bb1-423a-86ef-0c30597c293d" idref="697b0e38-e5b8-4040-a15a-28fc21bf9e37" name="include-QuadMenuManager.ms" url="include-QuadMenuManager.ms">

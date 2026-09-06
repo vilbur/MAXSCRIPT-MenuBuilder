@@ -12,7 +12,10 @@ if MENU_MANAGER_GLOBAL == undefined then
 filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MacroScriptFileParser/includes.ms" )	--"./../MAXSCRIPT-MacroScriptFileParser/includes.ms"
 
 
-/* IMPORT FILES */ 
+/* IMPORT FILES */
+
+filein( getFilenamePath(getSourceFileName()) + "/MenusData/MenusData.ms" )	--"./MenusData/MenusData.ms"
+
 filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager.ms" )	--"./QuadMenuManager/QuadMenuManager.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/MenuManagerUI/MenuManagerUI.ms" )	--"./MenuManagerUI/MenuManagerUI.ms"
