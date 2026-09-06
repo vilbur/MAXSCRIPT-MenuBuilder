@@ -5,11 +5,12 @@ filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" 
 filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
 
-/*
 
+/*------------------------------------------------------------------------------
+  
+	TEST OF MENU AND QUAD MENUS using QuadMenuManager_v
 
-
-*/
+------------------------------------------------------------------------------*/
 
 --modifier_specs = #(
 --	#("None",	"None",	#nonePressed),
@@ -24,87 +25,108 @@ filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" 
 --
 --
 
-cfg_files = getFilenamePath(getSourceFileName()) + "/../Config-Files/Test"
-
 /* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
 global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
-MENU_MANAGER_GLOBAL.resetMenus()
 
---MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
+/* RESET MENUS AND QUAS */ 
+MENU_MANAGER_GLOBAL.resetAll()
 
+/* RESET MENUS */ 
+MENU_MANAGER_GLOBAL.resetMenus() -- reset only menus
 
-
-
-/*------------------------------------------------------------------------------
-  
-  
-	MENU
-	
-	
---------------------------------------------------------------------------------*/
-/* ADD ITEM */ 
-
---MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
+/* RESET QUADS */ 
+MENU_MANAGER_GLOBAL.resetQuads() -- reset only quads
 
 
-for letter in #( "A", "B", "C") do 
+/*==============================================================================
+
+	DEFINE MENUS
+
+================================================================================*/
+
+
+/** Add menus test
+ */
+function defineMenusItemsTest =
 (
-	menu_new = MENU_MANAGER_GLOBAL.menu ("_TEST_MENU_" + letter ) --type:#quad
-
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 1 "+letter)
+	--format "\n"; print ".createMenusTest()"
 	
-	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 2 "+letter)
-
-	--menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
+	for letter in #( "A", "B", "C") do 
+	(
+		menu_new = MENU_MANAGER_GLOBAL.menu ("_TEST_MENU_" + letter ) --type:#quad
 	
-	--menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:( "Time of test " + (getLocalTime())[5] as string + ":"+(getLocalTime())[6] as string )
+		/* ADD ITEMS TO MENU */ 
+		menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 1 "+letter)
+		
+		menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 2 "+letter)
 	
+		/* ADD NATIVE MAX ACTION */ 
+		menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
+		
+	)
 )
 
 
 
-/*------------------------------------------------------------------------------
-  
-  
-	QUAD MENU
+/*==============================================================================
+
+	DEFINE QUAD MENUS
+
+================================================================================*/  
 	
-	
---------------------------------------------------------------------------------*/
-
---MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads" )	--"./../Config-Files/Test/Quads" 
---MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/ModKeys" )	--"./../Config-Files/Test/Quads/ModKeys" 
---MENU_MANAGER_GLOBAL.quadDir ( cfg_files + "/Quads/Quads-Custom" )	--"./../Config-Files/Test/Quads/Quads-Custom" 
-
-
---for modifier_spec in modifier_specs do 
+/** Add quad items test
+ */
+function defineQuadItemsTest =
 (
-	quad_new = MENU_MANAGER_GLOBAL.quad ("_TEST_QUAD" ) --type:#quad
+	--format "\n"; print ".defineQuadItemsTest()"
 	
-	quad_new.quad_modifier = #controlPressed
-
+	for modifier_spec in modifier_specs do 
+	(
+		quad_new = MENU_MANAGER_GLOBAL.quad ("_TEST_QUAD" ) --type:#quad
+		
+		quad_new.quad_modifier = #controlPressed
 	
-	/*------ BOTTOM LEFT QUAD ------*/
-	quad_1 = quad_new.getQuad 1
-
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:"ITEM 1 QUAD"
-	quad_1.addSeparator()
-	quad_1.addItem "_TEST_CATEGORY" "_test_macro" --title:("ITEM 2 QUAD")
+		
+		
+		/*------ BOTTOM LEFT QUAD ------*/
+		quad_1 = quad_new.getQuad 1
 	
+		quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:"ITEM 1 QUAD"
+		quad_1.addSeparator()
+		quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:"TEST MACRO"
+		
+		
 	
-
-	/*------ BOTTOM RIGHT QUAD ------*/
-	quad_2 = quad_new.getQuad 2
-
-	quad_2.setTitle "Custom Quad Title"
+		/*------ TOP RIGHT QUAD ------*/
+		quad_2 = quad_new.getQuad 2
 	
-	quad_2.addMenu "_TEST_MENU_A" title:"MENU AS SUBMENU" separators:#(1,2) 
-	
-	quad_2.addSeparator()
-	
-	quad_2.addMenu "_TEST_MENU_B" flat:true
-	
+		quad_2.setTitle "Custom Quad Title"
+		
+		quad_2.addMenu "_TEST_MENU_A" title:"MENU AS SUBMENU" separators:#(1,2) 
+		
+		quad_2.addSeparator()
+		
+		quad_2.addMenu "_TEST_MENU_B" flat:true
+		
+	)
 )
+
+
+
+/*==============================================================================
+
+	RUN TESTS
+
+================================================================================*/
+
+
+/* MENUS */ 
+defineMenusItemsTest()
+
+
+/* QUADS */ 
+--defineQuadItemsTest()
 
 
 
@@ -120,7 +142,7 @@ MENU_MANAGER_GLOBAL.createMenus()
 
 
 /* CREATE QUAD MENUS */ 
-MENU_MANAGER_GLOBAL.createQuadMenus()
+--MENU_MANAGER_GLOBAL.createQuadMenus()
 
 
 /* SUCCESS MESSAGE */ 

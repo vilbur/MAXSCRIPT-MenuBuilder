@@ -1,15 +1,14 @@
 clearListener(); print("Cleared in: "+getSourceFileName())
 
-/* Load the current struct definition before creating the test manager. */
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
-
-filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
 
 /*------------------------------------------------------------------------------
-	RUN TEST
+  
+	TEST OF MENU using MenuBuildManager
+
 ------------------------------------------------------------------------------*/
---
+
 MenuBuildManager = MenuBuildManager_v()
 format "Manager version: %, native cache: %\n" MenuBuildManager.version (MenuBuildManager.getNativeDataFilePath())
 
