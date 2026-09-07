@@ -36,21 +36,14 @@ MENU_MANAGER_GLOBAL.resetMenus() -- reset only menus
 function defineMenusItemsTest =
 (
 	--format "\n"; print ".createMenusTest()"
+	/* ADD FILES IN DIRECTORY */ 
 	MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
-	
-	--for letter in #( "A", "B", "C") do 
-	--(
-	--	menu_new = MENU_MANAGER_GLOBAL.menu ("_TEST_MENU_" + letter ) --type:#quad
-	--
-	--	/* ADD ITEMS TO MENU */ 
-	--	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 1 "+letter)
-	--	
-	--	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM 2 "+letter)
-	--
-	--	/* ADD NATIVE MAX ACTION */ 
-	--	menu_new.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
-	--	
-	--)
+
+	/* TEST ADDING ITEMS AFTER PARSING */ 
+	menu_new = MENU_MANAGER_GLOBAL.menu ("MENU_BY_CODE" ) --type:#quad
+
+	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM by code")
+
 )
 
 
@@ -61,7 +54,7 @@ function defineMenusItemsTest =
 ================================================================================*/
 
 
-/* MENUS */ 
+/* DEFINE MENUS */ 
 defineMenusItemsTest()
 
 
@@ -69,15 +62,5 @@ defineMenusItemsTest()
 	CREATE MENU
 --------------------------------------------------------------------------------*/
 		
---createDialog MenuManagerUI_ROLLOUT width:380 --1024
-
-
-/* CREATE MENUS */ 
 MENU_MANAGER_GLOBAL.createMenus()
-
-
-/* SUCCESS MESSAGE */ 
---messageBox "Show quad by pressing:\n\nCTRL + RMB" title:"SHOW QUAD MENU"
-
-
 
