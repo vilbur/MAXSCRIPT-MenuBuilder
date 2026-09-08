@@ -24,8 +24,8 @@ struct ConfigFilesBlacklist_v
 	*/ 
 	function isOnBlacklist file_path blacklist:#COMMON =
 	(
-		format "\n"; print "ConfigFilesBlacklist_v.isOnBlacklist()"
-		format "this.menus: %\n" this.menus
+		--format "\n"; print "ConfigFilesBlacklist_v.isOnBlacklist()"
+
 		/* GET PATTERNS */ 
 		patterns = case blacklist of
 		(
@@ -35,10 +35,9 @@ struct ConfigFilesBlacklist_v
 			default: common
 		)
 		
-		format "patterns: %\n" patterns
+		blacklisted_files = for pattern in patterns where matchPattern file_path pattern:pattern collect pattern
 		
-		/* TEST PATTERNS */ 
-		(for pattern in patterns where matchPattern file_path pattern:pattern collect pattern).count > 0
+		blacklisted_files.count > 0
 	),
 	
 	

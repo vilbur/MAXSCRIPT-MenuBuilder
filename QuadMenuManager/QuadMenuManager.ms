@@ -137,14 +137,15 @@ struct QuadMenuManager_v
 	/** Add quad configuration directory or file.
 	  *
 	  */
-	function quadDir quad_cfg_files =
+	function quadDir quad_cfg_paths =
 	(
 		--format "\n"; print "QuadMenuManager_v.quadDir()"
-		--format "quad_cfg_files: %\n" quad_cfg_files
 	
-		this.quad_dirs += this._getPathsToFiles quad_cfg_files -- return
+		quad_cfg_files = this._getPathsToFiles quad_cfg_paths -- return
 		
-		--format "this.quad_dirs: %\n" this.quad_dirs
+		
+		/* TEST FILES BALCKLIST */ 
+		this.quad_cfg_files = for quad_cfg_file in quad_cfg_files where not Blacklist.isOnBlacklist quad_cfg_file blacklist:#QUADS collect quad_cfg_file
 	),
 		
 	/** Add item to menu
@@ -194,7 +195,7 @@ struct QuadMenuManager_v
 		--quad_cfg_files = this._setQuadConfigFiles()
 		QuadBuildManager = MenuBuildManager_v()
 
-		this._setQuadConfigFiles()
+		--this._setQuadConfigFiles()
 		
 		for quad_cfg_file in this.quad_cfg_files do
 		(
@@ -395,31 +396,31 @@ struct QuadMenuManager_v
 		this.MenuBuildManager.installMenusNow()
 	),
 
-	/** Get macroscript files
-	 */
-	function _setQuadConfigFiles =
-	(
-		format "\n"; print "QuadMenuManager_v._setQuadConfigFiles()"
-		--format "this.quad_dirs: %\n" this.quad_dirs
-
-		/** Test if path is on blacklist
-		 */
-
-		for dir in this.quad_dirs do
-		(
-			--format "DIR: %\n" dir
-			quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
-			
-			--for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
-			for quad_config_file in quad_config_files do
-			(
-				format "QUAD_CONFIG_FILE: %\n" quad_config_file
-				appendIfUnique quad_cfg_files ( this._sanitizePath quad_config_file )
-			)
-		)
-		
-		quad_cfg_files --return
-	),
+	--/** Get macroscript files
+	-- */
+	--function _setQuadConfigFiles =
+	--(
+	--	format "\n"; print "QuadMenuManager_v._setQuadConfigFiles()"
+	--	format "quad_config_files: %\n" quad_config_files
+	--
+	--	/** Test if path is on blacklist
+	--	 */
+	--
+	--	for dir in this.quad_dirs do
+	--	(
+	--		--format "DIR: %\n" dir
+	--		quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
+	--		
+	--		--for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
+	--		for quad_config_file in quad_config_files do
+	--		(
+	--			format "QUAD_CONFIG_FILE: %\n" quad_config_file
+	--			appendIfUnique quad_cfg_files ( this._sanitizePath quad_config_file )
+	--		)
+	--	)
+	--	
+	--	quad_cfg_files --return
+	--),
 
 	--/** Get blacklist
 	-- */
