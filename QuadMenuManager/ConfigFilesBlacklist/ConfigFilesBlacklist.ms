@@ -24,17 +24,21 @@ struct ConfigFilesBlacklist_v
 	*/ 
 	function isOnBlacklist file_path blacklist:#COMMON =
 	(
+		format "\n"; print "ConfigFilesBlacklist_v.isOnBlacklist()"
+		format "this.menus: %\n" this.menus
 		/* GET PATTERNS */ 
-		masks = case blacklist of
+		patterns = case blacklist of
 		(
 			#MENUS: this.common + this.menus
 			#QUADS: this.common + this.quads
 
 			default: common
 		)
-												  
+		
+		format "patterns: %\n" patterns
+		
 		/* TEST PATTERNS */ 
-		(for pattern in blacklist where matchPattern file_path pattern:pattern collect pattern).count > 0
+		(for pattern in patterns where matchPattern file_path pattern:pattern collect pattern).count > 0
 	),
 	
 	

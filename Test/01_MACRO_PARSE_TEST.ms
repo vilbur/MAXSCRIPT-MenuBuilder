@@ -16,7 +16,7 @@ filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" 
 /* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
 global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
---MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
+MENU_MANAGER_GLOBAL.Blacklist.menus = #( "*Black-List-Test.*" )
 
 
 /* RESET MENUS */ 

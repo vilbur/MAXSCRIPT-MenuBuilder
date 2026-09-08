@@ -106,11 +106,15 @@ struct QuadMenuManager_v
 	 */
 	function addMacrosToMenus macroscripts_paths =
 	(
-		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		--format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
 		
-			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"		
+			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"	
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
+		
+		/* TEST FILES BALCKLIST */ 
+		macroscripts_paths = for macroscripts_path in macroscripts_paths where not Blacklist.isOnBlacklist macroscripts_path blacklist:#MENUS collect macroscripts_path
+		
 		
 		/* FILE IN .mcr FILES */
 		this._fileInMacroscriptFiles macroscripts_paths
@@ -118,6 +122,7 @@ struct QuadMenuManager_v
 		/* ADD MACROSCRIPTS TO MENUS */ 
 		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
+				
 		/* DEFINE MENUS FROM PARSED DATA */ 
 		for menu_name in ParsedMenusData.menus_data.keys do
 		(
@@ -288,7 +293,7 @@ struct QuadMenuManager_v
 		local normalized_type = this.MenuBuildManager.normalizeMenuType menu_type
 		local kept_saved_data = #()
 
-		for menu_data in this.MenuBuildManager.loadSavedParsedMenusDataFromJson() do
+		for menu_data in this.MenuBuildManager.loadSavedMenusDataFromJson() do
 		(
 			if this.MenuBuildManager.getSavedMenuType menu_data != normalized_type then
 				append kept_saved_data menu_data
@@ -309,8 +314,8 @@ struct QuadMenuManager_v
 
 		--if normalized_type == #menu then this.MenuBuildManager.menus_data = Dictionary #string -- FOR AI: NOT SURE IF THIS LINE IS NEEDED
 
-		this.MenuBuildManager.saved_parsed_menus_data = kept_saved_data
-		this.MenuBuildManager.writeSavedParsedMenusDataToJson kept_saved_data
+		this.MenuBuildManager.saved_menus_data = kept_saved_data
+		this.MenuBuildManager.writeSavedMenusDataToJson kept_saved_data
 		this.MenuBuildManager.updateMenus update_quads:true
 		this.MenuBuildManager.saveCurrentCuiConfiguration()
 
@@ -394,7 +399,7 @@ struct QuadMenuManager_v
 	 */
 	function _setQuadConfigFiles =
 	(
-		--format "\n"; print "QuadMenuManager_v._setQuadConfigFiles()"
+		format "\n"; print "QuadMenuManager_v._setQuadConfigFiles()"
 		--format "this.quad_dirs: %\n" this.quad_dirs
 
 		/** Test if path is on blacklist
@@ -405,9 +410,12 @@ struct QuadMenuManager_v
 			--format "DIR: %\n" dir
 			quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
 			
-			----for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
+			--for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
 			for quad_config_file in quad_config_files do
+			(
+				format "QUAD_CONFIG_FILE: %\n" quad_config_file
 				appendIfUnique quad_cfg_files ( this._sanitizePath quad_config_file )
+			)
 		)
 		
 		quad_cfg_files --return
