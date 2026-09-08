@@ -37,7 +37,7 @@ function defineMenusItemsTest =
 (
 	--format "\n"; print ".createMenusTest()"
 	/* ADD FILES IN DIRECTORY */ 
-	MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Config-Files/Test/Menus" )	--"./../Config-Files/Test/Menus/" )
+	--MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Test-Config-Files/Menus" )	--"./../Config-Files/Test/Menus/" )
 
 	/* TEST ADDING ITEMS AFTER PARSING */ 
 	menu_new = MENU_MANAGER_GLOBAL.menu ("MENU_BY_CODE" ) --type:#quad

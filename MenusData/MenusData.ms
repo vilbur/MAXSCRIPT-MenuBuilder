@@ -18,22 +18,23 @@ struct MenusData_v
 	
 	/** Add to menu data
 	 */
-	function addToMenuData macroscripts_to_import =
+	function addMacroscripFilesToMenus macroscripts_to_import =
 	(
 		FORMAT "\n\n"; print "========================= PARSE MENUS ========================="
-		format "\n"; print "MenusData_v.addToMenuData()"
+		format "\n"; print "MenusData_v.addMacroscripFilesToMenus()"
 		format "macroscripts_to_import: %\n" macroscripts_to_import
 		
-		/* PARSE FILES */ 
+		/* PARSE mcr FILES */ 
 		for macroscript_file in macroscripts_to_import do
 		(
 			MacroParser 	= MacroScriptFileParser_v (macroscript_file)
 
+			/* PASRSE macroscript */ 
 			for _MacroScript in MacroParser.MacroScripts do
 			(
-				format "_MacroScript: %\n" _MacroScript
+				--format "_MacroScript: %\n" _MacroScript
 				title = this._getTitle (_MacroScript)
-				format "title: %\n" title
+				--format "title: %\n" title
 				this.addItemToMenu (_MacroScript.category) (_MacroScript.macro_name) (title)  --return
 			)
 		)
@@ -43,7 +44,7 @@ struct MenusData_v
 	 */
 	function addItemToMenu macro_category macro_name title =
 	(
-		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		format "\n"; print "QuadMenuManager_v.addItemToMenu()"
 		--menu_name = item_data[1] -- menu name is category of macroscript  
 		data_of_menu = this._getDataOfMenu macro_category
 		

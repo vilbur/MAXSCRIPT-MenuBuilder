@@ -15,25 +15,31 @@ global configQuad4 = undefined
  *
  * Converts macroscripts to menus and creates quad menus from configuration files.
  *
- * @method	menu	title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined	Creates or returns a menu definition managed by MenuBuildManager_v.
- *
- * @method	quad	title clear_default_menu:false qmnx_clear_directory:undefined	Creates or returns a quad-menu definition managed by MenuBuildManager_v.
- *
- * @method	addMacrosToMenus	macroscripts_paths	Queues one macroscript path, directory, or an array of paths for menu import.
- *
- * @method	quadDir	quad_cfg_files	Queues one quad-config path, directory, or an array of paths.
- *
  * @method	addItemToMenu	macro_category macro_name title	Adds a unique macroscript action to the collected menu data.
  *
+ * @method	menu	title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined	Creates or returns a menu definition managed by MenuBuildManager_v.
+ *			
+ * @method	quad	title clear_default_menu:false qmnx_clear_directory:undefined	Creates or returns a quad-menu definition managed by MenuBuildManager_v.
+ *			
+ * @method	addMacrosToMenus	macroscripts_paths	Queues one macroscript path, directory, or an array of paths for menu import.
+ *			
+ * @method	quadDir	quad_cfg_files	Queues one quad-config path, directory, or an array of paths.
+ *	
  * @method	createMenus	which:#()	Builds collected menus and installs the current menu and quad definitions.
- *
- * @method	createQuadMenus	()	Loads queued quad-config files, builds their quads, and installs them.
- *
- * @method	resetAll	()	Removes all custom menus and quads, clears persisted data, and refreshes the CUI.
- *
+ *			
+ * @method	createQuadMenu	()	Loads queued quad-config files, builds their quads, and installs them.
+ *			
+ * @method	resetAl	()	Removes all custom menus and quads, clears persisted data, and refreshes the CUI.
+ *			
  * @method	resetMenus	()	Removes only normal menus and preserves quad menus.
- *
+ *			
  * @method	resetQuads	()	Removes only quad menus and preserves normal menus.
+ 
+ 
+	DATA STRUCTURE OF MENUS DEFINITIONS:
+ 
+		QuadMenuManager.MenusData[#MENU_NAME] = MenuDefinition
+ 
  */
 struct QuadMenuManager_v
 (
@@ -44,10 +50,9 @@ struct QuadMenuManager_v
 	/* properties */
  
 	/* private */
-	macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
-	
+	--macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
 	quad_cfg_files = #(),
-
+	
 	
 	/* dependency */
 	MenusData,	--"./../MenusData/MenusData.ms"
@@ -67,11 +72,17 @@ struct QuadMenuManager_v
 	================================================================================*/
 
 	/** ALIAS for MenuBuildManager.menu() "./../MenuBuildManager/MenuBuildManager.ms"
+	  
+		@return MenuDefinition_v
 	 */
-	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined	=
+	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
-		--format "\n"; print "QuadMenuManager_v.menu()"
-		this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		format "\n"; print "QuadMenuManager_v.menu()"
+		
+		--this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		MenuDefinition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		format "MenuDefinition: %\n" MenuDefinition
+		MenuDefinition --return
 	),
 	
 	
@@ -93,7 +104,7 @@ struct QuadMenuManager_v
 		MenuBuildManager.quad title clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
 	),
 	
-	/** Add macros to menus
+	/** Add .mcr files to menus
 	  
 	  * param string|array macroscripts_paths PATH OR PATHS TO FILES OR DIRECTORIES 
 	  
@@ -102,7 +113,14 @@ struct QuadMenuManager_v
 	(
 		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
 
-		this.macroscripts_to_import += this._appendMacroScriptPaths macroscripts_paths
+		/* GET PATHS TO .mcr FILES */
+		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
+		
+		/* FILE IN .mcr FILES */
+		this._fileInMacroscriptFiles macroscripts_paths
+		
+		/* ADD MACROSCRIPTS TO MENUS */ 
+		MenusData.addMacroscripFilesToMenus (macroscripts_paths)
 	),
 	
 	/** Add quad configuration directory or file.
@@ -113,7 +131,7 @@ struct QuadMenuManager_v
 		--format "\n"; print "QuadMenuManager_v.quadDir()"
 		--format "quad_cfg_files: %\n" quad_cfg_files
 	
-		this.quad_dirs += this._appendMacroScriptPaths quad_cfg_files -- return
+		this.quad_dirs += this._getPathsToFiles quad_cfg_files -- return
 		
 		--format "this.quad_dirs: %\n" this.quad_dirs
 	),
@@ -141,25 +159,20 @@ struct QuadMenuManager_v
 	function createMenus which:#() =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
+		format "\n"; print "QuadMenuManager_v.createMenus()"
+
 		format "this.MenusData.menus_data.keys: %\n" this.MenusData.menus_data.keys
 
-		/* PARSE MACROSCRIPT FILES TO MENU DATA
-		
-		*/ 
-		MenusData.addToMenuData (this.macroscripts_to_import)
-		
-		
 		/* DEFINE MENUS FROM PARSED DATA */ 
 		
 		for menu_name in this.MenusData.menus_data.keys do
 		(
+			format "MENU_NAME: %\n" menu_name
 			local menu_new = this.MenuBuildManager.menu menu_name
 
 			for menu_item_data in this.MenusData.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
-		
-		
 		
 
 		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
@@ -319,16 +332,16 @@ struct QuadMenuManager_v
 	--(
 	--format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
 	--
-	--	this._appendMacroScriptPaths this.macroscripts_to_import macroscripts_paths -- return
+	--	this._getPathsToFiles this.macroscripts_to_import macroscripts_paths -- return
 	--),
 	
 	/** Collect .mcr files from FILES or DIRECTORIES.
 	  *
 	  * Adds sanitized file paths into the destination array.
 	  */
-	function _appendMacroScriptPaths input_paths =
+	function _getPathsToFiles input_paths =
 	(
-		--format "\n"; print "QuadMenuManager_v._appendMacroScriptPaths()"
+		--format "\n"; print "QuadMenuManager_v._getPathsToFiles()"
 	
 		destination_array = #()
 	
@@ -341,7 +354,7 @@ struct QuadMenuManager_v
 			--format "doesDirectoryExist input_path: %\n" (doesDirectoryExist input_path)
 			if doesDirectoryExist input_path then
 			(
-				
+				/* GET .ms and .mcr FILES in directory */ 
 				ms_and_mcr_files = getFiles ( pathConfig.appendPath input_path "*.ms")  + getFiles ( pathConfig.appendPath input_path "*.mcr") 
 				
 				for file_path in ms_and_mcr_files do
@@ -472,15 +485,26 @@ struct QuadMenuManager_v
 		--format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
 		
 		for macroscript_file in macroscripts_to_import do
-		(
-			macroscript_file = pathConfig.normalizePath macroscript_file
+			try(
 			
-			--menu_name = getFilenameFile( macroscript_file )
-	
-			FORMAT "\n\n============================== SETUP QUAD MENU FILE ==========================================\n%\n" (getFilenameFile( macroscript_file ))
+				filein( macroscript_file )
+				
+			)catch(
+				format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
 		
-			filein( macroscript_file )
-		)
+				format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())
+				format "\n————————————————— EXCEPTION —————————————————\n\n%\n" (getCurrentException())
+			)
+		
+		
+		--(
+		--	macroscript_file = pathConfig.normalizePath macroscript_file
+		--	
+		--	--menu_name = getFilenameFile( macroscript_file )
+		--
+		--	FORMAT "\n\n============================== SETUP QUAD MENU FILE ==========================================\n%\n" (getFilenameFile( macroscript_file ))
+		--
+		--)
 	),
 	
 	/** Update menus hotkeys by OPENING and CLOSING hotkey editor
