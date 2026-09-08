@@ -31,11 +31,18 @@ current_dir = getFilenamePath(getSourceFileName())
 
 ================================================================================*/
 
+/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
+global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 
-quad_cfg_files = ( getFilenamePath(getSourceFileName()) + "/Test-Quad-Files/ModKeys" )	--"./Test-Quad-Files/ModKeys"
+
+/* RESET QUADS */ 
+MENU_MANAGER_GLOBAL.resetQuads() -- reset only quads
+
 
 
 /* QUAD MENU FILES */ 
+quad_cfg_files = ( getFilenamePath(getSourceFileName()) + "/Test-Quad-Files/ModKeys" )	--"./Test-Quad-Files/ModKeys"
+
 MENU_MANAGER_GLOBAL.quadDir ( quad_cfg_files )
 
 
