@@ -35,15 +35,16 @@ MENU_MANAGER_GLOBAL.resetMenus() -- reset only menus
  */
 function defineMenusItemsTest =
 (
-	--format "\n"; print ".createMenusTest()"
-	/* ADD FILES IN DIRECTORY */ 
-	--MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Test-Config-Files/Menus" )	--"./../Config-Files/Test/Menus/" )
-
-	/* TEST ADDING ITEMS AFTER PARSING */ 
+	/* ADDING ITEMS BY CODE */ 
 	menu_new = MENU_MANAGER_GLOBAL.menu ("MENU_BY_CODE" ) --type:#quad
-
+	
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM by code")
+	
+	/* ADD FILES IN DIRECTORY */ 
+	MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Test-Config-Files/Menus" )	--"./../Config-Files/Test/Menus/" )
 
+	/* ADDING ITEMS BY CODE AFTER PARSING */ 
+	menu_new = MENU_MANAGER_GLOBAL.menu ("TEST MENU ORDER" ) --type:#quad
 )
 
 

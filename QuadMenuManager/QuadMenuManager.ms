@@ -55,7 +55,7 @@ struct QuadMenuManager_v
 	
 	
 	/* dependency */
-	MenusData,	--"./../MenusData/MenusData.ms"
+	--MenusData,	--"./../MenusData/MenusData.ms"
 	MenuBuildManager,	--"./../MenuBuildManager/MenuBuildManager.ms"
 	Blacklist,	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 	
@@ -79,13 +79,8 @@ struct QuadMenuManager_v
 	(
 		format "\n"; print "QuadMenuManager_v.menu()"
 		
-		--this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
-		MenuDefinition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
-		format "MenuDefinition: %\n" MenuDefinition
-		MenuDefinition --return
+		this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
 	),
-	
-	
 	
 	/*==============================================================================
 	
@@ -112,7 +107,8 @@ struct QuadMenuManager_v
 	function addMacrosToMenus macroscripts_paths =
 	(
 		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
-
+		
+			--MenusData,	--"./../MenusData/MenusData.ms"		
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
 		
@@ -120,7 +116,21 @@ struct QuadMenuManager_v
 		this._fileInMacroscriptFiles macroscripts_paths
 		
 		/* ADD MACROSCRIPTS TO MENUS */ 
-		MenusData.addMacroscripFilesToMenus (macroscripts_paths)
+		MenusData	= MenusData_v(macroscripts_paths)
+		
+		--MenusData.addMacroscripFilesToMenus ()
+		
+		format "MenusData.menus_data.keys: %\n" MenusData.menus_data.keys
+		
+		/* DEFINE MENUS FROM PARSED DATA */ 
+		for menu_name in MenusData.menus_data.keys do
+		(
+			--format "MENU_NAME: %\n" menu_name
+			local menu_new = this.MenuBuildManager.menu menu_name
+
+			for menu_item_data in MenusData.menus_data[menu_name] do
+				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
+		)
 	),
 	
 	/** Add quad configuration directory or file.
@@ -143,7 +153,7 @@ struct QuadMenuManager_v
 		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
 		
 		/* ADD MACRO TO MENU */ 
-		this.MenusData.addItemToMenu macro_category macro_name title 
+		MenusData.addItemToMenu macro_category macro_name title 
 	),
 			
 	/*==============================================================================
@@ -159,21 +169,8 @@ struct QuadMenuManager_v
 	function createMenus which:#() =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
-		format "\n"; print "QuadMenuManager_v.createMenus()"
+		format "QuadMenuManager_v.createMenus()"
 
-		format "this.MenusData.menus_data.keys: %\n" this.MenusData.menus_data.keys
-
-		/* DEFINE MENUS FROM PARSED DATA */ 
-		
-		for menu_name in this.MenusData.menus_data.keys do
-		(
-			format "MENU_NAME: %\n" menu_name
-			local menu_new = this.MenuBuildManager.menu menu_name
-
-			for menu_item_data in this.MenusData.menus_data[menu_name] do
-				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
-		)
-		
 
 		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
 	),
@@ -314,7 +311,7 @@ struct QuadMenuManager_v
 			)
 		)
 
-		if normalized_type == #menu then this.MenusData.menus_data = Dictionary #string
+		--if normalized_type == #menu then this.MenuBuildManager.menus_data = Dictionary #string -- FOR AI: NOT SURE IF THIS LINE IS NEEDED
 
 		this.MenuBuildManager.saved_menus_data = kept_saved_data
 		this.MenuBuildManager.writeSavedMenusDataToJson kept_saved_data
@@ -385,7 +382,7 @@ struct QuadMenuManager_v
 	(
 		format "\n"; print "QuadMenuManager_v._createMenus()"
 		
-		for menu_name in this.MenusData.menus_data.keys do
+		for menu_name in MenusData.menus_data.keys do
 		(
 			--format "menu_name: %\n" menu_name
 			menu_new = this.MenuBuildManager.menu (menu_name) --type:#quad
@@ -526,14 +523,14 @@ struct QuadMenuManager_v
 		if (hotkey_dialog = (for hwnd in UIAccessor.GetPopupDialogs() where UIAccessor.GetWindowText hwnd == "Hotkey Editor" collect hwnd)[1]) != undefined then
 			UIAccessor.CloseDialog hotkey_dialog
 	),
-
+	
 	/**
-	 */
+	*/
 	on create do
 	(
 		--format "\n"; print "QuadMenuManager.onCreate()"
-		MenusData	= MenusData_v()
-		MenuBuildManager	= MenuBuildManager_v()
-		Blacklist	= ConfigFilesBlacklist_v()
+	
+		Blacklist        = ConfigFilesBlacklist_v()
+		MenuBuildManager = MenuBuildManager_v()
 	)
 )

@@ -5,6 +5,8 @@
 struct MenusData_v
 (
 	/* construct */
+	macroscripts_to_import,
+	
 	/* required */
 	
 	/* properties */
@@ -18,7 +20,7 @@ struct MenusData_v
 	
 	/** Add to menu data
 	 */
-	function addMacroscripFilesToMenus macroscripts_to_import =
+	function addMacroscripFilesToMenus =
 	(
 		FORMAT "\n\n"; print "========================= PARSE MENUS ========================="
 		format "\n"; print "MenusData_v.addMacroscripFilesToMenus()"
@@ -101,8 +103,6 @@ struct MenusData_v
 	on create do
 	(
 		--format "\n"; print "MenusData.onCreate()"
-		--for prop in #(  ) where getProperty this prop == undefined do -- CHECK CONSTRUCT PROPERTIES -- Array of this struct properties necessary to run
-		--	throw ("\n\n\nUNDEFINED CONSTRUCT PROPERTY\n\n\nSTRUCT:\n\n"+ ((filterString( classof this as string )"(:")[2]) +"\n\n\nPROPERTY:\n\n"+ prop )
+		this.addMacroscripFilesToMenus()
 	)
-
 )
