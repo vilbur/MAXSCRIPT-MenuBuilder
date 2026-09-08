@@ -148,7 +148,7 @@ struct QuadMenuManager_v
 		quad_cfg_files = this._getPathsToFiles quad_cfg_paths -- return
 		
 		
-		/* TEST FILES BALCKLIST */ 
+		/* FILTER FILES BY BALCKLIST */ 
 		this.quad_cfg_files = for quad_cfg_file in quad_cfg_files where not Blacklist.isOnBlacklist quad_cfg_file blacklist:#QUADS collect quad_cfg_file
 	),
 		

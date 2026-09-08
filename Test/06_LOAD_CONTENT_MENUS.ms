@@ -41,10 +41,20 @@ MENU_MANAGER_GLOBAL.resetQuads() -- reset only quads
 
 
 /* QUAD MENU FILES */ 
-quad_cfg_files = ( getFilenamePath(getSourceFileName()) + "/Test-Quad-Files/ModKeys" )	--"./Test-Quad-Files/ModKeys"
+quad_cfg_files = current_dir + "/Test-Quad-Files/ModKeys"	--"./Test-Quad-Files/ModKeys"
+--quad_cfg_files = current_dir + "/Test-Quad-Files/Quads-Custom"	--"./Test-Quad-Files/Quads-Custom"
+
+
 
 MENU_MANAGER_GLOBAL.quadDir ( quad_cfg_files )
 
 
 /* CREATE QUAD MENUS */ 
 MENU_MANAGER_GLOBAL.createQuadMenus()
+
+
+
+/* SUCCESS MESSAGE */ 
+--messageBox "Show quad by pressing:\n\nCTRL + RMB" title:"SHOW QUAD MENU"
+
+

@@ -249,9 +249,9 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         
         if MENU_MANAGER_GLOBAL != undefined then
         (
-            if isProperty MENU_MANAGER_GLOBAL #quad_dirs then
+            if isProperty MENU_MANAGER_GLOBAL #quad_cfg_files then
             (
-                for mcr_path in MENU_MANAGER_GLOBAL.quad_dirs do
+                for mcr_path in MENU_MANAGER_GLOBAL.quad_cfg_files do
                 (
                     parts = filterString mcr_path "\\/"
                     
@@ -309,11 +309,11 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 		--for macro in macro_data do
 		--format "macro: %\n" macro
 		
-		--format "MENU_MANAGER_GLOBAL.quad_dirs[1]: %\n" MENU_MANAGER_GLOBAL.quad_dirs[1]
+		--format "MENU_MANAGER_GLOBAL.quad_cfg_files[1]: %\n" MENU_MANAGER_GLOBAL.quad_cfg_files[1]
 		
-		--quad_data = MENU_MANAGER_GLOBAL.quad_dirs
-		--quad_data = #( Dictionary #( #path, MENU_MANAGER_GLOBAL.quad_dirs[1] ) #( #name, "Test" ) )
-		--quad_data = #( MENU_MANAGER_GLOBAL.quad_dirs[1]  )
+		--quad_data = MENU_MANAGER_GLOBAL.quad_cfg_files
+		--quad_data = #( Dictionary #( #path, MENU_MANAGER_GLOBAL.quad_cfg_files[1] ) #( #name, "Test" ) )
+		--quad_data = #( MENU_MANAGER_GLOBAL.quad_cfg_files[1]  )
 		
 		MenuManagerUICallbacks.buildMacroTree quad_data tv_quads
 		
