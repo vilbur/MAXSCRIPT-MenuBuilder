@@ -99,7 +99,7 @@ struct MenuBuildManager_v
 	merge_existing_data = true,
 	callback_id = #menuBuildManagerCuiRegisterMenus,
 	quad_callback_id = #menuBuildManagerCuiRegisterQuadMenus,
-
+ 
 	
 	/** Match a normal root, including definitions grouped under the custom root.
 	  */
@@ -2719,7 +2719,7 @@ struct MenuBuildManager_v
 
 	function updateVisibleMenuBarNow =
 	(
-		format "\n"; print "MenuBuildManager.updateVisibleMenuBarNow()"
+		--format "\n"; print "MenuBuildManager.updateVisibleMenuBarNow()"
 		update_ok = false
 		menu_manager = this.getCurrentCuiMenuManager()
 

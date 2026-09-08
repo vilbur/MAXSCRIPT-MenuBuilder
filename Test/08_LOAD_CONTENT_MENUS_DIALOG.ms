@@ -34,7 +34,8 @@ current_dir = getFilenamePath(getSourceFileName())
 
 /* GET MACTOSCRIPTS IN FILE */ 
 --macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"	--"./../Config-Files/Test/Menus/MacroScriptsToMenus.mcr"
-macro_scripts_file =  current_dir + "/../Config-Files/Test/Menus/"	--"./../Config-Files/Test/Menus/"
+--macro_scripts_file =  ( getFilenamePath(getSourceFileName()) + "/Macros-Parser-Test-Files/MENU A.mcr" )	--"./Macros-Parser-Test-Files/MENU A.mcr"
+macro_scripts_file =  ( getFilenamePath(getSourceFileName()) + "/Macros-Parser-Test-Files" )	--"./Macros-Parser-Test-Files"
 
 /* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
 global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
@@ -45,16 +46,24 @@ MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_file)
 --appendIfUnique MENU_MANAGER_GLOBAL.macroscripts_to_import macro_scripts_file
 		
 		
-format "MENU_MANAGER_GLOBAL.macroscripts_to_import: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import
-format "MENU_MANAGER_GLOBAL.macroscripts_to_import.count: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import.count
+--format "MENU_MANAGER_GLOBAL.macroscripts_to_import: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import
+--format "MENU_MANAGER_GLOBAL.macroscripts_to_import.count: %\n" MENU_MANAGER_GLOBAL.macroscripts_to_import.count
 -- MENU_MANAGER_GLOBAL.macroscripts_to_import.count: 1
 
-format "MENU_MANAGER_GLOBAL.menus_data.keys: %\n" MENU_MANAGER_GLOBAL.menus_data.keys
+--format "MENU_MANAGER_GLOBAL.MenuBuildManager.menus_data: %\n" MENU_MANAGER_GLOBAL.MenuBuildManager.menus_data
+
+
+--for menu_data in MENU_MANAGER_GLOBAL.MenuBuildManager.menus_data do
+	--format "MENU_DATA: %\n" menu_data
+
 -- MENU_MANAGER_GLOBAL.menus_data.keys: #("_TEST MENU A", "_TEST MENU B")
 
-format "MENU_MANAGER_GLOBAL.menus_data: %\n" MENU_MANAGER_GLOBAL.menus_data
+--format "MENU_MANAGER_GLOBAL.menus_data: %\n" MENU_MANAGER_GLOBAL.menus_data
 --MENU_MANAGER_GLOBAL.menus_data: (Dictionary #string (DataPair "_TEST MENU A" #(#("_TEST MENU A", "_test_macro_A1", "Test Macro Button Text"))) (DataPair "_TEST MENU B" #(#("r_GLOBAL.menus_data.keys do
 
+		
+		
+		
 		
 createDialog MenuManagerUI_ROLLOUT width:380 --1024
 

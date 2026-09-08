@@ -20,18 +20,27 @@ MenuBuildManager = MenuBuildManager_v()
 
 QuadMenu = MenuBuildManager.getQuad "Default Viewport Quad" modifiers:#rightclick
 
+/*------------------------------------------------------------------------------
+	QUAD 1
+--------------------------------------------------------------------------------*/
+
 quad_1 = QuadMenu.getQuad 1
 
 quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM IN DEFAULT VIEWPORT QUAD")
 
 
 
-test_backup = MenuBuildManager.getDefaultViewportQuadBackup()
+/*------------------------------------------------------------------------------
+	QUAD 2
+--------------------------------------------------------------------------------*/
 
-format "backup exists: %\n" (test_backup != undefined)
-format "backup title: %\n" test_backup.title
-format "replacement title: %\n" QuadMenu.title
-format "replacement modifier: %\n" QuadMenu.quad_modifier
-format "replacement clear default: %\n" QuadMenu.clear_default_menu
+quad_2 = QuadMenu.getQuad 2
+
+--format "quad_2: %\n" quad_2
+
+quad_2.clearItems()
+
+quad_1.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM IN DEFAULT VIEWPORT QUAD")
+
 
 MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true

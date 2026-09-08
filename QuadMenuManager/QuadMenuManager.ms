@@ -50,7 +50,7 @@ struct QuadMenuManager_v
 	/* properties */
  
 	/* private */
-	--macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
+	macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
 	quad_cfg_files = #(),
 	
 	
@@ -114,6 +114,10 @@ struct QuadMenuManager_v
 		
 		/* TEST FILES BALCKLIST */ 
 		macroscripts_paths = for macroscripts_path in macroscripts_paths where not Blacklist.isOnBlacklist macroscripts_path blacklist:#MENUS collect macroscripts_path
+		
+		
+		/* REMBER MACROSCRIPT FILES - USED BY MenuManagerUI */ 
+		this.macroscripts_to_import += macroscripts_paths
 		
 		
 		/* FILE IN .mcr FILES */

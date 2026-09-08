@@ -24,7 +24,7 @@ struct ParsedMenusData_v
 	(
 		FORMAT "\n\n"; print "========================= PARSE MENUS ========================="
 		format "\n"; print "ParsedMenusData_v.addMacroscripFilesToMenus()"
-		format "macroscripts_to_import: %\n" macroscripts_to_import
+		--format "macroscripts_to_import: %\n" macroscripts_to_import
 		
 		/* PARSE mcr FILES */ 
 		for macroscript_file in macroscripts_to_import do
