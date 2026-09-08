@@ -2,6 +2,7 @@
 
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
 
+filein( getFilenamePath(getSourceFileName()) + "/ConfigFilesBlacklist/ConfigFilesBlacklist.ms" )	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 
 global configQuad1 = undefined
 global configQuad2 = undefined
@@ -37,34 +38,28 @@ global configQuad4 = undefined
 struct QuadMenuManager_v
 (
 	/* construct */
-	blacklist = #(),
-	
-	
 	quad_dirs = #(),
 	
 	/* required */
-
 	/* properties */
-	--blacklist_quads = #(),
  
 	/* private */
 	macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
 	
-	--parsed_macroscript_files = #(),
-	
 	quad_cfg_files = #(),
 
-	
-	--menus_data = Dictionary #STRING,
 	
 	/* dependency */
 	MenusData,	--"./../MenusData/MenusData.ms"
 	MenuBuildManager,	--"./../MenuBuildManager/MenuBuildManager.ms"
+	Blacklist,	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 	
 	/* reference */
 	/* inhered */
 	/* static */ 
 	hotkeys = #( #RightClick, #shiftPressed, #altPressed, #controlPressed, #shiftAndAltPressed, #shiftAndControlPressed, #controlAndAltPressed, #shiftAndAltAndControlPressed ),
+
+
 	/*==============================================================================
 	
 		CONFIG MENUS
@@ -370,14 +365,7 @@ struct QuadMenuManager_v
 		
 		pathConfig.normalizePath _path--return
 	),
-	
-	/* TEST BLACKLIST
-		
-		currently unsused
-		
-	*/ 
-	----function isOnBlacklist macroscript_file blacklist = ((for pattern in blacklist where matchPattern macroscript_file pattern:pattern collect pattern).count > 0),
-	
+
 	/** Createa menus
 	 */
 	function _createMenus =
@@ -522,5 +510,6 @@ struct QuadMenuManager_v
 		--format "\n"; print "QuadMenuManager.onCreate()"
 		MenusData	= MenusData_v()
 		MenuBuildManager	= MenuBuildManager_v()
+		Blacklist	= ConfigFilesBlacklist_v()
 	)
 )

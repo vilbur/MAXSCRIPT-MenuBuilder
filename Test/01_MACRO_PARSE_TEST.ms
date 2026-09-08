@@ -11,11 +11,11 @@ filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" 
 
 ------------------------------------------------------------------------------*/
 
-cfg_files = getFilenamePath(getSourceFileName()) + "/../Config-Files/Test" --"./../Config-Files/Test/"
 
 
 /* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
 global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+
 --MENU_MANAGER_GLOBAL.blacklist = #( "*\\bak*", "*-UNUSED*", "*rollout-OPTIONS\Menus.mcr" )
 
 
@@ -37,7 +37,7 @@ function defineMenusItemsTest =
 (
 	--format "\n"; print ".createMenusTest()"
 	/* ADD FILES IN DIRECTORY */ 
-	MENU_MANAGER_GLOBAL.addMacrosToMenus ( cfg_files + "/Menus" )	--"./../Config-Files/Test/Menus/" )
+	MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Config-Files/Test/Menus" )	--"./../Config-Files/Test/Menus/" )
 
 	/* TEST ADDING ITEMS AFTER PARSING */ 
 	menu_new = MENU_MANAGER_GLOBAL.menu ("MENU_BY_CODE" ) --type:#quad
