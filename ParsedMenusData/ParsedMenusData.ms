@@ -2,7 +2,7 @@
   
   
  */
-struct MenusData_v
+struct ParsedMenusData_v
 (
 	/* construct */
 	macroscripts_to_import,
@@ -23,7 +23,7 @@ struct MenusData_v
 	function addMacroscripFilesToMenus =
 	(
 		FORMAT "\n\n"; print "========================= PARSE MENUS ========================="
-		format "\n"; print "MenusData_v.addMacroscripFilesToMenus()"
+		format "\n"; print "ParsedMenusData_v.addMacroscripFilesToMenus()"
 		format "macroscripts_to_import: %\n" macroscripts_to_import
 		
 		/* PARSE mcr FILES */ 
@@ -60,7 +60,7 @@ struct MenusData_v
 	 */
 	function _getDataOfMenu menu_name =
 	(
-		--format "\n"; print "MenusData_v._getDataOfMenu()"
+		--format "\n"; print "ParsedMenusData_v._getDataOfMenu()"
 		/* CREATE NEW MENU if needed */ 
 		if this.menus_data[menu_name] == undefined then
 			this.menus_data[menu_name] = #()
@@ -73,7 +73,7 @@ struct MenusData_v
 	 */
 	function _getTitle _MacroScript =
 	(
-		--format "\n"; print "MenusData_v.getTitle()"
+		--format "\n"; print "ParsedMenusData_v.getTitle()"
 		if (menu_name_param = _MacroScript.Params[#menu]) != undefined then
 			if menu_name_param != false then
 			(
@@ -102,7 +102,7 @@ struct MenusData_v
 	 */
 	on create do
 	(
-		--format "\n"; print "MenusData.onCreate()"
+		--format "\n"; print "ParsedMenusData.onCreate()"
 		this.addMacroscripFilesToMenus()
 	)
 )

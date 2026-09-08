@@ -14,7 +14,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../MAXSCRIPT-MacroScriptFilePar
 
 /* IMPORT FILES */
 
-filein( getFilenamePath(getSourceFileName()) + "/MenusData/MenusData.ms" )	--"./MenusData/MenusData.ms"
+filein( getFilenamePath(getSourceFileName()) + "/ParsedMenusData/ParsedMenusData.ms" )	--"./ParsedMenusData/ParsedMenusData.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/QuadMenuManager/QuadMenuManager.ms" )	--"./QuadMenuManager/QuadMenuManager.ms"
 

@@ -41,7 +41,7 @@ function defineMenusItemsTest =
 	menu_new.addItem "_TEST_CATEGORY" "_test_macro" title:("ITEM by code")
 	
 	/* ADD FILES IN DIRECTORY */ 
-	MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/../Test-Config-Files/Menus" )	--"./../Config-Files/Test/Menus/" )
+	MENU_MANAGER_GLOBAL.addMacrosToMenus ( getFilenamePath(getSourceFileName()) + "/Macros-Parser-Test-Files" )	--"./Macros-Parser-Test-Files/"
 
 	/* ADDING ITEMS BY CODE AFTER PARSING */ 
 	menu_new = MENU_MANAGER_GLOBAL.menu ("TEST MENU ORDER" ) --type:#quad

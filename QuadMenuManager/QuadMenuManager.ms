@@ -38,7 +38,7 @@ global configQuad4 = undefined
  
 	DATA STRUCTURE OF MENUS DEFINITIONS:
  
-		QuadMenuManager.MenusData[#MENU_NAME] = MenuDefinition
+		QuadMenuManager.ParsedMenusData[#MENU_NAME] = MenuDefinition
  
  */
 struct QuadMenuManager_v
@@ -55,7 +55,7 @@ struct QuadMenuManager_v
 	
 	
 	/* dependency */
-	--MenusData,	--"./../MenusData/MenusData.ms"
+	--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"
 	MenuBuildManager,	--"./../MenuBuildManager/MenuBuildManager.ms"
 	Blacklist,	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 	
@@ -108,7 +108,7 @@ struct QuadMenuManager_v
 	(
 		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
 		
-			--MenusData,	--"./../MenusData/MenusData.ms"		
+			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"		
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
 		
@@ -116,19 +116,15 @@ struct QuadMenuManager_v
 		this._fileInMacroscriptFiles macroscripts_paths
 		
 		/* ADD MACROSCRIPTS TO MENUS */ 
-		MenusData	= MenusData_v(macroscripts_paths)
-		
-		--MenusData.addMacroscripFilesToMenus ()
-		
-		format "MenusData.menus_data.keys: %\n" MenusData.menus_data.keys
+		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
 		/* DEFINE MENUS FROM PARSED DATA */ 
-		for menu_name in MenusData.menus_data.keys do
+		for menu_name in ParsedMenusData.menus_data.keys do
 		(
 			--format "MENU_NAME: %\n" menu_name
 			local menu_new = this.MenuBuildManager.menu menu_name
 
-			for menu_item_data in MenusData.menus_data[menu_name] do
+			for menu_item_data in ParsedMenusData.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
 		)
 	),
@@ -153,7 +149,7 @@ struct QuadMenuManager_v
 		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
 		
 		/* ADD MACRO TO MENU */ 
-		MenusData.addItemToMenu macro_category macro_name title 
+		ParsedMenusData.addItemToMenu macro_category macro_name title 
 	),
 			
 	/*==============================================================================
@@ -292,7 +288,7 @@ struct QuadMenuManager_v
 		local normalized_type = this.MenuBuildManager.normalizeMenuType menu_type
 		local kept_saved_data = #()
 
-		for menu_data in this.MenuBuildManager.loadSavedMenusDataFromJson() do
+		for menu_data in this.MenuBuildManager.loadSavedParsedMenusDataFromJson() do
 		(
 			if this.MenuBuildManager.getSavedMenuType menu_data != normalized_type then
 				append kept_saved_data menu_data
@@ -313,15 +309,15 @@ struct QuadMenuManager_v
 
 		--if normalized_type == #menu then this.MenuBuildManager.menus_data = Dictionary #string -- FOR AI: NOT SURE IF THIS LINE IS NEEDED
 
-		this.MenuBuildManager.saved_menus_data = kept_saved_data
-		this.MenuBuildManager.writeSavedMenusDataToJson kept_saved_data
+		this.MenuBuildManager.saved_parsed_menus_data = kept_saved_data
+		this.MenuBuildManager.writeSavedParsedMenusDataToJson kept_saved_data
 		this.MenuBuildManager.updateMenus update_quads:true
 		this.MenuBuildManager.saveCurrentCuiConfiguration()
 
 		kept_saved_data -- return
 	),
 	
-	--/MenusData.** Get file paths
+	--/ParsedMenusData.** Get file paths
 	--  *
 	--  * @param string|array macroscript_paths to macroscript files or directories.
 	--  */
@@ -382,7 +378,7 @@ struct QuadMenuManager_v
 	(
 		format "\n"; print "QuadMenuManager_v._createMenus()"
 		
-		for menu_name in MenusData.menus_data.keys do
+		for menu_name in ParsedMenusData.menus_data.keys do
 		(
 			--format "menu_name: %\n" menu_name
 			menu_new = this.MenuBuildManager.menu (menu_name) --type:#quad

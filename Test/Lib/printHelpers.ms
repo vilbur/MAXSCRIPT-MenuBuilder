@@ -1,4 +1,4 @@
-﻿/*  ====================================================================================================
+/*  ====================================================================================================
     SECTION 07: PRINT AND DEBUG HELPERS
     ====================================================================================================
 */
@@ -170,22 +170,22 @@ function printSavedMenuData saved_menu_data indent:"" =
 /*  Prints array of saved menu root data.
     Used after MenuBuildManager_v.run.
 */
-function printSavedMenusData saved_menus_data =
+function printSavedParsedMenusData saved_parsed_menus_data =
 (
-	if saved_menus_data == undefined then
+	if saved_parsed_menus_data == undefined then
 	(
-		format "saved_menus_data: undefined\n"
+		format "saved_parsed_menus_data: undefined\n"
 	)
-	else if classOf saved_menus_data != Array then
+	else if classOf saved_parsed_menus_data != Array then
 	(
-		format "saved_menus_data is not Array: %\n" saved_menus_data
+		format "saved_parsed_menus_data is not Array: %\n" saved_parsed_menus_data
 	)
 	else
 	(
-		for menu_index = 1 to saved_menus_data.count do
+		for menu_index = 1 to saved_parsed_menus_data.count do
 		(
 			format "\n===== SAVED MENU DATA % =====\n" menu_index
-			printSavedMenuData saved_menus_data[menu_index] indent:"    "
+			printSavedMenuData saved_parsed_menus_data[menu_index] indent:"    "
 		)
 	)
 
