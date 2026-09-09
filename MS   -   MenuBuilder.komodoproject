@@ -9,6 +9,8 @@
 </livefolder>
 <livefolder id="8f5c0908-4955-4588-a5db-0908167eebaa" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuRebuilder" url="MenuRebuilder/">
 </livefolder>
+<livefolder id="9781115f-8d83-49ab-9e9d-aab07a26e1ee" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="ParsedMenusData" url="ParsedMenusData/">
+</livefolder>
 <livefolder id="9bf92dae-4cc6-4b50-9c02-6e23fea2794c" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="MenuDefinition" url="MenuDefinition/">
 </livefolder>
 <livefolder id="ae90d8a9-3245-42f2-a902-3aaf7b50703e" idref="3641cb2b-67e9-4e91-8547-78f8a33e6c00" name="QuadMenuManager" url="QuadMenuManager/">
@@ -27,11 +29,13 @@
 </file>
 <file id="1f3e3b99-b12d-4dfd-9ad5-c8f569bebb4e" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="include-QuadMenuManager.ms" url="include-QuadMenuManager.ms">
 </file>
+<livefolder id="29290d4c-27e7-48fd-8f82-683038b8291b" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Test-Quad-Files" url="Test/Test-Quad-Files/">
+</livefolder>
 <folder id="3641cb2b-67e9-4e91-8547-78f8a33e6c00" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_LIB">
 </folder>
 <folder id="697b0e38-e5b8-4040-a15a-28fc21bf9e37" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="_MENUS CACHE DATA">
 </folder>
-<livefolder id="88942d19-ffc1-4a63-9126-f9a2c51f31a5" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Config-Files" url="Config-Files/">
+<livefolder id="6f78a306-83e5-487f-b234-c7007b5676da" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Macros-Parser-Test-Files" url="Test/Macros-Parser-Test-Files/">
 </livefolder>
 <livefolder id="a20afc33-848e-424b-93da-844305ae45b0" idref="f97a111e-220c-4bad-ad5e-fd91cbb6dfa0" name="Test" url="Test/">
 </livefolder>

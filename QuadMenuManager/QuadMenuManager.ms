@@ -106,11 +106,12 @@ struct QuadMenuManager_v
 	 */
 	function addMacrosToMenus macroscripts_paths =
 	(
-		--format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
 		
 			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"	
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
+		
 		
 		/* TEST FILES BALCKLIST */ 
 		macroscripts_paths = for macroscripts_path in macroscripts_paths where not Blacklist.isOnBlacklist macroscripts_path blacklist:#MENUS collect macroscripts_path
@@ -123,6 +124,7 @@ struct QuadMenuManager_v
 		/* FILE IN .mcr FILES */
 		this._fileInMacroscriptFiles macroscripts_paths
 		
+		
 		/* ADD MACROSCRIPTS TO MENUS */ 
 		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
@@ -130,7 +132,10 @@ struct QuadMenuManager_v
 		/* DEFINE MENUS FROM PARSED DATA */ 
 		for menu_name in ParsedMenusData.menus_data.keys do
 		(
-			--format "MENU_NAME: %\n" menu_name
+			format "\n"
+			format "MENU_NAME: %\n" menu_name
+			format "ParsedMenusData.menus_data[menu_name]: %\n" ParsedMenusData.menus_data[menu_name]
+			
 			local menu_new = this.MenuBuildManager.menu menu_name
 
 			for menu_item_data in ParsedMenusData.menus_data[menu_name] do
