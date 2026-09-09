@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.92
+	Version: 0.93
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -12,7 +12,7 @@ if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_gua
 
 struct MenuRebuilder_v
 (
-	version = 0.92,
+	version = 0.93,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -695,15 +695,28 @@ struct MenuRebuilder_v
 			(
 				try
 				(
-					created_item = parent_menu.CreateAction item_id action_table_id persistent_action_id
+					if action_group == "" then
+					(
+						created_item = parent_menu.CreateMacroScriptAction item_id (macro_name as string) (macro_category as string)
+					)
+					else
+					(
+						created_item = parent_menu.CreateAction item_id action_table_id persistent_action_id
+					)
+
 					if created_item != undefined and this.shouldUseCustomTitle item_data macro_name item_title then
 					(
 						created_item.title = item_title
 					)
+
+					if created_item == undefined then
+					(
+						format "MenuRebuilder_v.createRealCuiAction returned undefined. item:'%' category:'%' macro:'%' table:% action:'%'\n" item_id macro_category macro_name action_table_id persistent_action_id
+					)
 				)
 				catch
 				(
-					format "MenuRebuilder_v.createRealCuiAction failed. item:'%' table:% action:'%'\n" item_id action_table_id persistent_action_id
+					format "MenuRebuilder_v.createRealCuiAction failed. item:'%' category:'%' macro:'%' table:% action:'%' error:%\n" item_id macro_category macro_name action_table_id persistent_action_id (getCurrentException())
 				)
 			)
 		)

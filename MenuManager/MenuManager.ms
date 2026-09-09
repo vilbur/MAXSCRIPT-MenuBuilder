@@ -1,8 +1,8 @@
 
 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager/MenuBuildManager.ms" )	--"./../MenuBuildManager/MenuBuildManager.ms"
+if MenuBuildManager_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../Lib/MenuBuildManager/MenuBuildManager.ms" )	--"./../Lib/MenuBuildManager/MenuBuildManager.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/ConfigFilesBlacklist/ConfigFilesBlacklist.ms" )	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
+if ConfigFilesBlacklist_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../Lib/ConfigFilesBlacklist/ConfigFilesBlacklist.ms" )	--"./../Lib/ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 
 global configQuad1 = undefined
 global configQuad2 = undefined
@@ -38,10 +38,10 @@ global configQuad4 = undefined
  
 	DATA STRUCTURE OF MENUS DEFINITIONS:
  
-		QuadMenuManager.ParsedMenusData[#MENU_NAME] = MenuDefinition
+		MenuManager.ParsedMenusData[#MENU_NAME] = MenuDefinition
  
  */
-struct QuadMenuManager_v
+struct MenuManager_v
 (
 	/* construct */
 	quad_dirs = #(),
@@ -56,9 +56,9 @@ struct QuadMenuManager_v
 	
 	
 	/* dependency */
-	--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"
-	MenuBuildManager,	--"./../MenuBuildManager/MenuBuildManager.ms"
-	Blacklist,	--"./ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
+	--ParsedMenusData,	--"./../Lib/ParsedMenusData/ParsedMenusData.ms"
+	MenuBuildManager,	--"./../Lib/MenuBuildManager/MenuBuildManager.ms"
+	Blacklist,	--"./../Lib/ConfigFilesBlacklist/ConfigFilesBlacklist.ms"
 	
 	/* reference */
 	/* inhered */
@@ -72,13 +72,13 @@ struct QuadMenuManager_v
 	
 	================================================================================*/
 
-	/** ALIAS for MenuBuildManager.menu() "./../MenuBuildManager/MenuBuildManager.ms"
+	/** ALIAS for MenuBuildManager.menu() "./../Lib/MenuBuildManager/MenuBuildManager.ms"
 	  
 		@return MenuDefinition_v
 	 */
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
-		--format "\n"; print "QuadMenuManager_v.menu()"
+		--format "\n"; print "MenuManager_v.menu()"
 		
 		local menu_definition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
 		if menu_definition != undefined and this.MenuBuildManager.normalizeMenuType type == #menu then
@@ -95,12 +95,12 @@ struct QuadMenuManager_v
 
 	/** Quad
 	 */
-	/** ALIAS for MenuBuildManager.quad() "./../MenuBuildManager/MenuBuildManager.ms"
+	/** ALIAS for MenuBuildManager.quad() "./../Lib/MenuBuildManager/MenuBuildManager.ms"
 	  
 	  */
 	function quad title clear_default_menu:false qmnx_clear_directory:undefined =
 	(
-		--format "\n"; print "QuadMenuManager_v.quad()"
+		--format "\n"; print "MenuManager_v.quad()"
 		MenuBuildManager.quad title clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
 	),
 	
@@ -111,9 +111,9 @@ struct QuadMenuManager_v
 	 */
 	function addMacrosToMenus macroscripts_paths =
 	(
-		format "\n"; print "QuadMenuManager_v.addMacrosToMenus()"
+		--format "\n"; print "MenuManager_v.addMacrosToMenus()"
 		
-			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"	
+			--ParsedMenusData,	--"./../Lib/ParsedMenusData/ParsedMenusData.ms"	
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths) filetype:"mcr"
 		
@@ -126,10 +126,8 @@ struct QuadMenuManager_v
 		this.macroscripts_to_import += macroscripts_paths
 		
 		
-		/* FILE IN .mcr FILES */
-		--this._fileInMacroscriptFiles macroscripts_paths
-		
-		
+		/* REGISTER MACROSCRIPTS BEFORE BUILDING CUI ACTIONS */
+		this._fileInMacroscriptFiles macroscripts_paths
 		/* ADD MACROSCRIPTS TO MENUS */ 
 		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
@@ -139,13 +137,21 @@ struct QuadMenuManager_v
 		(
 			--format "\n"
 			--format "MENU_NAME: %\n" menu_name
+			--format "ParsedMenusData.menus_data[menu_name].count: %\n" ParsedMenusData.menus_data[menu_name].count
 			--format "ParsedMenusData.menus_data[menu_name]: %\n" ParsedMenusData.menus_data[menu_name]
 			
 			local menu_new = this.menu menu_name
 
 			for menu_item_data in ParsedMenusData.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
+			
 		)
+		
+		--format "MENUS_DATA: %\n" menus_data
+		
+		--for key in menus_data.keys do
+			--format "key: % \nVALUE: %\n\n" key menus_data[key]
+		
 	),
 	
 	/** Add quad configuration directory or file.
@@ -153,7 +159,7 @@ struct QuadMenuManager_v
 	  */
 	function quadDir quad_cfg_paths =
 	(
-		--format "\n"; print "QuadMenuManager_v.quadDir()"
+		--format "\n"; print "MenuManager_v.quadDir()"
 	
 		quad_cfg_paths = this._getPathsToFiles quad_cfg_paths filetype:"ms" -- return
 		
@@ -166,7 +172,7 @@ struct QuadMenuManager_v
 	 */
 	function addItemToMenu macro_category macro_name title =
 	(
-		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--format "\n"; print "MenuManager_v.addItemToMenu()"
 		
 		/* ADD MACRO TO MENU */ 
 		ParsedMenusData.addItemToMenu macro_category macro_name title 
@@ -185,25 +191,57 @@ struct QuadMenuManager_v
 	function createMenus which:#() =
 	(
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
-		format "QuadMenuManager_v.createMenus()"
+		format "MenuManager_v.createMenus()\n"
 
-		if which.count == 0 then
+		local install_all = which.count == 0
+		local menu_names = if install_all then this.menus_data.keys else which
+		local menu_count = menu_names.count
+
+		if install_all then
 		(
+			for menu_index = 1 to menu_count do
+			(
+				format "Installing % of % menus: %\n" menu_index menu_count menu_names[menu_index]
+				try (windows.processPostedMessages()) catch()
+			)
+
+			format "Applying % menu(s) to 3ds Max. Please wait...\n" menu_count
+			try (windows.processPostedMessages()) catch()
+			this.MenuBuildManager.buildSavedMenusData()
 			this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+			format "Finished installing % menu(s).\n" menu_count
 		)
 		else
 		(
-			local selected_build_manager = MenuBuildManager_v()
+			local selected_saved_data = #()
 
-			for menu_name in which do
+			for menu_index = 1 to menu_count do
 			(
+				local menu_name = menu_names[menu_index]
+				format "Installing % of % menus: %\n" menu_index menu_count menu_name
+				try (windows.processPostedMessages()) catch()
+
 				local menu_definition = this.menus_data[menu_name]
 				if menu_definition != undefined then
-					selected_build_manager.waitForBuild menu_definition
+				(
+					local menu_data = this.MenuBuildManager.buildSavedMenuDataFromDefinition menu_definition
+					if menu_data != undefined then append selected_saved_data menu_data
+				)
 			)
 
-			if selected_build_manager.menus_data.count > 0 then
-				selected_build_manager.installMenusNow update_quads:true load_default_cui_configuration:true
+			if selected_saved_data.count > 0 then
+			(
+				local selected_count = selected_saved_data.count
+				this.MenuBuildManager.saved_menus_data = selected_saved_data
+				format "Applying % selected menu(s) to 3ds Max. Please wait...\n" selected_count
+				try (windows.processPostedMessages()) catch()
+				this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+				format "Finished installing % selected menu(s).\n" selected_count
+			)
+			else
+			(
+				format "No valid selected menus were found.\n"
+			)
 		)
 	),
 
@@ -286,7 +324,7 @@ struct QuadMenuManager_v
 	  */
 	function resetAll =
 	(
-		--format "\n"; print "QuadMenuManager_v.resetAll()"
+		--format "\n"; print "MenuManager_v.resetAll()"
 		MenuBuildManager = MenuBuildManager_v()
 
 		/* REMOVE FFROM MAIN MENU */ 
@@ -298,7 +336,7 @@ struct QuadMenuManager_v
 		/* UPDATE MENU & QUADS */ 
 		MenuBuildManager.installMenusNow()
 		
-		--format "QuadMenuManager: Custom menus have been reset.\n"
+		--format "MenuManager: Custom menus have been reset.\n"
 	),
 		
 	/** Reset only normal menus while preserving quad menus.
@@ -323,11 +361,34 @@ struct QuadMenuManager_v
 	(
 		local normalized_type = this.MenuBuildManager.normalizeMenuType menu_type
 		local kept_saved_data = #()
+		local removed_saved_data = #()
+		local disk_saved_data = this.MenuBuildManager.loadSavedMenusDataFromJson()
 
-		for menu_data in this.MenuBuildManager.loadSavedMenusDataFromJson() do
+		for menu_data in disk_saved_data do
 		(
 			if this.MenuBuildManager.getSavedMenuType menu_data != normalized_type then
 				append kept_saved_data menu_data
+			else
+				append removed_saved_data menu_data
+		)
+
+		-- Loading a CUI configuration does not reliably remove roots already present
+		-- in the visible menu bar, so delete persisted normal roots by GUID first.
+		if normalized_type == #menu and removed_saved_data.count > 0 then
+		(
+			local menu_manager = this.MenuBuildManager.getCurrentCuiMenuManager()
+			local menu_rebuilder_helper = MenuRebuilder_v()
+			local main_menu_bar = menu_rebuilder_helper.getMainMenuBar menu_manager
+
+			if main_menu_bar != undefined then
+			(
+				for menu_data in removed_saved_data do
+				(
+					local menu_rebuilder = MenuRebuilder_v menu_data:(this.MenuBuildManager.createRebuilderCompatibleMenuData menu_data)
+					menu_rebuilder.deleteMainMenu main_menu_bar
+				)
+				this.MenuBuildManager.updateVisibleMenuBarNow()
+			)
 		)
 
 		for definitions in #(this.MenuBuildManager.menus_data, this.MenuBuildManager.wait_for_build) do
@@ -335,7 +396,7 @@ struct QuadMenuManager_v
 			for definition_index = definitions.count to 1 by -1 do
 			(
 				local definition = definitions[definition_index]
-				if this.MenuBuildManager.isMenuDefinitionLike definition then
+				if this.MenuBuildManager.isMenuDefinitionLike definition do
 				(
 					if this.MenuBuildManager.normalizeMenuType definition.type == normalized_type then
 						deleteItem definitions definition_index
@@ -343,23 +404,21 @@ struct QuadMenuManager_v
 			)
 		)
 
-		--if normalized_type == #menu then this.MenuBuildManager.menus_data = Dictionary #string -- FOR AI: NOT SURE IF THIS LINE IS NEEDED
-
 		this.MenuBuildManager.saved_menus_data = kept_saved_data
 		this.MenuBuildManager.writeSavedMenusDataToJson kept_saved_data
 		this.MenuBuildManager.updateMenus update_quads:true
 		this.MenuBuildManager.saveCurrentCuiConfiguration()
+		format "Reset removed % persisted % menu(s).\n" removed_saved_data.count normalized_type
 
 		kept_saved_data -- return
 	),
-	
 	--/ParsedMenusData.** Get file paths
 	--  *
 	--  * @param string|array macroscript_paths to macroscript files or directories.
 	--  */
 	--function _setMacroscriptsToImport macroscripts_paths =
 	--(
-	--format "\n"; print "QuadMenuManager_v._setMacroscriptsToImport()"
+	--format "\n"; print "MenuManager_v._setMacroscriptsToImport()"
 	--
 	--	this._getPathsToFiles this.macroscripts_to_import macroscripts_paths -- return
 	--),
@@ -372,7 +431,7 @@ struct QuadMenuManager_v
 	  */
 	function _getPathsToFiles input_paths filetype: =
 	(
-		--format "\n"; print "QuadMenuManager_v._getPathsToFiles()"
+		--format "\n"; print "MenuManager_v._getPathsToFiles()"
 	
 		destination_array = #()
 	
@@ -405,7 +464,7 @@ struct QuadMenuManager_v
 	 */
 	function _sanitizePath _path =
 	(
-		--format "\n"; print "QuadMenuManager_v._sanitizePath()"
+		--format "\n"; print "MenuManager_v._sanitizePath()"
 		_path	= ( dotNetObject "System.Text.RegularExpressions.Regex" @"[\\/]+" ).Replace _path "\\"
 		
 		pathConfig.normalizePath _path--return
@@ -415,7 +474,7 @@ struct QuadMenuManager_v
 	 */
 	function _createMenus =
 	(
-		format "\n"; print "QuadMenuManager_v._createMenus()"
+		format "\n"; print "MenuManager_v._createMenus()"
 		
 		for menu_name in ParsedMenusData.menus_data.keys do
 		(
@@ -433,7 +492,7 @@ struct QuadMenuManager_v
 	-- */
 	--function _setQuadConfigFiles =
 	--(
-	--	format "\n"; print "QuadMenuManager_v._setQuadConfigFiles()"
+	--	format "\n"; print "MenuManager_v._setQuadConfigFiles()"
 	--	format "quad_config_files: %\n" quad_config_files
 	--
 	--	/** Test if path is on blacklist
@@ -459,7 +518,7 @@ struct QuadMenuManager_v
 	-- */
 	--function _getAddToBlacklist blacklist =
 	--(
-	--	--format "\n"; print "QuadMenuManager_v._getAddToBlacklist()"
+	--	--format "\n"; print "MenuManager_v._getAddToBlacklist()"
 	--	if blacklist != undefined then
 	--	(
 	--		if classOf blacklist != Array then
@@ -517,7 +576,7 @@ struct QuadMenuManager_v
 	 */
 	function _fileInMacroscriptFiles macroscripts_to_import =
 	(
-		--format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
+		--format "\n"; print "MenuManager_v._fileInMacroscriptFiles()"
 		
 		for macroscript_file in macroscripts_to_import do
 			try(
@@ -525,7 +584,7 @@ struct QuadMenuManager_v
 				filein( macroscript_file )
 				
 			)catch(
-				format "\n"; print "QuadMenuManager_v._fileInMacroscriptFiles()"
+				format "\n"; print "MenuManager_v._fileInMacroscriptFiles()"
 		
 				format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())
 				format "\n————————————————— EXCEPTION —————————————————\n\n%\n" (getCurrentException())
@@ -553,7 +612,7 @@ struct QuadMenuManager_v
 	 */
 	function _reconnectHotkeys =
 	(
-		--format "\n"; print "QuadMenuManager_v._reconnectHotkeys()"
+		--format "\n"; print "MenuManager_v._reconnectHotkeys()"
 		/* OPEN HOTKEY EDITOR - for refresh quad menu keyboard shortcuts */
 		actionMan.executeAction 0 "59245"  -- Customize User Interface: Hotkey Editor
 
@@ -566,7 +625,7 @@ struct QuadMenuManager_v
 	*/
 	on create do
 	(
-		--format "\n"; print "QuadMenuManager.onCreate()"
+		--format "\n"; print "MenuManager.onCreate()"
 	
 		Blacklist        = ConfigFilesBlacklist_v()
 		MenuBuildManager = MenuBuildManager_v()

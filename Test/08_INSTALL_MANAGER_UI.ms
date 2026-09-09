@@ -1,6 +1,6 @@
 clearListener(); print("Cleared in: "+getSourceFileName())
 
-filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" )	--"./../include-QuadMenuManager.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../include-MenuManager.ms" )	--"./../include-MenuManager.ms"
 
 quad_cfg_files = #()
 
@@ -36,8 +36,8 @@ current_dir = getFilenamePath(getSourceFileName())
 
 
 
-/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
-global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-MenuManager.ms" */ 
+global MENU_MANAGER_GLOBAL = MenuManager_v()
 
 /*------------------------------------------------------------------------------
 	
@@ -46,10 +46,12 @@ global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 --------------------------------------------------------------------------------*/
 
 /* GET MACTOSCRIPTS IN DIR */ 
---macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
-macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
+macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
+--macro_scripts_files =( getFilenamePath(getSourceFileName()) + "/Macros-Parser-Test-Files/EDIT.mcr" )	--"./Macros-Parser-Test-Files/EDIT.mcr"
+--macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
+--macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools\rollouts-Tools\rollout-EDIT-POLY\rollouts-EDIT-POLY-TOOLS\rollout-——————EDGES——————\-TOOLS-CONNECT.mcr"
 
-MENU_MANAGER_GLOBAL.Blacklist.menus = #( "*Black-List-Test.*" )
+--MENU_MANAGER_GLOBAL.Blacklist.menus = #( "*Black-List-Test.*" )
 
 /* ADD MACORS TO MENUS */ 
 MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_files)

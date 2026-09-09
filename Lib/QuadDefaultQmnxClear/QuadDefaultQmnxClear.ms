@@ -606,8 +606,8 @@ struct QuadDefaultQmnxClear_v
 		(
 			try
 			(
-				cui_quad_menu_manager = maxOps.GetICuiQuadMenuMgr()
-				cui_quad_menu_manager.LoadConfiguration qmnx_file_path
+				cui_menu_manager = maxOps.GetICuiQuadMenuMgr()
+				cui_menu_manager.LoadConfiguration qmnx_file_path
 
 				format "QuadDefaultQmnxClear_v: loaded merged qmnx clear file through CuiQuadMenuMgr: %\n" qmnx_file_path
 

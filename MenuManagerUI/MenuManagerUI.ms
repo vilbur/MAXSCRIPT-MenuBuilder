@@ -1,6 +1,6 @@
 /*
 	MenuManagerUI.ms
-	Version: 1.01
+	Version: 1.04
 	UI for MENU_MANAGER_GLOBAL macro management
 	TreeView-based macroscript inspector + install/reset tools
 */
@@ -12,7 +12,7 @@ try (destroyDialog MenuManagerUI_ROLLOUT) catch()
 
 struct MenuManagerUICallbacks_Struct
 (
-    version = 1.01,
+    version = 1.04,
 
     function buildMacroTree paths treeView =
     (
@@ -305,7 +305,7 @@ struct MenuManagerUICallbacks_Struct
                 selected_paths = this.getExistingSelectedPaths selections
                 if selected_paths.count > 0 then
                 (
-                    selected_manager = QuadMenuManager_v()
+                    selected_manager = MenuManager_v()
                     selected_manager.quadDir selected_paths
                     selected_manager.createQuadMenus()
                     format "Installed % selected quad configuration file(s).\n" selected_paths.count
@@ -320,15 +320,25 @@ struct MenuManagerUICallbacks_Struct
 
     function resetMenus =
     (
-        --try
-        --(
-        --    if isProperty MENU_MANAGER_GLOBAL #resetMenus then
-        --    (
-			if queryBox ( "REMOVE MENU: \"" + MENU_MANAGER_GLOBAL.MenuBuildManager.custom_menu_root_title +"\"\n\nFROM MAIN MENU BAR ?" ) title:"Title"  beep:false then
+        try
+        (
+            if MENU_MANAGER_GLOBAL == undefined or not (isProperty MENU_MANAGER_GLOBAL #resetMenus) then
+            (
+                messageBox "Menu manager is not available." title:"Menu Manager UI"
+            )
+            else if queryBox ("REMOVE NORMAL MENUS?\n\nQuad menus will be preserved.") title:"Reset Menus" beep:false then
+            (
+                format "Resetting normal menus. Please wait...\n"
+                try (windows.processPostedMessages()) catch()
                 MENU_MANAGER_GLOBAL.resetMenus()
-        --    )
-        --)
-        --catch()
+                format "Finished resetting normal menus.\n"
+            )
+        )
+        catch
+        (
+            this._showException()
+            messageBox "Reset menus failed. See the MAXScript Listener for details." title:"Menu Manager UI"
+        )
     ),
 
     function resetQuads =

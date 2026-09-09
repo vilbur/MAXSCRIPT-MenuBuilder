@@ -2,7 +2,7 @@ clearListener(); print("Cleared in: "+getSourceFileName())
 
 filein( getFilenamePath(getSourceFileName()) + "/../MenuBuildManager.ms" )	--"./../MenuBuildManager.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/../../Test/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./../../Test/_INCLUDE-TEST_MACROSCRIPT.mcr"
+filein( getFilenamePath(getSourceFileName()) + "/../../../Test/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./../../../Test/_INCLUDE-TEST_MACROSCRIPT.mcr"
 
 --modifier_specs = #(
 --	#("None",	"None",	#nonePressed),

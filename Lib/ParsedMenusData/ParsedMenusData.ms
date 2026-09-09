@@ -43,16 +43,26 @@ struct ParsedMenusData_v
 			)
 		)
 		
-		format "MENUS_DATA.KEYS: %\n" menus_data.keys
+		--format "MacroParser.MacroScripts: %\n" MacroParser.MacroScripts
+		--format "\n"
+		
+		--format "MacroParser.MacroScripts: %\n" MacroParser.MacroScripts.count
+		
+		--for i = 1 to MacroParser.MacroScripts.count do format "%: %\n" i MacroParser.MacroScripts[i]
+		
+
+		--format "MENUS_DATA.KEYS: %\n" menus_data.keys
 		--for key in menus_data.keys do
-			--format "key: % \nVALUE: %\n\n" key menus_data[key]
+			--for i = 1 to menus_data[key].count do format "%: %\n" i menus_data[key][i]
+			--format "classOf menus_data[key]: %\n" ( classOf menus_data[key] )
+			--format "key: % \nVALUE: %\n\n" key menus_data[key].count
 	),
 	
 	/** Add item to menu
 	 */
 	function addItemToMenu macro_category macro_name title =
 	(
-		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--format "\n"; print "MenuManager_v.addItemToMenu()"
 		--menu_name = item_data[1] -- menu name is category of macroscript  
 		menu_data = this._getDataOfMenuByName macro_category
 		

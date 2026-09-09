@@ -104,7 +104,7 @@ buttontext:	"PARSE MACROS TO MENUS"
 icon:	"across:1|width:468|height:48|offset:[0,32]"
 (
 	on execute do
-		(QuadMenuManager_v()).createMenusFromMacroscriptFiles(getFilenamePath(getSourceFileName())) blacklist:#("*blacklist*")
+		(MenuManager_v()).createMenusFromMacroscriptFiles(getFilenamePath(getSourceFileName())) blacklist:#("*blacklist*")
 )
 
 /* SETUP MENUS
@@ -115,7 +115,7 @@ buttontext:	"SETUP QUADS - ASSIGN HOTKEYS #Rightclick and Ctrl + #Rightclick"
 (
 	on execute do
 	(
-		(QuadMenuManager_v()).setupMenus(getFilenamePath(getSourceFileName()) + "/../menus-setup")
+		(MenuManager_v()).setupMenus(getFilenamePath(getSourceFileName()) + "/../menus-setup")
 		
 		print "RightClick QUad Menu should be customized"
 	)
@@ -129,7 +129,7 @@ buttontext:	"RESET MENUS"
 (
 	on execute do
 		if queryBox "REST ALL MENUS AND QUADMENUS ?" title:"RESET MENUS" then
-			(QuadMenuManager_v()).resetMenusAndHotkeys()
+			(MenuManager_v()).resetMenusAndHotkeys()
 )
 
 

@@ -5,17 +5,17 @@ global QuadDefaultQmnxClear_v
 
 
 /* HEPERS */ 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuNativeDataIO/MenuNativeDataIO.ms" )	--"./../MenuNativeDataIO/MenuNativeDataIO.ms"
-filein( getFilenamePath(getSourceFileName()) + "/../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms" )	--"./../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms"
+if MenuNativeDataIO_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../MenuNativeDataIO/MenuNativeDataIO.ms" )	--"./../MenuNativeDataIO/MenuNativeDataIO.ms"
+if QuadDefaultQmnxClear_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms" )	--"./../QuadDefaultQmnxClear/QuadDefaultQmnxClear.ms"
 
 
 /* LIBRARY */ 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuDefinition/MenuDefinition.ms" )	--"./../MenuDefinition/MenuDefinition.ms"
+if MenuDefinition_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../MenuDefinition/MenuDefinition.ms" )	--"./../MenuDefinition/MenuDefinition.ms"
 
-filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder/MenuRebuilder.ms" )	--"./../MenuRebuilder/MenuRebuilder.ms"
+if MenuRebuilder_v == undefined then filein( getFilenamePath(getSourceFileName()) + "/../MenuRebuilder/MenuRebuilder.ms" )	--"./../MenuRebuilder/MenuRebuilder.ms"
 
 /* UI */ 
-filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManagerRollout.ms" )	--"./../JsonManagerRollout/JsonManagerRollout.ms"
+if MenuBuildManagerJsonRollout == undefined then filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManagerRollout.ms" )	--"./../JsonManagerRollout/JsonManagerRollout.ms"
 
 
 
@@ -41,7 +41,7 @@ filein( getFilenamePath(getSourceFileName()) + "/../JsonManagerRollout/JsonManag
 
 struct MenuBuildManager_v
 (
-	version = 0.95,
+	version = 0.96,
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
@@ -463,7 +463,8 @@ struct MenuBuildManager_v
 		(
 			native_file_path = this.getNativeDataFilePath()
 			menus_data_array = native_io.loadDataFromNativeFile native_file_path
-			if menus_data_array.count > 0 then format "Native menu cache loaded: % menus from %\n" menus_data_array.count native_file_path
+			
+			--if menus_data_array.count > 0 then format "Native menu cache loaded: % menus from %\n" menus_data_array.count native_file_path
 		)
 		menus_data_array -- return
 	),
@@ -2689,7 +2690,7 @@ struct MenuBuildManager_v
 
 		if quad_menu_manager == undefined then
 		(
-			format "MenuBuildManager_v.rebuildVisibleQuadMenusNow failed. CUI quad menu manager is undefined.\n"
+			format "MenuBuildManager_v.rebuildVisibleQuadMenusNow failed. CUI menu manager is undefined.\n"
 		)
 		else
 		(

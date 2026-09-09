@@ -604,6 +604,12 @@ struct MenuDefinition_v
 	*/
 	function addItem macro_category macro_name title:"" group:"" index:undefined =
 	(
+		--format "\n"; print "MenuDefinition_v.addItem()"
+		--format "macro_category: %\n" macro_category
+		--format "macro_name: %\n" macro_name
+		--format "title: %\n" title
+
+		
 		local item_title = title
 		local action_group = if group == undefined then "" else group as string
 		if item_title == "" then item_title = macro_name as string
@@ -622,6 +628,7 @@ struct MenuDefinition_v
 				)
 			)
 		)
+		--format "item_data: %\n" item_data
 
 		if item_data == undefined then
 		(

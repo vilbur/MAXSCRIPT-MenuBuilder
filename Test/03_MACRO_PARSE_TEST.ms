@@ -1,20 +1,20 @@
 clearListener(); print("Cleared in: "+getSourceFileName())
 
-filein( getFilenamePath(getSourceFileName()) + "/../include-QuadMenuManager.ms" )	--"./../include-QuadMenuManager.ms"
+filein( getFilenamePath(getSourceFileName()) + "/../include-MenuManager.ms" )	--"./../include-MenuManager.ms"
 
 filein( getFilenamePath(getSourceFileName()) + "/_INCLUDE-TEST_MACROSCRIPT.mcr" )	--"./_INCLUDE-TEST_MACROSCRIPT.mcr"
 
 
 /*------------------------------------------------------------------------------
   
-	TEST OF MENU AND QUAD MENUS using QuadMenuManager_v
+	TEST OF MENU AND QUAD MENUS using MenuManager_v
 
 ------------------------------------------------------------------------------*/
 
 
 
-/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-QuadMenuManager.ms" */ 
-global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
+/* CREATE INSTANCE FOR TESTING - FOR PRODUCTION CREATED IN "./../include-MenuManager.ms" */ 
+global MENU_MANAGER_GLOBAL = MenuManager_v()
 
 MENU_MANAGER_GLOBAL.Blacklist.menus = #( "*Black-List-Test.*" )
 
