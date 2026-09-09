@@ -1,6 +1,6 @@
 /*
 	MenuManagerUI.ms
-	Version: 0.92
+	Version: 1.01
 	UI for MENU_MANAGER_GLOBAL macro management
 	TreeView-based macroscript inspector + install/reset tools
 */
@@ -12,7 +12,7 @@ try (destroyDialog MenuManagerUI_ROLLOUT) catch()
 
 struct MenuManagerUICallbacks_Struct
 (
-    version = 0.92,
+    version = 1.01,
 
     function buildMacroTree paths treeView =
     (
@@ -88,7 +88,7 @@ struct MenuManagerUICallbacks_Struct
             node = treeView.SelectedNode
             if node != undefined then
             (
-                -- If it's a leaf node, return its full path
+                -- If it is a leaf node, return its stored source value
                 if node.Nodes.Count == 0 then
                 (
                     if node.Tag != undefined then return node.Tag as string
@@ -111,6 +111,111 @@ struct MenuManagerUICallbacks_Struct
                 this.setChildNodesChecked child_node is_checked
             )
         )
+    ),
+
+    function collectVisibleNodes nodes visible_nodes =
+    (
+        if nodes.Count > 0 then
+        (
+            for node_index = 0 to nodes.Count - 1 do
+            (
+                local node = nodes.Item[node_index]
+                append visible_nodes node
+                if node.IsExpanded then
+                    this.collectVisibleNodes node.Nodes visible_nodes
+            )
+        )
+
+        visible_nodes -- return
+    ),
+
+    function findTreeNodeIndex nodes target_node =
+    (
+        local found_index = 0
+
+        for node_index = 1 to nodes.count while found_index == 0 do
+        (
+            if nodes[node_index].Equals target_node then
+                found_index = node_index
+        )
+
+        found_index -- return
+    ),
+
+    function isShiftKeyPressed =
+    (
+        local control_class = dotNetClass "System.Windows.Forms.Control"
+        local modifier_text = control_class.ModifierKeys.ToString()
+
+        findString modifier_text "Shift" != undefined -- return
+    ),
+
+    function setCheckedNodeRange tree_view first_node last_node is_checked =
+    (
+        local visible_nodes = #()
+        this.collectVisibleNodes tree_view.Nodes visible_nodes
+
+        local first_index = this.findTreeNodeIndex visible_nodes first_node
+        local last_index = this.findTreeNodeIndex visible_nodes last_node
+
+        if first_index == 0 or last_index == 0 then
+        (
+            last_node.Checked = is_checked
+            this.setChildNodesChecked last_node is_checked
+        )
+        else
+        (
+            local range_start = first_index
+            local range_end = last_index
+
+            if range_start > range_end then
+            (
+                range_start = last_index
+                range_end = first_index
+            )
+
+            for node_index = range_start to range_end do
+            (
+                local node = visible_nodes[node_index]
+                node.Checked = is_checked
+                this.setChildNodesChecked node is_checked
+            )
+        )
+    ),
+
+    function toggleNodeFromClick tree_view event_args selection_anchor =
+    (
+        local mouse_buttons = dotNetClass "System.Windows.Forms.MouseButtons"
+        local hit_locations = dotNetClass "System.Windows.Forms.TreeViewHitTestLocations"
+        local next_anchor = selection_anchor
+
+        if event_args.Button == mouse_buttons.Left then
+        (
+            local hit_info = tree_view.HitTest event_args.Location
+            local hit_location = hit_info.Location
+
+            if hit_location != hit_locations.PlusMinus then
+            (
+                if this.isShiftKeyPressed() and selection_anchor != undefined then
+                (
+                    local is_checked = event_args.Node.Checked
+                    if hit_location != hit_locations.StateImage then
+                        is_checked = not event_args.Node.Checked
+
+                    this.setCheckedNodeRange tree_view selection_anchor event_args.Node is_checked
+                )
+                else if hit_location != hit_locations.StateImage then
+                (
+                    local is_checked = not event_args.Node.Checked
+                    event_args.Node.Checked = is_checked
+                    this.setChildNodesChecked event_args.Node is_checked
+                )
+
+                next_anchor = event_args.Node
+            )
+        )
+
+        next_anchor -- return
     ),
 
     function collectCheckedLeafPaths nodes selected_paths =
@@ -173,18 +278,12 @@ struct MenuManagerUICallbacks_Struct
         (
             if selections == undefined or selections.count == 0 then
             (
-                messageBox "Check one or more menu files first." title:"Menu Manager UI"
+                messageBox "Check one or more menu names first." title:"Menu Manager UI"
             )
             else
             (
-                selected_paths = this.getExistingSelectedPaths selections
-                if selected_paths.count > 0 then
-                (
-                    selected_manager = QuadMenuManager_v()
-                    selected_manager.addMacrosToMenus selected_paths
-                    selected_manager.createMenus()
-                    format "Installed % selected menu file(s).\n" selected_paths.count
-                )
+                MENU_MANAGER_GLOBAL.createMenus which:selections
+                format "Installed % selected menu(s).\n" selections.count
             )
         )
         catch
@@ -284,6 +383,8 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 
     local macro_data = #()
     local quad_data = #()
+    local menu_selection_anchor = undefined
+    local quad_selection_anchor = undefined
 
     function updateMacroData =
     (
@@ -291,10 +392,10 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         
         if MENU_MANAGER_GLOBAL != undefined then
         (
-            if isProperty MENU_MANAGER_GLOBAL #macroscripts_to_import then
+            if isProperty MENU_MANAGER_GLOBAL #menus_data then
             (
-                for mcr_path in MENU_MANAGER_GLOBAL.macroscripts_to_import do
-                    appendIfUnique macro_data mcr_path
+                for menu_name in MENU_MANAGER_GLOBAL.menus_data.keys do
+                    appendIfUnique macro_data menu_name
             )
         )
     )
@@ -310,6 +411,77 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
                 for quad_cfg_path in MENU_MANAGER_GLOBAL.quad_cfg_files do
                     appendIfUnique quad_data quad_cfg_path
             )
+        )
+    )
+    function increaseTreeFontByOnePixel tree_view =
+    (
+        local pixel_in_points = 0.75
+        local font_size = tree_view.Font.SizeInPoints + pixel_in_points
+        tree_view.Font = dotNetObject "System.Drawing.Font" tree_view.Font.FontFamily font_size tree_view.Font.Style
+    )
+
+    function countVisibleTreeNodes nodes =
+    (
+        local visible_count = 0
+
+        if nodes.Count > 0 then
+        (
+            for node_index = 0 to nodes.Count - 1 do
+            (
+                local node = nodes.Item[node_index]
+                visible_count += 1
+                if node.IsExpanded then
+                    visible_count += countVisibleTreeNodes node.Nodes
+            )
+        )
+
+        visible_count -- return
+    )
+
+    function updateTreeLayout =
+    (
+        local dialog_width = 724
+        local layout_height = 140
+        local minimum_tree_height = 240
+        local max_window_margin = 48
+        local max_window_rect = windows.getWindowPos #max
+        local max_dialog_height = 540
+
+        if max_window_rect != undefined then
+            max_dialog_height = max_window_rect.h - max_window_margin
+
+        if max_dialog_height < minimum_tree_height + layout_height then
+            max_dialog_height = minimum_tree_height + layout_height
+
+        local max_tree_height = max_dialog_height - layout_height
+        local menu_required_height = (countVisibleTreeNodes tv_menus.Nodes * tv_menus.ItemHeight) + 6
+        local quad_required_height = (countVisibleTreeNodes tv_quads.Nodes * tv_quads.ItemHeight) + 6
+        local tree_height = menu_required_height
+
+        if quad_required_height > tree_height then tree_height = quad_required_height
+        if tree_height < minimum_tree_height then tree_height = minimum_tree_height
+        if tree_height > max_tree_height then tree_height = max_tree_height
+
+        tv_menus.height = tree_height
+        tv_quads.height = tree_height
+        tv_menus.Scrollable = menu_required_height > tree_height
+        tv_quads.Scrollable = quad_required_height > tree_height
+
+        local button_y = 16 + tree_height
+        btnInstallMenus.pos = [8, button_y]
+        btnResetMenus.pos = [188, button_y]
+        btnInstallQuads.pos = [366, button_y]
+        btnResetQuads.pos = [546, button_y]
+        btnRefresh.pos = [273, button_y + 44]
+
+        setDialogSize MenuManagerUI_ROLLOUT [dialog_width, tree_height + layout_height]
+
+        if max_window_rect != undefined then
+        (
+            local dialog_size = getDialogSize MenuManagerUI_ROLLOUT
+            local dialog_position = getDialogPos MenuManagerUI_ROLLOUT
+            local centered_y = (max_window_rect.y + ((max_window_rect.h - dialog_size.y) / 2)) as integer
+            setDialogPos MenuManagerUI_ROLLOUT [dialog_position.x, centered_y]
         )
     )
 	
@@ -328,10 +500,10 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 			tv.LineColor = drawingColor.FromArgb 150 150 150    -- Mid Gray hierarchy lines
 		)
 		
-        setDialogSize MenuManagerUI_ROLLOUT [724, 500]
-
         tv_menus.CheckBoxes = true
         tv_quads.CheckBoxes = true
+        tv_menus.Sorted = true
+        tv_quads.Sorted = true
         tv_menus.HideSelection = false
         tv_quads.HideSelection = false
 
@@ -344,6 +516,9 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 		darkThemeTreeView tv_menus
 		
 		darkThemeTreeView tv_quads
+
+        increaseTreeFontByOnePixel tv_menus
+        increaseTreeFontByOnePixel tv_quads
 
 		
         MenuManagerUICallbacks.buildMacroTree macro_data tv_menus
@@ -359,6 +534,7 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 		--quad_data = #( MENU_MANAGER_GLOBAL.quad_cfg_files[1]  )
 		
 		MenuManagerUICallbacks.buildMacroTree quad_data tv_quads
+		updateTreeLayout()
 		
     )
 
@@ -374,6 +550,36 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         selections = MenuManagerUICallbacks.getSelectedMacros tv_quads
 
         MenuManagerUICallbacks.installQuadMenusFromSelected selections
+    )
+
+    on tv_menus AfterExpand sender event_args do
+    (
+        updateTreeLayout()
+    )
+
+    on tv_menus AfterCollapse sender event_args do
+    (
+        updateTreeLayout()
+    )
+
+    on tv_quads AfterExpand sender event_args do
+    (
+        updateTreeLayout()
+    )
+
+    on tv_quads AfterCollapse sender event_args do
+    (
+        updateTreeLayout()
+    )
+
+    on tv_menus NodeMouseClick sender event_args do
+    (
+        menu_selection_anchor = MenuManagerUICallbacks.toggleNodeFromClick sender event_args menu_selection_anchor
+    )
+
+    on tv_quads NodeMouseClick sender event_args do
+    (
+        quad_selection_anchor = MenuManagerUICallbacks.toggleNodeFromClick sender event_args quad_selection_anchor
     )
 
     on tv_menus AfterCheck sender event_args do
@@ -402,16 +608,19 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
 
     on btnRefresh pressed do
     (
+        menu_selection_anchor = undefined
+        quad_selection_anchor = undefined
         updateMacroData()
         updateQuadData()
         MenuManagerUICallbacks.buildMacroTree macro_data tv_menus
         MenuManagerUICallbacks.buildMacroTree quad_data tv_quads
+        updateTreeLayout()
     )
 )
 
 
 /*
 
-createDialog MenuManagerUI_ROLLOUT 724 500
+createDialog MenuManagerUI_ROLLOUT 724 540
 
 */

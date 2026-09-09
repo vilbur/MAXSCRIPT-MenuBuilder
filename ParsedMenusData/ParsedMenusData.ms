@@ -36,29 +36,23 @@ struct ParsedMenusData_v
 			for _MacroScript in MacroParser.MacroScripts where _MacroScript.params[#MENU] == true do
 			--for _MacroScript in MacroParser.MacroScripts do
 			(
-				format "_MacroScript: %\n" _MacroScript.macro_name
-				--format "_MacroScript: %\n" _MacroScript
-				--format "_MacroScript.params: %\n" _MacroScript.params
-				--format "MENU PARAM: %\n"( _MacroScript.hasParam #MENU)
-				
-				 --_MacroScript.hasParam #MENU
-				
+
 				title = this._getTitle (_MacroScript)
-				--format "title: %\n" title
-				
-				
+
 				this.addItemToMenu (_MacroScript.category) (_MacroScript.macro_name) (title)  --return
 			)
 		)
 		
 		format "MENUS_DATA.KEYS: %\n" menus_data.keys
+		--for key in menus_data.keys do
+			--format "key: % \nVALUE: %\n\n" key menus_data[key]
 	),
 	
 	/** Add item to menu
 	 */
 	function addItemToMenu macro_category macro_name title =
 	(
-		format "\n"; print "QuadMenuManager_v.addItemToMenu()"
+		--format "\n"; print "QuadMenuManager_v.addItemToMenu()"
 		--menu_name = item_data[1] -- menu name is category of macroscript  
 		menu_data = this._getDataOfMenuByName macro_category
 		

@@ -1,5 +1,5 @@
 macroscript	_test_macro_blacklist
-category:	"_THIS_SHOULD_NOT_APPEAR_IN_MENU"
+category:	"_THIS_IS_BLACKLISTED_FILE"
 buttontext:	"Test"
 icon:	"MENU:true"
 (

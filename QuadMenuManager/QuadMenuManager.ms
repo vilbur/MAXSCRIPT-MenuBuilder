@@ -48,6 +48,7 @@ struct QuadMenuManager_v
 	
 	/* required */
 	/* properties */
+	menus_data = Dictionary #string,
  
 	/* private */
 	macroscripts_to_import = #(), -- PATHS TO *.mcr FILES with menus definition
@@ -77,9 +78,13 @@ struct QuadMenuManager_v
 	 */
 	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
 	(
-		format "\n"; print "QuadMenuManager_v.menu()"
+		--format "\n"; print "QuadMenuManager_v.menu()"
 		
-		this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		local menu_definition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		if menu_definition != undefined and this.MenuBuildManager.normalizeMenuType type == #menu then
+			this.menus_data[menu_definition.title] = menu_definition
+
+		menu_definition -- return
 	),
 	
 	/*==============================================================================
@@ -110,7 +115,7 @@ struct QuadMenuManager_v
 		
 			--ParsedMenusData,	--"./../ParsedMenusData/ParsedMenusData.ms"	
 		/* GET PATHS TO .mcr FILES */
-		macroscripts_paths = this._getPathsToFiles(macroscripts_paths)
+		macroscripts_paths = this._getPathsToFiles(macroscripts_paths) filetype:"mcr"
 		
 		
 		/* TEST FILES BALCKLIST */ 
@@ -122,7 +127,7 @@ struct QuadMenuManager_v
 		
 		
 		/* FILE IN .mcr FILES */
-		this._fileInMacroscriptFiles macroscripts_paths
+		--this._fileInMacroscriptFiles macroscripts_paths
 		
 		
 		/* ADD MACROSCRIPTS TO MENUS */ 
@@ -132,11 +137,11 @@ struct QuadMenuManager_v
 		/* DEFINE MENUS FROM PARSED DATA */ 
 		for menu_name in ParsedMenusData.menus_data.keys do
 		(
-			format "\n"
-			format "MENU_NAME: %\n" menu_name
-			format "ParsedMenusData.menus_data[menu_name]: %\n" ParsedMenusData.menus_data[menu_name]
+			--format "\n"
+			--format "MENU_NAME: %\n" menu_name
+			--format "ParsedMenusData.menus_data[menu_name]: %\n" ParsedMenusData.menus_data[menu_name]
 			
-			local menu_new = this.MenuBuildManager.menu menu_name
+			local menu_new = this.menu menu_name
 
 			for menu_item_data in ParsedMenusData.menus_data[menu_name] do
 				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
@@ -150,11 +155,11 @@ struct QuadMenuManager_v
 	(
 		--format "\n"; print "QuadMenuManager_v.quadDir()"
 	
-		quad_cfg_files = this._getPathsToFiles quad_cfg_paths -- return
+		quad_cfg_paths = this._getPathsToFiles quad_cfg_paths filetype:"ms" -- return
 		
 		
 		/* FILTER FILES BY BALCKLIST */ 
-		this.quad_cfg_files = for quad_cfg_file in quad_cfg_files where not Blacklist.isOnBlacklist quad_cfg_file blacklist:#QUADS collect quad_cfg_file
+		this.quad_cfg_files += for quad_cfg_path in quad_cfg_paths where not Blacklist.isOnBlacklist quad_cfg_path blacklist:#QUADS collect quad_cfg_path
 	),
 		
 	/** Add item to menu
@@ -182,8 +187,24 @@ struct QuadMenuManager_v
 		FORMAT "\n\n"; print "========================= CREATE MENUS ========================="
 		format "QuadMenuManager_v.createMenus()"
 
+		if which.count == 0 then
+		(
+			this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+		)
+		else
+		(
+			local selected_build_manager = MenuBuildManager_v()
 
-		this.MenuBuildManager.installMenusNow update_quads:true load_default_cui_configuration:true
+			for menu_name in which do
+			(
+				local menu_definition = this.menus_data[menu_name]
+				if menu_definition != undefined then
+					selected_build_manager.waitForBuild menu_definition
+			)
+
+			if selected_build_manager.menus_data.count > 0 then
+				selected_build_manager.installMenusNow update_quads:true load_default_cui_configuration:true
+		)
 	),
 
 	/** SETUP MENUS BY CONFIG FILES IN DIR
@@ -346,8 +367,10 @@ struct QuadMenuManager_v
 	/** Collect .mcr files from FILES or DIRECTORIES.
 	  *
 	  * Adds sanitized file paths into the destination array.
+	  
+	  * @param filetype "ms|mcr"
 	  */
-	function _getPathsToFiles input_paths =
+	function _getPathsToFiles input_paths filetype: =
 	(
 		--format "\n"; print "QuadMenuManager_v._getPathsToFiles()"
 	
@@ -363,9 +386,10 @@ struct QuadMenuManager_v
 			if doesDirectoryExist input_path then
 			(
 				/* GET .ms and .mcr FILES in directory */ 
-				ms_and_mcr_files = getFiles ( pathConfig.appendPath input_path "*.ms")  + getFiles ( pathConfig.appendPath input_path "*.mcr") 
+				--ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path "*.ms") recurse:true  + getFiles ( pathConfig.appendPath input_path "*.mcr") recurse:true
+				ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path ("*."+filetype) ) recurse:true 
 				
-				for file_path in ms_and_mcr_files do
+				for file_path in ms_or_mcr_files do
 					appendIfUnique destination_array (this._sanitizePath file_path)
 			)
 			else

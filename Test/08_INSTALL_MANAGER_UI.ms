@@ -46,7 +46,8 @@ global MENU_MANAGER_GLOBAL = QuadMenuManager_v()
 --------------------------------------------------------------------------------*/
 
 /* GET MACTOSCRIPTS IN DIR */ 
-macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
+--macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
+macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
 
 MENU_MANAGER_GLOBAL.Blacklist.menus = #( "*Black-List-Test.*" )
 
@@ -64,8 +65,10 @@ quad_cfg_files += #( current_dir + "/Test-Quad-Files/ModKeys" )	--"./Test-Quad-F
 quad_cfg_files += #( current_dir + "/Test-Quad-Files/Quads-Custom" )	--"./Test-Quad-Files/Quads-Custom`"
 
 
-
 MENU_MANAGER_GLOBAL.quadDir ( quad_cfg_files )
+
+
+MENU_MANAGER_GLOBAL.quadDir @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-Quad-Menus-Config"	--"./Test-Quad-Files/Quads-Custom`"
 
 /*------------------------------------------------------------------------------
 	CREATE DIALOG MENU MANAGER UI
