@@ -359,7 +359,7 @@ struct MenuManagerUICallbacks_Struct
 	 */
 	function _showException =
 	(
-		--format "\n"; print "MenuManagerUICallbacks_Struct._showException()"
+		format "\n"; print "MenuManagerUICallbacks_Struct._showException()"
 		format "\n——————————————— ERROR IN FILE ———————————————\n\n%\n" (getSourceFileName())
 		format "\n————————————————— EXCEPTION —————————————————\n\n%\n" (getCurrentException())
 		format "\n——————————————————— TRACE ———————————————————\n%\n"   (getCurrentExceptionStackTrace())

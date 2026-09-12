@@ -112,14 +112,22 @@ struct MenuManager_v
 	function addMacrosToMenus macroscripts_paths =
 	(
 		--format "\n"; print "MenuManager_v.addMacrosToMenus()"
-		
+		--format "macroscripts_paths: %\n" macroscripts_paths
+		if macroscripts_paths == undefined then
+		(
+			format "\n"; print "MenuManager_v.addMacrosToMenus()"
+			format "WARNING UNDEFINED PARAMETER macroscripts_paths  METHOD:MenuManager_v.addMacrosToMenus()\n"
+			return false
+		)
 			--ParsedMenusData,	--"./../Lib/ParsedMenusData/ParsedMenusData.ms"	
 		/* GET PATHS TO .mcr FILES */
 		macroscripts_paths = this._getPathsToFiles(macroscripts_paths) filetype:"mcr"
+		--format "macroscripts_paths: %\n" macroscripts_paths
 		
 		
 		/* TEST FILES BALCKLIST */ 
 		macroscripts_paths = for macroscripts_path in macroscripts_paths where not Blacklist.isOnBlacklist macroscripts_path blacklist:#MENUS collect macroscripts_path
+		--format "macroscripts_paths: %\n" macroscripts_paths
 		
 		
 		/* REMBER MACROSCRIPT FILES - USED BY MenuManagerUI */ 
@@ -128,6 +136,8 @@ struct MenuManager_v
 		
 		/* REGISTER MACROSCRIPTS BEFORE BUILDING CUI ACTIONS */
 		this._fileInMacroscriptFiles macroscripts_paths
+		
+		
 		/* ADD MACROSCRIPTS TO MENUS */ 
 		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
@@ -432,20 +442,20 @@ struct MenuManager_v
 	function _getPathsToFiles input_paths filetype: =
 	(
 		--format "\n"; print "MenuManager_v._getPathsToFiles()"
+		--format "input_paths: %\n" input_paths
 	
 		destination_array = #()
 	
 		if classOf input_paths != Array then
 			input_paths = #( input_paths )
 	
-		for input_path in input_paths where doesFileExist ( input_path = this._sanitizePath input_path) do
+		for input_path in input_paths where trimLeft(input_path) != "" and doesFileExist ( input_path = this._sanitizePath input_path ) do
 		(
-			--format "Input_Path: %\n" input_path
+			--format "INPUT_PATH: %\n" input_path
 			--format "doesDirectoryExist input_path: %\n" (doesDirectoryExist input_path)
 			if doesDirectoryExist input_path then
 			(
-				/* GET .ms and .mcr FILES in directory */ 
-				--ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path "*.ms") recurse:true  + getFiles ( pathConfig.appendPath input_path "*.mcr") recurse:true
+				/* GET .ms and .mcr FILES in directory */
 				ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path ("*."+filetype) ) recurse:true 
 				
 				for file_path in ms_or_mcr_files do

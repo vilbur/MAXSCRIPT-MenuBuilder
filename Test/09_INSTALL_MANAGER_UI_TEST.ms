@@ -46,8 +46,10 @@ global MENU_MANAGER_GLOBAL = MenuManager_v()
 --------------------------------------------------------------------------------*/
 
 /* GET MACTOSCRIPTS IN DIR */ 
+macro_scripts_files =  ""
 --macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
-macro_scripts_files =  "C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
+macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
+--macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools\rollouts-Tools\rollout-SCENE\03-RESET.mcr"
 
 
 /* ADD MACOyRS TO MENUS */ 
