@@ -171,7 +171,7 @@ struct MenuManager_v
 	(
 		--format "\n"; print "MenuManager_v.quadDir()"
 	
-		quad_cfg_paths = this._getPathsToFiles quad_cfg_paths filetype:"ms" -- return
+		quad_cfg_paths = this._getPathsToFiles quad_cfg_paths filetype:"ms" recurse:false -- return
 		
 		
 		/* FILTER FILES BY BALCKLIST */ 
@@ -439,7 +439,7 @@ struct MenuManager_v
 	  
 	  * @param filetype "ms|mcr"
 	  */
-	function _getPathsToFiles input_paths filetype: =
+	function _getPathsToFiles input_paths filetype: recurse:true =
 	(
 		--format "\n"; print "MenuManager_v._getPathsToFiles()"
 		--format "input_paths: %\n" input_paths
@@ -456,7 +456,7 @@ struct MenuManager_v
 			if doesDirectoryExist input_path then
 			(
 				/* GET .ms and .mcr FILES in directory */
-				ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path ("*."+filetype) ) recurse:true 
+				ms_or_mcr_files = getFiles ( pathConfig.appendPath input_path ("*."+filetype) ) recurse:recurse 
 				
 				for file_path in ms_or_mcr_files do
 					appendIfUnique destination_array (this._sanitizePath file_path)

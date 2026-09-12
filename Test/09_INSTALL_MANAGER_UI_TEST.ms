@@ -48,11 +48,13 @@ global MENU_MANAGER_GLOBAL = MenuManager_v()
 /* GET MACTOSCRIPTS IN DIR */ 
 macro_scripts_files =  ""
 --macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
+
+/* TEST ON PRODUCTION FILES */ 
 macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"
 --macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools\rollouts-Tools\rollout-SCENE\03-RESET.mcr"
 
 
-/* ADD MACOyRS TO MENUS */ 
+/* ADD MACORS TO MENUS */ 
 MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_files)
 
 
@@ -64,8 +66,12 @@ MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_files)
 /* COFIG FILES OF QUAD MENU */ 
 --quad_cfg_files += #( current_dir + "/Test-Quad-Files/ModKeys" )	--"./Test-Quad-Files/ModKeys"
 --quad_cfg_files += #( current_dir + "/Test-Quad-Files/Quads-Custom" )	--"./Test-Quad-Files/Quads-Custom`"
+
+/* TEST ON PRODUCTION FILES */ 
 quad_cfg_files += #( "c:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-Quad-Menus-Config" )	--"./Test-Quad-Files/Quads-Custom`"
 
+
+/* ADD PATHS TO MANAGER */ 
 MENU_MANAGER_GLOBAL.quadDir ( quad_cfg_files )
 
 /*------------------------------------------------------------------------------

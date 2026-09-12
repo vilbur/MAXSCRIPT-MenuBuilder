@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.95
+	Version: 0.96
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.95,
+	version = 0.96,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -686,16 +686,41 @@ struct MenuDefinition_v
 	),
 
 
+	/* Resolve a string title from either a title value or MenuDefinition_v. */
+	function getMenuReferenceTitle menu_reference =
+	(
+		local menu_title = ""
+
+		if menu_reference != undefined then
+		(
+			try (menu_title = menu_reference.title as string) catch (menu_title = menu_reference as string)
+		)
+
+		menu_title -- return
+	),
+
+
 	/*
-	Load existing menu items by title.
+	Load existing menu items by title or directly from MenuDefinition_v.
 	Uses manager saved data when available.
 	*/
-	function loadExistingMenuItems menu_title =
+	function loadExistingMenuItems menu_reference =
 	(
-		menu_items = #()
-		menu_manager = this.getManager()
+		local menu_items = #()
+		local menu_title = this.getMenuReferenceTitle menu_reference
+		local menu_manager = this.getManager()
 
-		if menu_manager != undefined then
+		try
+		(
+			local definition_items = menu_reference.getActiveData()
+			if this.isArrayValue definition_items then menu_items = this.cloneArrayValue definition_items
+		)
+		catch
+		(
+			menu_items = #()
+		)
+
+		if menu_items.count == 0 and menu_manager != undefined then
 		(
 			try
 			(
@@ -755,10 +780,11 @@ struct MenuDefinition_v
 	Append existing menu items into this menu.
 	Used by addMenu flat:true.
 	*/
-	function appendExistingMenuItems menu_title index:undefined separators:undefined =
+	function appendExistingMenuItems menu_reference index:undefined separators:undefined =
 	(
 		target_items = this.ensureItemsArray()
-		source_items = this.loadExistingMenuItems menu_title
+		menu_title = this.getMenuReferenceTitle menu_reference
+		source_items = this.loadExistingMenuItems menu_reference
 
 		if source_items.count > 0 then
 		(
@@ -781,11 +807,12 @@ struct MenuDefinition_v
 	Add submenu or flattened existing menu.
 	Returns MenuDefinition_v for submenu when flat:false.
 	*/
-	function addSubMenu menu_title index:undefined separators:undefined title:undefined =
+	function addSubMenu menu_reference index:undefined separators:undefined title:undefined =
 	(
+		menu_title = this.getMenuReferenceTitle menu_reference
 		submenu_title = menu_title
 		if title != undefined and title != "" then submenu_title = title
-		submenu_items = this.loadExistingMenuItems menu_title
+		submenu_items = this.loadExistingMenuItems menu_reference
 		this.insertSeparatorsInItemArray submenu_items separators:separators
 		submenu_data = this.makeSubMenuItemData submenu_title submenu_items separators:separators source_menu_title:menu_title
 		this.appendSavedItem submenu_data index:index
@@ -809,19 +836,19 @@ struct MenuDefinition_v
 	flat:true copies the source menu items into this menu.
 	flat:false creates a real submenu, including inside quad menus.
 	*/
-	function addMenu menu_title flat:false index:undefined separators:undefined title:undefined =
+	function addMenu menu_reference flat:false index:undefined separators:undefined title:undefined =
 	(
 		result_data = undefined
 		effective_flat = flat
 
 		if effective_flat then
 		(
-			this.appendExistingMenuItems menu_title index:index separators:separators
+			this.appendExistingMenuItems menu_reference index:index separators:separators
 			result_data = this
 		)
 		else
 		(
-			result_data = this.addSubMenu menu_title index:index separators:separators title:title
+			result_data = this.addSubMenu menu_reference index:index separators:separators title:title
 		)
 
 		result_data -- return

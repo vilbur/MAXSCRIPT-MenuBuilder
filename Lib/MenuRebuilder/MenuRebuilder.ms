@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.93
+	Version: 0.94
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -12,7 +12,7 @@ if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_gua
 
 struct MenuRebuilder_v
 (
-	version = 0.93,
+	version = 0.94,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -602,6 +602,93 @@ struct MenuRebuilder_v
 	),
 
 
+	/*
+	Find a registered menu item in either CUI manager.
+	*/
+	function getExistingCuiItemById item_id =
+	(
+		local existing_item = undefined
+		local menu_managers = #()
+
+		try
+		(
+			local menu_manager = maxOps.GetICuiMenuMgr()
+			if menu_manager != undefined then appendIfUnique menu_managers menu_manager
+		)
+		catch
+		(
+			ok
+		)
+
+		try
+		(
+			local quad_menu_manager = maxOps.GetICuiQuadMenuMgr()
+			if quad_menu_manager != undefined then appendIfUnique menu_managers quad_menu_manager
+		)
+		catch
+		(
+			ok
+		)
+
+		for menu_manager in menu_managers while existing_item == undefined do
+		(
+			try
+			(
+				existing_item = menu_manager.GetMenuItemById item_id
+			)
+			catch
+			(
+				existing_item = undefined
+			)
+		)
+
+		existing_item -- return
+	),
+
+
+	/*
+	Reuse a retained CUI item when immediate recreation reports a duplicate ID.
+	DeleteItem can detach an item before the manager releases its GUID.
+	*/
+	function reuseExistingCuiItem parent_menu item_id =
+	(
+		local existing_item = this.getExistingCuiItemById item_id
+		local reuse_ok = existing_item != undefined
+		local needs_move = reuse_ok
+
+		if reuse_ok then
+		(
+			local current_parent = undefined
+			try (current_parent = existing_item.parent) catch (current_parent = undefined)
+
+			if current_parent != undefined then
+			(
+				try
+				(
+					needs_move = (current_parent.id as string) != (parent_menu.id as string)
+				)
+				catch
+				(
+					needs_move = true
+				)
+			)
+
+			if needs_move then
+			(
+				try
+				(
+					reuse_ok = existing_item.Move parent_menu.id
+				)
+				catch
+				(
+					reuse_ok = false
+				)
+			)
+		)
+
+		if reuse_ok then existing_item else undefined -- return
+	),
+
 	function createRealCuiSeparator target_menu item_id =
 	(
 		separator_item = undefined
@@ -704,6 +791,11 @@ struct MenuRebuilder_v
 						created_item = parent_menu.CreateAction item_id action_table_id persistent_action_id
 					)
 
+
+					if created_item == undefined then
+					(
+						created_item = this.reuseExistingCuiItem parent_menu item_id
+					)
 					if created_item != undefined and this.shouldUseCustomTitle item_data macro_name item_title then
 					(
 						created_item.title = item_title
@@ -1073,21 +1165,181 @@ struct MenuRebuilder_v
 	),
 
 
-	function createCustomQuadRootMenu quad_context =
+	/*
+	Delete all existing entries from one CUI menu.
+	A copied item array avoids mutating the collection during iteration.
+	*/
+	function clearCuiMenuItems target_menu =
 	(
-		quad_menu = undefined
-		quad_modifier = this.getQuadModifier()
+		local was_cleared = true
+		local menu_items = #()
+
+		if target_menu != undefined then
+		(
+			try
+			(
+				for menu_item in target_menu.menuItems do
+				(
+					append menu_items menu_item
+				)
+			)
+			catch
+			(
+				was_cleared = false
+			)
+
+			for menu_item in menu_items do
+			(
+				try
+				(
+					if not (target_menu.DeleteItem menu_item.id) then
+					(
+						was_cleared = false
+					)
+				)
+				catch
+				(
+					was_cleared = false
+				)
+			)
+		)
+
+		was_cleared -- return
+	),
+
+
+	/*
+	Clear all four position menus before rebuilding an existing custom quad.
+	The 2026 MAXScript API exposes no quad-root deletion method.
+	*/
+	function clearCustomQuadMenu quad_menu =
+	(
+		local was_cleared = true
+		local quad_positions = #(#BottomRight, #TopRight, #TopLeft, #BottomLeft)
+
+		if quad_menu != undefined then
+		(
+			for quad_position_value in quad_positions do
+			(
+				local quad_position_menu = undefined
+				try
+				(
+					quad_position_menu = quad_menu.GetMenuByPos quad_position_value
+				)
+				catch
+				(
+					quad_position_menu = undefined
+				)
+
+				if quad_position_menu != undefined then
+				(
+					if not (this.clearCuiMenuItems quad_position_menu) then
+					(
+						was_cleared = false
+					)
+				)
+			)
+		)
+
+		was_cleared -- return
+	),
+
+
+	/*
+	Collect every installed root representing this custom quad.
+	Title matching catches stale roots left behind under an earlier saved GUID.
+	*/
+	function getExistingCustomQuadMenus quad_menu_manager quad_context =
+	(
+		local quad_menus = #()
+		local exact_quad_menu = undefined
+
+		if quad_menu_manager != undefined then
+		(
+			try
+			(
+				exact_quad_menu = quad_menu_manager.GetQuadMenuById (this.getMenuId())
+			)
+			catch
+			(
+				exact_quad_menu = undefined
+			)
+
+			if exact_quad_menu != undefined then
+			(
+				appendIfUnique quad_menus exact_quad_menu
+			)
+		)
 
 		if quad_context != undefined then
+		(
+			local context_quad_menus = #()
+			try
+			(
+				for context_quad_menu in (quad_context.GetQuadMenus()) do
+				(
+					append context_quad_menus context_quad_menu
+				)
+			)
+			catch
+			(
+				context_quad_menus = #()
+			)
+
+			for context_quad_menu in context_quad_menus do
+			(
+				if this.quadTitlesMatch (this.getQuadMenuTitle context_quad_menu) (this.getMenuTitle()) then
+				(
+					appendIfUnique quad_menus context_quad_menu
+				)
+			)
+		)
+
+		quad_menus -- return
+	),
+
+
+	/*
+	Clear all matching roots and reuse one of them.
+	This prevents duplicate CUI item IDs when installing twice without a reset.
+	*/
+	function prepareCustomQuadRootMenu quad_menu_manager quad_context =
+	(
+		local existing_quad_menus = this.getExistingCustomQuadMenus quad_menu_manager quad_context
+		local quad_menu = undefined
+		local quad_modifier = this.getQuadModifier()
+		local clear_ok = true
+
+		if existing_quad_menus.count > 0 then
+		(
+			quad_menu = existing_quad_menus[1]
+
+			for existing_quad_menu in existing_quad_menus do
+			(
+				if not (this.clearCustomQuadMenu existing_quad_menu) then
+				(
+					clear_ok = false
+					format "MenuRebuilder_v.prepareCustomQuadRootMenu failed. Existing quad was not completely cleared. title:'%' id:'%'\n" (this.getMenuTitle()) (this.getMenuId())
+				)
+			)
+
+			if clear_ok then
+			(
+				try (quad_menu.SetTitle (this.getMenuTitle())) catch
+				(
+					try (quad_menu.title = this.getMenuTitle()) catch (ok)
+				)
+			)
+			else
+			(
+				quad_menu = undefined
+			)
+		)
+		else if quad_context != undefined then
 		(
 			try
 			(
 				quad_menu = quad_context.CreateQuadMenu (this.getMenuId()) (this.getMenuTitle())
-
-				if quad_menu != undefined and quad_modifier != undefined then
-				(
-					quad_context.SetRightClickModifiers quad_menu quad_modifier
-				)
 			)
 			catch
 			(
@@ -1095,23 +1347,50 @@ struct MenuRebuilder_v
 			)
 		)
 
+		if quad_menu != undefined and quad_context != undefined and quad_modifier != undefined then
+		(
+			try
+			(
+				quad_context.SetRightClickModifiers quad_menu quad_modifier
+			)
+			catch
+			(
+				ok
+			)
+		)
+
 		quad_menu -- return
 	),
 
-
 	function rebuildCustomQuadPositionMenu quad_menu quad_title quad_position_value quad_menu_id_value quad_items_value =
 	(
-		quad_position_menu = undefined
+		local quad_position_menu = undefined
 
 		if quad_menu != undefined then
 		(
 			try
 			(
-				quad_position_menu = quad_menu.CreateMenu quad_menu_id_value quad_title quad_position_value
+				quad_position_menu = quad_menu.GetMenuByPos quad_position_value
 			)
 			catch
 			(
 				quad_position_menu = undefined
+			)
+
+			if quad_position_menu == undefined then
+			(
+				try
+				(
+					quad_position_menu = quad_menu.CreateMenu quad_menu_id_value quad_title quad_position_value
+				)
+				catch
+				(
+					quad_position_menu = undefined
+				)
+			)
+			else
+			(
+				try (quad_position_menu.title = quad_title) catch (ok)
 			)
 
 			if quad_position_menu != undefined then
@@ -1122,7 +1401,6 @@ struct MenuRebuilder_v
 
 		quad_position_menu -- return
 	),
-
 
 	function injectExistingQuadPositionMenu quad_menu quad_position_value quad_items_value =
 	(
@@ -1160,7 +1438,7 @@ struct MenuRebuilder_v
 		if quad_menu_manager != undefined then
 		(
 			quad_context = this.getQuadContext quad_menu_manager
-			quad_menu = this.createCustomQuadRootMenu quad_context
+			quad_menu = this.prepareCustomQuadRootMenu quad_menu_manager quad_context
 			quad_menus = this.getQuadMenus()
 
 			if quad_menu != undefined then
