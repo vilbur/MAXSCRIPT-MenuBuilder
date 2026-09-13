@@ -45,6 +45,7 @@ struct MenuBuildManager_v
 	menus_data = #(),
 	wait_for_build = #(),
 	saved_menus_data = #(),
+	saved_menus_data_loaded = false,
 	data_file_name = "MenuRebuilder_data.json",
 	data_folder_name = "MenuRebuilder_data",
 	menus_folder_name = "menus",
@@ -1771,42 +1772,19 @@ struct MenuBuildManager_v
 		found_menu_data = undefined
 		resolved_title = this.resolveDefaultQuadTitle menu_title
 
-		if this.saved_menus_data.count > 0 then
+		/* Keep the first complete disk load on this manager. Reloading the full
+		   native data file for every requested menu exhausts memory on large sets. */
+		if not this.saved_menus_data_loaded then
 		(
-			found_menu_data = this.findSavedMenuDataByTitleInArray resolved_title this.saved_menus_data
+			if this.saved_menus_data.count == 0 then
+				this.saved_menus_data = this.loadSavedMenusDataFromJson()
+			this.saved_menus_data_loaded = true
 		)
 
-		if found_menu_data == undefined then
-		(
-			if this.split_json_enabled then
-			(
-				found_menu_data = this.loadSplitMenuDataByTitle resolved_title
-			)
-		)
+		found_menu_data = this.findSavedMenuDataByTitleInArray resolved_title this.saved_menus_data
 
-		if found_menu_data == undefined then
-		(
-			found_menu_data = this.findSavedMenuDataByTitleInArray resolved_title (this.loadSavedMenusDataFromJson())
-		)
-
-		if found_menu_data == undefined then
-		(
-			if resolved_title != menu_title then
-			(
-				if this.saved_menus_data.count > 0 then
-				(
-					found_menu_data = this.findSavedMenuDataByTitleInArray menu_title this.saved_menus_data
-				)
-
-				if found_menu_data == undefined then
-				(
-					if this.split_json_enabled then
-					(
-						found_menu_data = this.loadSplitMenuDataByTitle menu_title
-					)
-				)
-			)
-		)
+		if found_menu_data == undefined and resolved_title != menu_title then
+			found_menu_data = this.findSavedMenuDataByTitleInArray menu_title this.saved_menus_data
 
 		found_menu_data -- return
 	),
@@ -1837,19 +1815,18 @@ struct MenuBuildManager_v
 	function createMenuDefinitionFromSavedMenuData menu_data =
 	(
 		definition_type = this.getSavedMenuType menu_data
-		menu_definition = MenuDefinition_v type:definition_type title:(this.getSavedMenuTitle menu_data) quad_modifier:(this.getSavedQuadModifier menu_data) quad_position:(this.getMenuDataValue menu_data #quad_position undefined) quad_context_id:(this.getMenuDataValue menu_data #quad_context_id "") manager:this qmnx_clear_directory:(this.getSavedQmnxClearDirectory menu_data) clear_default_menu:(this.getSavedClearDefaultMenu menu_data)
+		definition_data = menu_data[#items]
 		if definition_type == #quad and this.hasDictValueSafe menu_data #quad_menus and classOf menu_data[#quad_menus] == Array and menu_data[#quad_menus].count > 0 then
 		(
-			menu_definition.data = #()
-			for quad_data in menu_data[#quad_menus] do append menu_definition.data (this.createQuadDefinitionFromSavedQuadData quad_data menu_data)
+			definition_data = #()
+			for quad_data in menu_data[#quad_menus] do append definition_data (this.createQuadDefinitionFromSavedQuadData quad_data menu_data)
 		)
-		else menu_definition.data = menu_data[#items]
-		menu_definition._data = menu_definition.data
+		menu_definition = MenuDefinition_v type:definition_type title:(this.getSavedMenuTitle menu_data) data:definition_data _data:definition_data quad_modifier:(this.getSavedQuadModifier menu_data) quad_position:(this.getMenuDataValue menu_data #quad_position undefined) quad_context_id:(this.getMenuDataValue menu_data #quad_context_id "") manager:this qmnx_clear_directory:(this.getSavedQmnxClearDirectory menu_data) clear_default_menu:(this.getSavedClearDefaultMenu menu_data)
 		menu_definition -- return
 	),
 
 
-	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
+	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined load_native_items:true =
 	(
 		definition_type = this.normalizeMenuType type
 		resolved_title = title
@@ -1898,9 +1875,12 @@ struct MenuBuildManager_v
 					)
 				)
 
+				definition_data = if load_native_items then undefined else #()
 				menu_definition = MenuDefinition_v \
 					type:definition_type \
 					title:resolved_title \
+					data:definition_data \
+					_data:definition_data \
 					quad_modifier:definition_quad_modifier \
 					quad_position:definition_quad_position \
 					manager:this \

@@ -76,11 +76,11 @@ struct MenuManager_v
 	  
 		@return MenuDefinition_v
 	 */
-	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined =
+	function menu title type:#menu clear_default_menu:undefined qmnx_clear_directory:undefined load_native_items:true =
 	(
 		--format "\n"; print "MenuManager_v.menu()"
 		
-		local menu_definition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory
+		local menu_definition = this.MenuBuildManager.menu title type:type clear_default_menu:clear_default_menu qmnx_clear_directory:qmnx_clear_directory load_native_items:load_native_items
 		if menu_definition != undefined and this.MenuBuildManager.normalizeMenuType type == #menu then
 			this.menus_data[menu_definition.title] = menu_definition
 
@@ -125,7 +125,7 @@ struct MenuManager_v
 		--format "macroscripts_paths: %\n" macroscripts_paths
 		
 		
-		/* TEST FILES BALCKLIST */ 
+		/* TEST FILES BALCKLIST */
 		macroscripts_paths = for macroscripts_path in macroscripts_paths where not Blacklist.isOnBlacklist macroscripts_path blacklist:#MENUS collect macroscripts_path
 		--format "macroscripts_paths: %\n" macroscripts_paths
 		
@@ -141,22 +141,20 @@ struct MenuManager_v
 		/* ADD MACROSCRIPTS TO MENUS */ 
 		ParsedMenusData	= ParsedMenusData_v(macroscripts_paths)
 		
-				
+		format "\nCREATE MENUS FROM PARSED DATA \n\n"
+
 		/* DEFINE MENUS FROM PARSED DATA */ 
 		for menu_name in ParsedMenusData.menus_data.keys do
 		(
-			--format "\n"
-			--format "MENU_NAME: %\n" menu_name
-			--format "ParsedMenusData.menus_data[menu_name].count: %\n" ParsedMenusData.menus_data[menu_name].count
-			--format "ParsedMenusData.menus_data[menu_name]: %\n" ParsedMenusData.menus_data[menu_name]
-			
-			local menu_new = this.menu menu_name
+			format "    MENU_NAME: %\n" menu_name
 
-			for menu_item_data in ParsedMenusData.menus_data[menu_name] do
-				menu_new.addItem menu_item_data[1] menu_item_data[2] title:menu_item_data[3]
-			
+			local menu_new = this.menu menu_name load_native_items:false
+
+			menu_new.addParsedItems ParsedMenusData.menus_data[menu_name]
 		)
 		
+		format "\nMENUS FROM PARSED DATA SUCCESS\n\n"
+
 		--format "MENUS_DATA: %\n" menus_data
 		
 		--for key in menus_data.keys do
@@ -422,17 +420,7 @@ struct MenuManager_v
 
 		kept_saved_data -- return
 	),
-	--/ParsedMenusData.** Get file paths
-	--  *
-	--  * @param string|array macroscript_paths to macroscript files or directories.
-	--  */
-	--function _setMacroscriptsToImport macroscripts_paths =
-	--(
-	--format "\n"; print "MenuManager_v._setMacroscriptsToImport()"
-	--
-	--	this._getPathsToFiles this.macroscripts_to_import macroscripts_paths -- return
-	--),
-	
+
 	/** Collect .mcr files from FILES or DIRECTORIES.
 	  *
 	  * Adds sanitized file paths into the destination array.
@@ -498,48 +486,6 @@ struct MenuManager_v
 		this.MenuBuildManager.installMenusNow()
 	),
 
-	--/** Get macroscript files
-	-- */
-	--function _setQuadConfigFiles =
-	--(
-	--	format "\n"; print "MenuManager_v._setQuadConfigFiles()"
-	--	format "quad_config_files: %\n" quad_config_files
-	--
-	--	/** Test if path is on blacklist
-	--	 */
-	--
-	--	for dir in this.quad_dirs do
-	--	(
-	--		--format "DIR: %\n" dir
-	--		quad_config_files = getFiles ( dir + "/*.ms" ) recurse:true  -- "./../../slot_properties.ini"
-	--		
-	--		--for quad_config_file in quad_config_files where not isOnBlacklist quad_config_file blacklist do
-	--		for quad_config_file in quad_config_files do
-	--		(
-	--			format "QUAD_CONFIG_FILE: %\n" quad_config_file
-	--			appendIfUnique quad_cfg_files ( this._sanitizePath quad_config_file )
-	--		)
-	--	)
-	--	
-	--	quad_cfg_files --return
-	--),
-
-	--/** Get blacklist
-	-- */
-	--function _getAddToBlacklist blacklist =
-	--(
-	--	--format "\n"; print "MenuManager_v._getAddToBlacklist()"
-	--	if blacklist != undefined then
-	--	(
-	--		if classOf blacklist != Array then
-	--			blacklist = #(blacklist)
-	--		
-	--		blacklist = makeUniqueArray ( this.blacklist + blacklist )
-	--	)
-	--	
-	--	blacklist --return
-	--),
-	
 	/*
 	Normalize quad modifier.
 	Example: #shiftAndControlAndAltPressed -> #shiftAndAltAndControlPressed.

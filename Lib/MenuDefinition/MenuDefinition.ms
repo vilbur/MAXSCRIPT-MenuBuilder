@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.97
+	Version: 0.98
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.97,
+	version = 0.98,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -981,6 +981,59 @@ struct MenuDefinition_v
 	),
 
 
+	/* Length prefixes keep delimiters in category, macro, and title unambiguous. */
+	function getParsedItemKey macro_category macro_name item_title =
+	(
+		if classOf macro_category != String or classOf macro_name != String or classOf item_title != String then return undefined
+		(macro_category.count as string) + ":" + macro_category + (macro_name.count as string) + ":" + macro_name + item_title
+	),
+
+
+	/* Import parsed rows with one temporary index, instead of scanning for every row.
+	   The index is rebuilt per call so external edits to item data remain visible. */
+	function addParsedItems parsed_items =
+	(
+		local items_array = this.ensureItemsArray()
+		local item_lookup = Dictionary #string
+		for saved_item in items_array do
+		(
+			if this.hasDictValueSafe saved_item #category and this.hasDictValueSafe saved_item #macro and this.hasDictValueSafe saved_item #title then
+			(
+				if not (this.hasDictValueSafe saved_item #items) then
+				(
+					local saved_group = if this.hasDictValueSafe saved_item #group then saved_item[#group] else ""
+					if saved_group == "" then
+					(
+						local item_key = this.getParsedItemKey saved_item[#category] saved_item[#macro] saved_item[#title]
+						if item_key != undefined then
+							if item_lookup[item_key] == undefined then item_lookup[item_key] = saved_item
+					)
+				)
+			)
+		)
+
+		for parsed_item in parsed_items do
+		(
+			local item_title = if parsed_item[3] == "" then parsed_item[2] as string else parsed_item[3]
+			local item_key = this.getParsedItemKey parsed_item[1] parsed_item[2] item_title
+			if item_key == undefined then
+				this.addItem parsed_item[1] parsed_item[2] title:parsed_item[3]
+			else
+			(
+				local item_data = item_lookup[item_key]
+				if item_data == undefined then
+				(
+					item_data = this.makeMacroItemData item_title parsed_item[1] parsed_item[2] custom_title:(parsed_item[3] != "")
+					append items_array item_data
+					item_lookup[item_key] = item_data
+				)
+				this.last_added_item = item_data
+			)
+		)
+		ok -- Do not return/print the full imported collection.
+	),
+
+
 	function isSeparatorData item_data =
 	(
 		local is_separator = false
@@ -1175,7 +1228,7 @@ struct MenuDefinition_v
 	flat:true copies the source menu items into this menu.
 	flat:false creates a real submenu, including inside quad menus.
 	*/
-	function addMenu menu_reference flat:false index:undefined separators:undefined title:undefined =
+	function addMenu menu_reference flat:true index:undefined separators:undefined title:undefined =
 	(
 		result_data = undefined
 		effective_flat = flat

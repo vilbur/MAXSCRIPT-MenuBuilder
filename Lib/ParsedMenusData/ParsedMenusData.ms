@@ -33,12 +33,21 @@ struct ParsedMenusData_v
 		/* PARSE mcr FILES */ 
 		for macroscript_file in macroscripts_to_import do
 		(
+			format "PARSE FILE: %\n" macroscript_file
 			MacroParser 	= MacroScriptFileParser_v (macroscript_file)
 			
 			/* PASRSE macroscripts in mcr file */ 
 			for _MacroScript in MacroParser.MacroScripts where _MacroScript.isMenuItem() do
+			(
+				format "   MACRO: %\n" _MacroScript.macro_name
 				this.addItemToMenu (_MacroScript.category) (_MacroScript.macro_name) (_MacroScript.getTitle())  --return
+			)
+			
+
 		)
+		
+		format "\nPARSING SUCCESS\n\n"
+		
 	),
 	
 	/** Add item to menu
@@ -50,7 +59,11 @@ struct ParsedMenusData_v
 		
 		/* GEN NEW MENU DATA ONLY IF NEW MENU OCCURES */ 
 		if macro_category != this.menu_name then
+		(
+			this.menu_name = macro_category
+			
 			this.menu_data = this._getDataOfMenuByName macro_category
+		)
 		
 		/* ADD MACRO TO MENU */ 
 		append this.menu_data #( macro_category, macro_name, title )

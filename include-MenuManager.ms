@@ -32,4 +32,5 @@ if MENU_MANAGER_GLOBAL == undefined then
 
 
 /* CREATE GLOBAL INSTANCE */
-MENU_MANAGER_GLOBAL = MenuManager_v()
+if MENU_MANAGER_GLOBAL == undefined then
+	MENU_MANAGER_GLOBAL = MenuManager_v()

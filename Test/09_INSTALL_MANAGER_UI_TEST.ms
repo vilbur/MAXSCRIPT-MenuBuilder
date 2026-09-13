@@ -71,9 +71,13 @@ MENU_MANAGER_GLOBAL.addMacrosToMenus (macro_scripts_files)
 /* TEST ON PRODUCTION FILES */ 
 quad_cfg_files += #( "c:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-Quad-Menus-Config" )	--"./Test-Quad-Files/Quads-Custom`"
 
+format "\n CONTINUE TEST \n\n"
+
 
 /* ADD PATHS TO MANAGER */ 
 MENU_MANAGER_GLOBAL.quadDir ( quad_cfg_files )
+
+format "\n QUAD SUCCESS\n\n"
 
 /*------------------------------------------------------------------------------
 	CREATE DIALOG MENU MANAGER UI
