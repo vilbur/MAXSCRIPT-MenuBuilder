@@ -6,6 +6,7 @@ function configQuad1 QuadMenu =
 
 	QuadMenu.addItem("Tools")("Hide Selection")	group:"Main UI" title:"Hide SELECTED"
 
-	QuadMenu.addMenu("_TEST_MENU")
+	--QuadMenu.addMenu("_TEST_MENU")
+	QuadMenu.addMenu("_TEST MENU A")
 
 )

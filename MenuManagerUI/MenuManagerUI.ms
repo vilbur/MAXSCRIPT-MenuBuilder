@@ -1,6 +1,6 @@
 /*
 	MenuManagerUI.ms
-	Version: 1.04
+	Version: 1.05
 	UI for MENU_MANAGER_GLOBAL macro management
 	TreeView-based macroscript inspector + install/reset tools
 */
@@ -10,9 +10,131 @@ global MenuManagerUICallbacks
 
 try (destroyDialog MenuManagerUI_ROLLOUT) catch()
 
+/*
+ * Selects a tab inside the Qt-based Menu Editor.
+ * Returns true when the requested tab was selected.
+ */
+function selectMenuEditorTab menu_editor_handle tab_title =
+(
+    local tab_selected = false
+
+    try
+    (
+        dotNet.loadAssembly "UIAutomationTypes"
+        dotNet.loadAssembly "UIAutomationClient"
+
+        local automation_element_class = dotNetClass "System.Windows.Automation.AutomationElement"
+        local tree_scope_class = dotNetClass "System.Windows.Automation.TreeScope"
+        local condition_class = dotNetClass "System.Windows.Automation.Condition"
+        local selection_item_pattern_class = dotNetClass "System.Windows.Automation.SelectionItemPattern"
+
+        local menu_editor_pointer = dotNetObject "System.IntPtr" menu_editor_handle
+        local menu_editor_element = automation_element_class.FromHandle menu_editor_pointer
+        local automation_elements = menu_editor_element.FindAll \
+            tree_scope_class.Descendants \
+            condition_class.TrueCondition
+
+        if automation_elements.count > 0 then
+        (
+            for automation_index = 0 to automation_elements.count - 1 do
+            (
+                if tab_selected == false then
+                (
+                    local automation_element = automation_elements.item[automation_index]
+                    local element_data = automation_element.Current
+
+                    if element_data.Name == tab_title and element_data.ControlType.ProgrammaticName == "ControlType.TabItem" then
+                    (
+                        local selection_pattern = automation_element.GetCurrentPattern selection_item_pattern_class.Pattern
+                        selection_pattern.Select()
+                        tab_selected = true
+                    )
+                )
+            )
+        )
+    )
+    catch
+    (
+        format "Menu Editor tab selection failed: %\n" (getCurrentException())
+    )
+
+    tab_selected -- return
+)
+
+/*
+ * Toggles or force-opens the Menu Editor.
+ * tab_name: #none, #Menus or #Quads.
+ */
+function toggleMenuEditor force:false tab_name:#none =
+(
+    local menu_editor_hwnd = undefined
+    local tab_title = undefined
+    local tab_selected = false
+
+    for editor_title in #("Menu Editor", "Menu Editor - Developer Mode") do
+    (
+        if menu_editor_hwnd == undefined then
+            menu_editor_hwnd = windows.getChildHWND 0 editor_title parent:#max
+    )
+
+    if menu_editor_hwnd != undefined and force != true then
+    (
+        if menu_editor_hwnd[1] != undefined then
+            windows.sendMessage menu_editor_hwnd[1] 0x0010 0 0
+
+        menu_editor_hwnd = undefined
+    )
+    else
+    (
+        if menu_editor_hwnd == undefined then
+        (
+            actionMan.executeAction 0 "59246"
+
+            for wait_index = 1 to 40 do
+            (
+                windows.processPostedMessages()
+                sleep 0.05
+
+                for editor_title in #("Menu Editor", "Menu Editor - Developer Mode") do
+                (
+                    if menu_editor_hwnd == undefined then
+                        menu_editor_hwnd = windows.getChildHWND 0 editor_title parent:#max
+                )
+
+                if menu_editor_hwnd != undefined then exit
+            )
+        )
+
+        tab_title = case tab_name of
+        (
+            #Menus: "Menus"
+            #Quads: "Quads"
+            default: undefined
+        )
+
+        if menu_editor_hwnd != undefined and tab_title != undefined then
+        (
+            for wait_index = 1 to 20 do
+            (
+                windows.processPostedMessages()
+                tab_selected = selectMenuEditorTab menu_editor_hwnd[1] tab_title
+
+                if tab_selected then exit
+                sleep 0.05
+            )
+
+            if tab_selected == false then
+                format "UI Automation tab \"%\" was not found.\n" tab_title
+        )
+    )
+
+    menu_editor_hwnd -- return
+)
+
+
 struct MenuManagerUICallbacks_Struct
 (
-    version = 1.04,
+    version = 1.05,
 
     function buildMacroTree paths treeView =
     (
@@ -353,6 +475,7 @@ struct MenuManagerUICallbacks_Struct
         catch()
     ),
 	
+
 	private
 	
 	/** Show exception
@@ -389,7 +512,9 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
     button btnInstallQuads "INSTALL SELECTED QUADS" pos:[366,416] width:170 height:32
     button btnResetQuads "RESET QUADS" pos:[546,416] width:170 height:32
 
-    button btnRefresh "REFRESH" pos:[273,460] width:170 height:32
+    button btnMenuEditor "Menu Editor" pos:[97,460] width:170 height:32
+    button btnRefresh "REFRESH" pos:[277,460] width:170 height:32
+    button btnQuadEditor "Quad Editor" pos:[457,460] width:170 height:32
 
     local macro_data = #()
     local quad_data = #()
@@ -482,7 +607,9 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         btnResetMenus.pos = [188, button_y]
         btnInstallQuads.pos = [366, button_y]
         btnResetQuads.pos = [546, button_y]
-        btnRefresh.pos = [273, button_y + 44]
+        btnMenuEditor.pos = [97, button_y + 44]
+        btnRefresh.pos = [277, button_y + 44]
+        btnQuadEditor.pos = [457, button_y + 44]
 
         setDialogSize MenuManagerUI_ROLLOUT [dialog_width, tree_height + layout_height]
 
@@ -616,6 +743,11 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         MenuManagerUICallbacks.resetQuads()
     )
 
+    on btnMenuEditor pressed do
+    (
+        toggleMenuEditor force:true tab_name:#Menus
+    )
+
     on btnRefresh pressed do
     (
         menu_selection_anchor = undefined
@@ -626,11 +758,15 @@ rollout MenuManagerUI_ROLLOUT "Menu Manager UI"
         MenuManagerUICallbacks.buildMacroTree quad_data tv_quads
         updateTreeLayout()
     )
+
+    on btnQuadEditor pressed do
+    (
+        toggleMenuEditor force:true tab_name:#Quads
+    )
 )
 
 
 /*
-
 createDialog MenuManagerUI_ROLLOUT 724 540
 
 */

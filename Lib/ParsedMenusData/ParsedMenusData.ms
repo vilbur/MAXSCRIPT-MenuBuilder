@@ -14,6 +14,10 @@ struct ParsedMenusData_v
 
 	
 	/* private */
+	
+	menu_name, -- store last used menu
+	menu_data, -- store last used menu
+	
 	/* dependency */
 	/* reference */
 	/* inhered */
@@ -23,8 +27,8 @@ struct ParsedMenusData_v
 	function addMacroscripFilesToMenus =
 	(
 		FORMAT "\n\n"; print "========================= PARSE MENUS ========================="
-		--format "\n"; print "ParsedMenusData_v.addMacroscripFilesToMenus()"
-		--format "macroscripts_to_import: %\n" macroscripts_to_import
+		format "\n"; print "ParsedMenusData_v.addMacroscripFilesToMenus()"
+		format "% .mcr files will be parsed to menus\n" macroscripts_to_import.count
 		
 		/* PARSE mcr FILES */ 
 		for macroscript_file in macroscripts_to_import do
@@ -42,11 +46,14 @@ struct ParsedMenusData_v
 	function addItemToMenu macro_category macro_name title =
 	(
 		--format "\n"; print "MenuManager_v.addItemToMenu()"
-		--menu_name = item_data[1] -- menu name is category of macroscript  
-		menu_data = this._getDataOfMenuByName macro_category
+		--menu_name = item_data[1] -- menu name is category of macroscript
+		
+		/* GEN NEW MENU DATA ONLY IF NEW MENU OCCURES */ 
+		if macro_category != this.menu_name then
+			this.menu_data = this._getDataOfMenuByName macro_category
 		
 		/* ADD MACRO TO MENU */ 
-		appendIfUnique menu_data #( macro_category, macro_name, title )
+		append this.menu_data #( macro_category, macro_name, title )
 	),
 	
 	private

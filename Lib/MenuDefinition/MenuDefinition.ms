@@ -1,13 +1,13 @@
 /*
 	MenuDefinition_v
-	Version: 0.96
+	Version: 0.97
 	Purpose: Ordered menu definition with OOP-friendly submenu creation, ordered quads, title aliases, real separator items, and deferred menu reference resolving.
 */
 
 
 struct MenuDefinition_v
 (
-	version = 0.96,
+	version = 0.97,
 	type = #menu,
 	title = "",
 	data = undefined,
@@ -477,6 +477,345 @@ struct MenuDefinition_v
 		)
 
 		found_manager -- return
+	),
+
+
+	/*
+	Find a live native CUI menu by title.
+	Searches top-level menus and their submenu hierarchy.
+	*/
+	function findNativeCuiMenuByTitle cui_menu menu_title =
+	(
+		local found_menu = undefined
+		local current_title = ""
+		local native_items = #()
+
+		try (current_title = cui_menu.title as string) catch (current_title = "")
+		if current_title == menu_title then
+		(
+			found_menu = cui_menu
+		)
+		else
+		(
+			try (native_items = cui_menu.menuItems) catch (native_items = #())
+
+			for native_item in native_items while found_menu == undefined do
+			(
+				local is_submenu = false
+				try (is_submenu = native_item.isSubMenu) catch (is_submenu = false)
+
+				if is_submenu then
+				(
+					local submenu = undefined
+					try (submenu = native_item.subMenu) catch (submenu = undefined)
+					if submenu != undefined then found_menu = this.findNativeCuiMenuByTitle submenu menu_title
+				)
+			)
+		)
+
+		found_menu -- return
+	),
+
+
+	/* Get a native CUI menu by title from the current 3ds Max menu manager. */
+	function getNativeCuiMenuByTitle menu_title =
+	(
+		local found_menu = undefined
+		local menu_manager = undefined
+		local top_level_menus = #()
+		local quad_menu_manager = undefined
+		local quad_contexts = #()
+
+		try (menu_manager = maxOps.GetICuiMenuMgr()) catch (menu_manager = undefined)
+
+		if menu_manager != undefined then
+		(
+			try (top_level_menus = menu_manager.topLevelMenus) catch (top_level_menus = #())
+
+			for top_level_menu in top_level_menus while found_menu == undefined do
+			(
+				found_menu = this.findNativeCuiMenuByTitle top_level_menu menu_title
+			)
+
+			if found_menu == undefined then
+			(
+				local main_menu_bar = undefined
+				try (main_menu_bar = menu_manager.mainMenuBar) catch (main_menu_bar = undefined)
+				if main_menu_bar != undefined then found_menu = this.findNativeCuiMenuByTitle main_menu_bar menu_title
+			)
+		)
+
+		if found_menu == undefined then
+		(
+			try (quad_menu_manager = maxOps.GetICuiQuadMenuMgr()) catch (quad_menu_manager = undefined)
+
+			if quad_menu_manager != undefined then
+			(
+				try (quad_contexts = quad_menu_manager.contexts) catch (quad_contexts = #())
+
+				for quad_context in quad_contexts while found_menu == undefined do
+				(
+					local quad_menus = #()
+					try (quad_menus = quad_context.GetQuadMenus()) catch (quad_menus = #())
+
+					for quad_menu in quad_menus while found_menu == undefined do
+					(
+						local quadrant_menus = #()
+						try (quadrant_menus = quad_menu.menus) catch (quadrant_menus = #())
+
+						for quadrant_menu in quadrant_menus while found_menu == undefined do
+						(
+							found_menu = this.findNativeCuiMenuByTitle quadrant_menu menu_title
+						)
+					)
+				)
+			)
+		)
+
+		found_menu -- return
+	),
+
+
+	/* Convert a live native CUI action into saved menu item data. */
+	function makeNativeCuiActionItemData native_item =
+	(
+		local item_id = this.createGuidString()
+		local item_title = ""
+		local action_item = undefined
+		local action_category = ""
+		local action_name = ""
+
+		try (item_title = native_item.title as string) catch (ok)
+		try (action_item = native_item.actionItem) catch (action_item = undefined)
+
+		if action_item != undefined then
+		(
+			try (action_category = action_item.category as string) catch (ok)
+			try (action_name = action_item.menuText as string) catch (ok)
+			if action_name == "" then try (action_name = action_item.buttonText as string) catch (ok)
+			if action_name == "" then try (action_name = action_item.description as string) catch (ok)
+			if action_name == "" then try (action_name = action_item.persistentActionId as string) catch (ok)
+		)
+
+		if item_title == "" then item_title = action_name
+		local item_data = this.makeMacroItemData item_title action_category action_name custom_title:true id:item_id
+
+		if action_item != undefined then
+		(
+			try (item_data[#action_table_id] = action_item.actionTableID) catch (ok)
+			try (item_data[#persistent_action_id] = action_item.persistentActionId as string) catch (ok)
+		)
+
+		item_data -- return
+	),
+
+
+	/* Convert the ordered items of a live native CUI menu recursively. */
+	function getNativeCuiMenuItems cui_menu =
+	(
+		local converted_items = #()
+		local native_items = #()
+		try (native_items = cui_menu.menuItems) catch (native_items = #())
+
+		for native_item in native_items do
+		(
+			local item_id = this.createGuidString()
+			local is_separator = false
+			local is_submenu = false
+			local is_action = false
+
+			try (is_separator = native_item.isSeparator) catch (ok)
+			try (is_submenu = native_item.isSubMenu) catch (ok)
+			try (is_action = native_item.isAction) catch (ok)
+
+			if is_separator then
+			(
+				append converted_items (this.makeSeparatorItemData id:item_id)
+			)
+			else if is_submenu then
+			(
+				local submenu = undefined
+				local submenu_title = ""
+				local submenu_items = #()
+				try (submenu = native_item.subMenu) catch (submenu = undefined)
+				if submenu != undefined then
+				(
+					try (submenu_title = submenu.title as string) catch (ok)
+					submenu_items = this.getNativeCuiMenuItems submenu
+				)
+				append converted_items (this.makeSubMenuItemData submenu_title submenu_items id:item_id source_menu_title:submenu_title)
+			)
+			else if is_action then
+			(
+				append converted_items (this.makeNativeCuiActionItemData native_item)
+			)
+		)
+
+		converted_items -- return
+	),
+
+
+	/* Resolve an ActionItem from its exact native action-table binding. */
+	function findNativeActionItem action_table_id persistent_action_id =
+	(
+		local found_action = undefined
+
+		for table_index = 1 to actionMan.numActionTables while found_action == undefined do
+		(
+			local action_table = actionMan.getActionTable table_index
+			if action_table.id == action_table_id then
+			(
+				for action_index = 1 to action_table.numActionItems while found_action == undefined do
+				(
+					local action_item = action_table.getActionItem action_index
+					local action_persistent_id = action_item.id as string
+					try (action_persistent_id = action_item.getPersistentActionId()) catch (ok)
+					if action_persistent_id == persistent_action_id then found_action = action_item
+				)
+			)
+		)
+
+		found_action -- return
+	),
+
+
+	/* Get one XML attribute without throwing when it is absent. */
+	function getXmlAttributeValue xml_node attribute_name default_value =
+	(
+		local attribute_value = default_value
+		local xml_attribute = undefined
+		try (xml_attribute = xml_node.Attributes.GetNamedItem attribute_name) catch (xml_attribute = undefined)
+		if xml_attribute != undefined then attribute_value = xml_attribute.Value as string
+
+		attribute_value -- return
+	),
+
+
+	/*
+	Get the legacy workspace menu source paired with the current CUI.
+	Hidden context groups such as Context Spline Tools are stored here.
+	*/
+	function getLegacyWorkspaceMenuFilePath =
+	(
+		local menu_file_path = ""
+		local current_cui_path = ""
+		try (current_cui_path = cui.getConfigFile()) catch (current_cui_path = "")
+
+		if current_cui_path != "" then
+		(
+			try
+			(
+				local cui_file = dotNetObject "System.IO.FileInfo" current_cui_path
+				local ui_directory = cui_file.Directory.Parent.Parent.FullName
+				local candidate_path = (dotNetClass "System.IO.Path").Combine ui_directory "MaxStartUI.mnux"
+				if doesFileExist candidate_path then menu_file_path = candidate_path
+			)
+			catch
+			(
+				menu_file_path = ""
+			)
+		)
+
+		menu_file_path -- return
+	),
+
+
+	/* Load a hidden native context menu from the active legacy workspace XML. */
+	function loadLegacyWorkspaceMenuItemsByTitle menu_title =
+	(
+		local converted_items = #()
+		local menu_file_path = this.getLegacyWorkspaceMenuFilePath()
+
+		if menu_file_path != "" then
+		(
+			try
+			(
+				local xml_document = dotNetObject "System.Xml.XmlDocument"
+				xml_document.Load menu_file_path
+				local menu_nodes = xml_document.SelectNodes "//Menu"
+				local found_menu_node = undefined
+
+				if menu_nodes.Count > 0 then for menu_index = 0 to (menu_nodes.Count - 1) while found_menu_node == undefined do
+				(
+					local menu_node = menu_nodes.Item menu_index
+					if (this.getXmlAttributeValue menu_node "title" "") == menu_title then found_menu_node = menu_node
+				)
+
+				if found_menu_node != undefined then
+				(
+					local child_nodes = found_menu_node.ChildNodes
+					if child_nodes.Count > 0 then for child_index = 0 to (child_nodes.Count - 1) do
+					(
+						local xml_item = child_nodes.Item child_index
+						if xml_item.Name == "Item" then
+						(
+							local mode_name = this.getXmlAttributeValue xml_item "modeName" ""
+
+							if mode_name == "AM_SEPARATOR" then
+							(
+								append converted_items (this.makeSeparatorItemData())
+							)
+							else
+							(
+								local action_table_id = 0
+								local persistent_action_id = this.getXmlAttributeValue xml_item "actionID" ""
+								try (action_table_id = (this.getXmlAttributeValue xml_item "actionTableID" "0") as integer) catch (action_table_id = 0)
+
+								if action_table_id != 0 and persistent_action_id != "" then
+								(
+									local action_item = this.findNativeActionItem action_table_id persistent_action_id
+									local action_category = ""
+									local action_name = persistent_action_id
+									local item_title = this.getXmlAttributeValue xml_item "customTitle" ""
+
+									if action_item != undefined then
+									(
+										try (action_category = action_item.category as string) catch (ok)
+										try (action_name = action_item.menuText as string) catch (ok)
+										if action_name == "" then try (action_name = action_item.buttonText as string) catch (ok)
+										if action_name == "" then try (action_name = action_item.description as string) catch (ok)
+									)
+									else if action_table_id == 647394 then
+									(
+										local category_separator_index = findString persistent_action_id "`"
+										if category_separator_index != undefined then
+										(
+											action_name = substring persistent_action_id 1 (category_separator_index - 1)
+											action_category = substring persistent_action_id (category_separator_index + 1) (persistent_action_id.count - category_separator_index)
+										)
+									)
+
+									if item_title == "" then item_title = action_name
+									local item_data = this.makeMacroItemData item_title action_category action_name custom_title:((this.getXmlAttributeValue xml_item "customTitle" "") != "")
+									item_data[#action_table_id] = action_table_id
+									item_data[#persistent_action_id] = persistent_action_id
+									append converted_items item_data
+								)
+							)
+						)
+					)
+				)
+			)
+			catch
+			(
+				format "MenuDefinition_v.loadLegacyWorkspaceMenuItemsByTitle failed. title:'%' error:%\n" menu_title (getCurrentException())
+				converted_items = #()
+			)
+		)
+
+		converted_items -- return
+	),
+
+
+	/* Load ordered items from a live native 3ds Max menu with the requested title. */
+	function loadNativeMenuItemsByTitle menu_title =
+	(
+		local native_items = #()
+		local native_menu = this.getNativeCuiMenuByTitle menu_title
+		if native_menu != undefined then native_items = this.getNativeCuiMenuItems native_menu
+		if native_items.count == 0 then native_items = this.loadLegacyWorkspaceMenuItemsByTitle menu_title
+
+		native_items -- return
 	),
 
 
@@ -994,6 +1333,14 @@ struct MenuDefinition_v
 
 	on create do
 	(
+		if this.data == undefined and this._data == undefined then
+		(
+			if this.title != undefined and this.title != "" then
+			(
+				this.data = this.loadNativeMenuItemsByTitle (this.title as string)
+			)
+		)
+
 		if this.data == undefined then
 		(
 			this.data = #()

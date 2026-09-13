@@ -1,6 +1,6 @@
 /*
 	MenuRebuilder_v
-	Version: 0.94
+	Version: 0.95
 	3ds Max: 2026
 	Purpose:
 		Rebuild menus and quad menus from MenuBuildManager_v saved data.
@@ -12,7 +12,7 @@ if MenuRebuilder_qmnx_clear_guard == undefined then MenuRebuilder_qmnx_clear_gua
 
 struct MenuRebuilder_v
 (
-	version = 0.94,
+	version = 0.95,
 	menu_data = Dictionary #name,
 	skip_default_qmnx_clear = false,
 	help_menu_id = "cee8f758-2199-411b-81e7-d3ff4a80d143",
@@ -763,8 +763,23 @@ struct MenuRebuilder_v
 		local item_title = this.getActionItemDisplayTitle item_data macro_name
 		local action_group = this.getItemStringValue item_data #group ""
 		local binding_valid = true
+		local use_saved_native_binding = false
 
-		if action_group != "" then
+		if this.hasDictValueSafe item_data #action_table_id and this.hasDictValueSafe item_data #persistent_action_id then
+		(
+			try
+			(
+				action_table_id = item_data[#action_table_id]
+				persistent_action_id = item_data[#persistent_action_id] as string
+				use_saved_native_binding = true
+			)
+			catch
+			(
+				use_saved_native_binding = false
+			)
+		)
+
+		if not use_saved_native_binding and action_group != "" then
 		(
 			local native_action = this.resolveNativeAction action_group macro_category macro_name
 			if native_action == undefined then
@@ -782,7 +797,7 @@ struct MenuRebuilder_v
 			(
 				try
 				(
-					if action_group == "" then
+					if action_group == "" and not use_saved_native_binding then
 					(
 						created_item = parent_menu.CreateMacroScriptAction item_id (macro_name as string) (macro_category as string)
 					)

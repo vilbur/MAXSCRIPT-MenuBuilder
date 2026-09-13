@@ -45,9 +45,10 @@ global MENU_MANAGER_GLOBAL = MenuManager_v()
 	
 --------------------------------------------------------------------------------*/
 
-/* GET MACTOSCRIPTS IN DIR */ 
+/* DEFINE MACTOSCRIPTS FOR MENUS */ 
 macro_scripts_files =  ""
 --macro_scripts_files =  current_dir + "/Macros-Parser-Test-Files" 	--"./Macros-Parser-Test-Files"
+
 
 /* TEST ON PRODUCTION FILES */ 
 macro_scripts_files =  @"C:\Users\vilbur\AppData\Local\Autodesk\3dsMax\2026 - 64bit\ENU\scripts\MAXSCRIPT-viltools3\VilTools"

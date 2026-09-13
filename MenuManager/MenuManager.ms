@@ -169,7 +169,7 @@ struct MenuManager_v
 	  */
 	function quadDir quad_cfg_paths =
 	(
-		--format "\n"; print "MenuManager_v.quadDir()"
+		format "\n"; print "MenuManager_v.quadDir()"
 	
 		quad_cfg_paths = this._getPathsToFiles quad_cfg_paths filetype:"ms" recurse:false -- return
 		
@@ -263,7 +263,7 @@ struct MenuManager_v
 	function createQuadMenus =
 	(
 		FORMAT "\n\n"; print "========================= CREATE QUAD MENU FROM QUAD AUTO CONFIG FILES ========================="
-		
+		--FORMAT "\n\n"
 		
 		/*------------------------------------------------------------------------------
 			QUADS
@@ -441,7 +441,7 @@ struct MenuManager_v
 	  */
 	function _getPathsToFiles input_paths filetype: recurse:true =
 	(
-		--format "\n"; print "MenuManager_v._getPathsToFiles()"
+		format "\n"; print "MenuManager_v._getPathsToFiles()"
 		--format "input_paths: %\n" input_paths
 	
 		destination_array = #()
